@@ -1,0 +1,52 @@
+'use client';
+
+import React from 'react';
+import { GameStateProvider } from '@/context/GameStateContext';
+import GameCanvas from '@/components/game/GameCanvas';
+import TopNavHUD from '@/components/hud/TopNavHUD';
+import MiniMap from '@/components/hud/MiniMap';
+import NotificationToast from '@/components/hud/NotificationToast';
+import DummyAdBanner from '@/components/ads/DummyAdBanner';
+import DialogueModal from '@/components/dialogue/DialogueModal';
+import ProfileModal from '@/components/profile/ProfileModal';
+import QuestsDrawer from '@/components/quests/QuestsDrawer';
+
+// Eco-Quest Modals
+import WildfireQuenchModal from '@/components/quests/WildfireQuenchModal';
+import LakeRecyclingModal from '@/components/quests/LakeRecyclingModal';
+import ForestFireModal from '@/components/quests/ForestFireModal';
+import TundraPetitionModal from '@/components/quests/TundraPetitionModal';
+import GrasslandsFarmingModal from '@/components/quests/GrasslandsFarmingModal';
+import ReefNavigationModal from '@/components/quests/ReefNavigationModal';
+
+export default function Home() {
+  return (
+    <GameStateProvider>
+      <main className="relative flex flex-col h-screen w-screen overflow-hidden bg-zinc-950 text-white font-sans">
+        {/* Top Navigation HUD with World Flourish Meter & Treasury */}
+        <TopNavHUD />
+
+        {/* Central Game Canvas Container */}
+        <div className="relative flex-1 w-full h-full overflow-hidden flex flex-col">
+          <GameCanvas />
+          <MiniMap />
+          <NotificationToast />
+
+          {/* Dialogue & Quest Modals Overlay */}
+          <DialogueModal />
+          <WildfireQuenchModal />
+          <LakeRecyclingModal />
+          <ForestFireModal />
+          <TundraPetitionModal />
+          <GrasslandsFarmingModal />
+          <ReefNavigationModal />
+          <ProfileModal />
+          <QuestsDrawer />
+        </div>
+
+        {/* Bottom Dummy Ad Banner for Eco-Sponsorship */}
+        <DummyAdBanner />
+      </main>
+    </GameStateProvider>
+  );
+}
