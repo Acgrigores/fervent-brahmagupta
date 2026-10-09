@@ -20,6 +20,16 @@ export interface AnimalInfo {
   suggestedQuestions: string[];
 }
 
+export interface CropInfo {
+  biome: BiomeId;
+  name: string;
+  icon: string;
+  deadIcon: string;
+  crisisDescription: string;
+  flourishDescription: string;
+  yieldMultiplier: number;
+}
+
 export interface CoinLedger {
   forest: number;
   lake: number;

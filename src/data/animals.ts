@@ -1,4 +1,4 @@
-import { AnimalId, AnimalInfo, BiomeId, Badge, Quest } from '@/types/game';
+import { AnimalId, AnimalInfo, BiomeId, Badge, Quest, CropInfo } from '@/types/game';
 
 export const BIOMES_INFO: Record<BiomeId, {
   name: string;
@@ -71,6 +71,63 @@ export const BIOMES_INFO: Record<BiomeId, {
     ashDescription: 'Bleached white coral graveyards, tangled ghost fishing nets, and noisy motorboat lanes.',
     charredColor: '#374151',
     flourishColor: '#06b6d4',
+  },
+};
+
+export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
+  lake: {
+    biome: 'lake',
+    name: 'Golden Sweet Corn',
+    icon: '🌽',
+    deadIcon: '🥀',
+    crisisDescription: 'Polluted lake runoff, microplastics, and algae choke the farm pumps. With no clean water, the corn stalks have withered and died.',
+    flourishDescription: 'Pure filtered lake water flows through the irrigation grid! 8-foot golden sweet corn stalks are heavy with harvest-ready cobs!',
+    yieldMultiplier: 1.5,
+  },
+  forest: {
+    biome: 'forest',
+    name: 'Canopy Apple & Berry Orchard',
+    icon: '🍎',
+    deadIcon: '🪵',
+    crisisDescription: 'Wildfire smoke and toxic ash clouds blanket the orchard, charring the bark and suffocating blossom bees.',
+    flourishDescription: 'Wildfires prevented! Radiant ruby apples and wild berries hang from lush branches buzzing with honeybees!',
+    yieldMultiplier: 1.4,
+  },
+  tundra: {
+    biome: 'tundra',
+    name: 'Glacial Winter Wheat',
+    icon: '🌾',
+    deadIcon: '🍂',
+    crisisDescription: 'Black carbon soot from the thermal coal plant falls on the snowpack, freezing the winter wheat in toxic black ice.',
+    flourishDescription: 'The coal plant is shut down! Pure mineral-rich glacial melt feeds vibrant rows of frost-hardy winter wheat!',
+    yieldMultiplier: 1.6,
+  },
+  grasslands: {
+    biome: 'grasslands',
+    name: 'Giant Pollinator Sunflowers',
+    icon: '🌻',
+    deadIcon: '🥀',
+    crisisDescription: 'Topsoil degradation and milkweed loss caused complete pollinator collapse; giant sunflowers hang drooping, dry, and seedless.',
+    flourishDescription: 'Bayer Smart Farming & pollinator buffer strips online! 12-foot sunflowers bloom under fluttering clouds of monarchs!',
+    yieldMultiplier: 1.8,
+  },
+  desert: {
+    biome: 'desert',
+    name: 'Arid Sugar Melons & Sorghum',
+    icon: '🍈',
+    deadIcon: '🏜️',
+    crisisDescription: 'Severe drought and dried groundwater have parched the crop field into cracked dust bowls, killing the melon vines.',
+    flourishDescription: 'Solar artesian wellspring running! Precision drip irrigation feeds sprawling sweet watermelons and golden sorghum!',
+    yieldMultiplier: 1.5,
+  },
+  reefs: {
+    biome: 'reefs',
+    name: 'Coastal Tidal Rice & Bio-Kelp',
+    icon: '🌱',
+    deadIcon: '🌊',
+    crisisDescription: 'Speedboat propeller wakes and fuel spills poison the tidal estuary, submerging the rice paddies in greasy foam.',
+    flourishDescription: 'Maritime traffic safely rerouted! Clean oceanic tides lap against flourishing emerald tidal rice and mineral kelp!',
+    yieldMultiplier: 1.7,
   },
 };
 
