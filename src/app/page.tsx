@@ -10,6 +10,8 @@ import DummyAdBanner from '@/components/ads/DummyAdBanner';
 import DialogueModal from '@/components/dialogue/DialogueModal';
 import ProfileModal from '@/components/profile/ProfileModal';
 import QuestsDrawer from '@/components/quests/QuestsDrawer';
+import FarmStatusWidget from '@/components/hud/FarmStatusWidget';
+import FastTravelDock from '@/components/hud/FastTravelDock';
 
 // Eco-Quest Modals
 import WildfireQuenchModal from '@/components/quests/WildfireQuenchModal';
@@ -29,6 +31,8 @@ export default function Home() {
         {/* Central Game Canvas Container */}
         <div className="relative flex-1 w-full h-full overflow-hidden flex flex-col">
           <GameCanvas />
+          <FarmStatusWidget />
+          <FastTravelDock />
           <MiniMap />
           <NotificationToast />
 
