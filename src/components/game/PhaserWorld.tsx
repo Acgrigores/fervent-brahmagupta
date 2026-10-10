@@ -1713,7 +1713,7 @@ export default function PhaserWorld() {
 
           private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number, isRestored: boolean) {
             const info = ANIMALS[animalId];
-            const hasMiniGame = animalId === 'manatee' || animalId === 'butterfly';
+            const hasMiniGame = ['manatee', 'butterfly', 'cheetah', 'polar_bear'].includes(animalId);
             const container = this.add.container(x, y);
 
             // Ground shadow

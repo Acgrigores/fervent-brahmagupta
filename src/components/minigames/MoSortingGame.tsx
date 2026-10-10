@@ -272,8 +272,8 @@ export default function MoSortingGame({ animal, isHappy, quest, onClose, onStart
   const avatar = isHappy ? animal.avatar : animal.avatar.replace('.png', '_sad.png');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-pixel">
-      <div className="relative w-full max-w-3xl pixel-panel overflow-hidden flex flex-col max-h-[90vh] text-[#2e1005] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-pixel">
+      <div className="relative w-full max-w-3xl pixel-panel overflow-hidden flex flex-col max-h-full text-[#2e1005] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 border-b-4 border-[#2e1005] bg-[#5c2c16] text-[#fffbeb]">
           <div className="flex items-center gap-3">

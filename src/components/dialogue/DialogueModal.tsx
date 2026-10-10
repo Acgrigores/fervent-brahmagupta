@@ -5,6 +5,8 @@ import { useGameState } from '@/context/GameStateContext';
 import { ANIMALS } from '@/data/animals';
 import MoSortingGame from '@/components/minigames/MoSortingGame';
 import AuraFlappyGame from '@/components/minigames/AuraFlappyGame';
+import ZuriRunGame from '@/components/minigames/ZuriRunGame';
+import NanukKnockoutGame from '@/components/minigames/NanukKnockoutGame';
 import { sounds } from '@/utils/soundEffects';
 import { X, Send, Sparkles, Coins, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -59,7 +61,13 @@ export default function DialogueModal() {
   const biomeQuest = quests.find((q) => q.biome === animal.biome);
 
   // Some animals play a mini-game instead of chatting (locked until their biome is restored)
-  const MiniGame = animal.id === 'manatee' ? MoSortingGame : animal.id === 'butterfly' ? AuraFlappyGame : null;
+  const MINI_GAMES: Partial<Record<typeof animal.id, typeof MoSortingGame>> = {
+    manatee: MoSortingGame,
+    butterfly: AuraFlappyGame,
+    cheetah: ZuriRunGame,
+    polar_bear: NanukKnockoutGame,
+  };
+  const MiniGame = MINI_GAMES[animal.id];
   if (MiniGame) {
     return (
       <MiniGame

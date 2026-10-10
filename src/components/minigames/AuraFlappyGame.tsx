@@ -4,6 +4,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { sounds } from '@/utils/soundEffects';
 import { AnimalInfo, Quest } from '@/types/game';
+import {
+  shuffle,
+  seeded,
+  makeLayer,
+  ridge,
+  mix,
+  drawTiled,
+  circleHitsRect,
+  applyHurtShake,
+  drawHurtFeedback,
+} from './canvasFx';
 import { X, Heart, ArrowRight, RotateCcw, HelpCircle, Coins, Trophy } from 'lucide-react';
 
 // ---------------------------------------------------------------
@@ -108,15 +119,6 @@ const TRIVIA: TriviaQuestion[] = [
   },
 ];
 
-function shuffle<T>(list: T[]): T[] {
-  const copy = [...list];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
 // ---------------------------------------------------------------
 // Game constants (logical canvas pixels)
 // ---------------------------------------------------------------
@@ -158,15 +160,6 @@ const PETALS = [
   ['#fbbf24', '#b45309', '#fef3c7'],
 ];
 
-// Small seeded random generator so each obstacle / layer always draws the same way
-function seeded(seed: number) {
-  let s = seed >>> 0 || 1;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
 // ---------------------------------------------------------------
 // Prairie background: layers are drawn once to offscreen canvases that tile
 // every W pixels, then panned at different speeds for smooth parallax
@@ -176,44 +169,8 @@ interface Layers {
   scrolling: [HTMLCanvasElement, number][];
 }
 
-function makeLayer(draw: (ctx: CanvasRenderingContext2D) => void) {
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-  draw(ctx);
-  return canvas;
-}
-
-// Smooth wave that repeats exactly every W pixels (whole-number frequencies)
-function wave(x: number, parts: [number, number, number][]) {
-  return parts.reduce((sum, [amp, freq, phase]) => sum + amp * Math.sin((x / W) * Math.PI * 2 * freq + phase), 0);
-}
-
-// Fills a rolling ridge in 2px columns and returns the top y of each column
-function ridge(ctx: CanvasRenderingContext2D, base: number, parts: [number, number, number][], color: string, edge?: string) {
-  const tops: number[] = [];
-  for (let x = 0; x < W; x += 2) {
-    const top = Math.round((base + wave(x, parts)) / 2) * 2;
-    tops[x] = top;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, top, 2, H - top);
-    if (edge) {
-      ctx.fillStyle = edge;
-      ctx.fillRect(x, top, 2, 2);
-    }
-  }
-  return tops;
-}
-
-function mix(a: string, b: string, t: number) {
-  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
-  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
-  return `rgb(${pa.map((v, i) => Math.round(v + (pb[i] - v) * t)).join(',')})`;
-}
-
 function buildLayers(): Layers {
-  const sky = makeLayer((ctx) => {
+  const sky = makeLayer(W, H, (ctx) => {
     // Banded sky: blue overhead fading to a warm golden horizon
     const bands = 14;
     for (let i = 0; i < bands; i++) {
@@ -235,7 +192,7 @@ function buildLayers(): Layers {
     sun(20, '#fffbea');
   });
 
-  const clouds = makeLayer((ctx) => {
+  const clouds = makeLayer(W, H, (ctx) => {
     const cloud = (x: number, y: number) => {
       for (const dx of [0, -W]) {
         ctx.fillStyle = '#f6e7cf';
@@ -252,8 +209,8 @@ function buildLayers(): Layers {
     cloud(600, 70);
   });
 
-  const far = makeLayer((ctx) => {
-    const tops = ridge(ctx, 222, [[10, 2, 0.4], [5, 5, 1.7]], '#a9bfae', '#bccdbf');
+  const far = makeLayer(W, H, (ctx) => {
+    const tops = ridge(ctx, W, H, 222, [[10, 2, 0.4], [5, 5, 1.7]], '#a9bfae', '#bccdbf');
     // Distant windmill: tapered tower and four blades
     const wx = 380;
     const top = tops[wx];
@@ -279,9 +236,9 @@ function buildLayers(): Layers {
     });
   });
 
-  const mid = makeLayer((ctx) => {
+  const mid = makeLayer(W, H, (ctx) => {
     const rand = seeded(11);
-    const tops = ridge(ctx, 250, [[8, 3, 0.5], [4, 7, 2]], '#c9bf6b', '#d9cf82');
+    const tops = ridge(ctx, W, H, 250, [[8, 3, 0.5], [4, 7, 2]], '#c9bf6b', '#d9cf82');
     // Grass texture strokes
     for (let i = 0; i < 260; i++) {
       const x = Math.floor((rand() * W) / 2) * 2;
@@ -301,9 +258,9 @@ function buildLayers(): Layers {
     });
   });
 
-  const near = makeLayer((ctx) => {
+  const near = makeLayer(W, H, (ctx) => {
     const rand = seeded(23);
-    const tops = ridge(ctx, 288, [[6, 4, 1], [3, 9, 0]], '#8fb852', '#a6cd66');
+    const tops = ridge(ctx, W, H, 288, [[6, 4, 1], [3, 9, 0]], '#8fb852', '#a6cd66');
     // Tufts of prairie grass along the crest
     for (let x = 0; x < W; x += 6) {
       const h = 4 + Math.floor(rand() * 4) * 2;
@@ -325,7 +282,7 @@ function buildLayers(): Layers {
     }
   });
 
-  const ground = makeLayer((ctx) => {
+  const ground = makeLayer(W, H, (ctx) => {
     const rand = seeded(5);
     ctx.fillStyle = '#6a9f3c';
     ctx.fillRect(0, GROUND, W, H - GROUND);
@@ -347,11 +304,7 @@ function buildLayers(): Layers {
 
 function drawBackground(ctx: CanvasRenderingContext2D, layers: Layers, scroll: number) {
   ctx.drawImage(layers.sky, 0, 0);
-  layers.scrolling.forEach(([layer, factor]) => {
-    const offset = Math.floor((scroll * factor) % W);
-    ctx.drawImage(layer, -offset, 0);
-    ctx.drawImage(layer, W - offset, 0);
-  });
+  layers.scrolling.forEach(([layer, factor]) => drawTiled(ctx, layer, scroll * factor));
 }
 
 // ---------------------------------------------------------------
@@ -440,23 +393,6 @@ function drawDroopingFlowers(ctx: CanvasRenderingContext2D, p: Pillar) {
       ctx.fillRect(hx + dx, hy + 10, 2, len - 2);
     });
   });
-}
-
-// 7x6 pixel heart
-const HEART_ROWS = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
-function drawPixelHeart(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) {
-  ctx.fillStyle = color;
-  HEART_ROWS.forEach((row, ry) =>
-    row.split('').forEach((c, rx) => {
-      if (c === 'X') ctx.fillRect(Math.round(x + rx * size), Math.round(y + ry * size), size, size);
-    })
-  );
-}
-
-function circleHitsRect(cx: number, cy: number, r: number, rx: number, ry: number, rw: number, rh: number) {
-  const nx = Math.max(rx, Math.min(cx, rx + rw));
-  const ny = Math.max(ry, Math.min(cy, ry + rh));
-  return (cx - nx) ** 2 + (cy - ny) ** 2 < r * r;
 }
 
 // ---------------------------------------------------------------
@@ -703,10 +639,7 @@ export default function AuraFlappyGame({ animal, isHappy, quest, onClose, onStar
       // ---- Draw ----
       const sinceHurt = g.time - g.hurtTime;
       ctx.save();
-      if (sinceHurt < 0.4) {
-        const power = 7 * (1 - sinceHurt / 0.4);
-        ctx.translate(Math.round((Math.random() - 0.5) * power * 2), Math.round((Math.random() - 0.5) * power * 2));
-      }
+      applyHurtShake(ctx, sinceHurt);
       drawBackground(ctx, layers, g.scroll);
       g.pillars.forEach((p) => {
         drawDroopingFlowers(ctx, p);
@@ -727,39 +660,15 @@ export default function AuraFlappyGame({ animal, isHappy, quest, onClose, onStar
       }
       ctx.restore();
 
-      // Hurt feedback: red flash, a heart falling away from Aura, and a banner
-      if (sinceHurt < 0.5) {
-        ctx.fillStyle = `rgba(220, 38, 38, ${0.45 * (1 - sinceHurt / 0.5)})`;
-        ctx.fillRect(0, 0, W, H);
-      }
-      if (sinceHurt < 1.2) {
-        ctx.globalAlpha = Math.max(0, 1 - sinceHurt / 1.2);
-        const hy = g.hurtY - 34 + sinceHurt * 70;
-        drawPixelHeart(ctx, BIRD_X + 14, hy + 2, 3, '#450a0a');
-        drawPixelHeart(ctx, BIRD_X + 12, hy, 3, '#dc2626');
-        ctx.font = '12px "Press Start 2P", monospace';
-        ctx.fillStyle = '#7f1d1d';
-        ctx.fillText('-1', BIRD_X + 38, hy + 16);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText('-1', BIRD_X + 36, hy + 14);
-        ctx.globalAlpha = 1;
-      }
-      if (sinceHurt < 1.1 && g.mode !== 'gameover') {
-        const left = g.hearts;
-        ctx.fillStyle = 'rgba(46, 16, 5, 0.85)';
-        ctx.fillRect(W / 2 - 150, 60, 300, 60);
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(W / 2 - 150, 60, 300, 4);
-        ctx.fillRect(W / 2 - 150, 116, 300, 4);
-        ctx.textAlign = 'center';
-        ctx.font = '16px "Press Start 2P", monospace';
-        ctx.fillStyle = '#fca5a5';
-        ctx.fillText('OUCH! -1 HEART', W / 2, 90);
-        ctx.font = '10px "Press Start 2P", monospace';
-        ctx.fillStyle = '#fde68a';
-        ctx.fillText(`${left} HEART${left === 1 ? '' : 'S'} LEFT`, W / 2, 110);
-        ctx.textAlign = 'left';
-      }
+      drawHurtFeedback(ctx, {
+        w: W,
+        h: H,
+        sinceHurt,
+        x: BIRD_X,
+        y: g.hurtY,
+        livesLeft: g.hearts,
+        showBanner: g.mode !== 'gameover',
+      });
 
       raf = requestAnimationFrame(step);
     };
@@ -822,8 +731,8 @@ export default function AuraFlappyGame({ animal, isHappy, quest, onClose, onStar
   const avatar = isHappy ? animal.avatar : animal.avatar.replace('.png', '_sad.png');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-pixel">
-      <div className="relative w-full max-w-3xl pixel-panel overflow-hidden flex flex-col max-h-[92vh] text-[#2e1005] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pb-24 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-pixel">
+      <div className="relative w-full max-w-3xl pixel-panel overflow-hidden flex flex-col max-h-full text-[#2e1005] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-3.5 border-b-4 border-[#2e1005] bg-[#5c2c16] text-[#fffbeb]">
           <div className="flex items-center gap-3">

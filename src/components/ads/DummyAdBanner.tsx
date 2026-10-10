@@ -79,7 +79,7 @@ export default function DummyAdBanner() {
   return (
     <>
       {/* Bottom Sticky Ad Banner - Pixel Farm Theme */}
-      <div className="w-full bg-[#5c2c16] border-t-4 border-[#2e1005] px-3 py-2 z-30 flex items-center justify-between gap-3 select-none text-[#fffbeb] font-pixel shadow-md">
+      <div className="relative z-[60] w-full bg-[#5c2c16] border-t-4 border-[#2e1005] px-3 py-2 flex items-center justify-between gap-3 select-none text-[#fffbeb] font-pixel shadow-md">
         {/* Ad Tag & Icon */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-shrink-0">
