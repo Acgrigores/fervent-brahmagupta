@@ -43,6 +43,7 @@ interface GameStateContextType {
   harvestCrop: (biome: Exclude<BiomeId, 'clearing'>) => boolean;
   fixCrop: (biome: Exclude<BiomeId, 'clearing'>) => void;
   forceGrowCrop: (biome: Exclude<BiomeId, 'clearing'>) => void;
+  boostGrowingCrops: (ms: number) => number;
   recentBuyerEvent: {
     id: string;
     biome: Exclude<BiomeId, 'clearing'>;
@@ -615,6 +616,31 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setNotification(null), 4000);
   }, []);
 
+  // Eco-windmill boost: shaves `ms` off the remaining grow time of every restored, growing crop.
+  // Returns how many crops were boosted.
+  const boostGrowingCrops = useCallback((ms: number): number => {
+    const isBoostable = (b: Exclude<BiomeId, 'clearing'>, plot: CropPlotState) =>
+      (restoration[b] || 0) >= 80 && plot.status === 'growing' && Boolean(plot.plantedAt);
+
+    const boostedCount = (Object.keys(cropPlots) as Array<Exclude<BiomeId, 'clearing'>>)
+      .filter((b) => isBoostable(b, cropPlots[b])).length;
+    if (boostedCount === 0) return 0;
+
+    setCropPlots((prev) => {
+      const next = { ...prev };
+      (Object.keys(next) as Array<Exclude<BiomeId, 'clearing'>>).forEach((b) => {
+        const plot = next[b];
+        if (isBoostable(b, plot)) {
+          next[b] = { ...plot, plantedAt: (plot.plantedAt as number) - ms };
+        }
+      });
+      return next;
+    });
+    setNotification(`💨 Eco-Windmill boost! ${boostedCount} growing crop${boostedCount === 1 ? '' : 's'} ${boostedCount === 1 ? 'is' : 'are'} now ${Math.round(ms / 1000)}s closer to harvest.`);
+    setTimeout(() => setNotification(null), 3000);
+    return boostedCount;
+  }, [restoration, cropPlots]);
+
   const clearBuyerEvent = useCallback(() => {
     setRecentBuyerEvent(null);
   }, []);
@@ -678,6 +704,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         harvestCrop,
         fixCrop,
         forceGrowCrop,
+        boostGrowingCrops,
         recentBuyerEvent,
         clearBuyerEvent,
         isPremiseOpen,

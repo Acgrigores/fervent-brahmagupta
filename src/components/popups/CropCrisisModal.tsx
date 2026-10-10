@@ -12,7 +12,6 @@ import {
   Sprout,
   MapPin,
   ShieldAlert,
-  Sparkles,
 } from 'lucide-react';
 
 export default function CropCrisisModal() {
@@ -23,7 +22,6 @@ export default function CropCrisisModal() {
     setCurrentBiome,
     cropPlots,
     harvestCrop,
-    fixCrop,
     forceGrowCrop,
   } = useGameState();
 
@@ -58,11 +56,6 @@ export default function CropCrisisModal() {
   const handleHarvest = () => {
     sounds.playBloom();
     harvestCrop(activeCropModal);
-  };
-
-  const handleFix = () => {
-    sounds.playBloom();
-    fixCrop(activeCropModal);
   };
 
   const handleTravelToBiome = () => {
@@ -277,24 +270,13 @@ export default function CropCrisisModal() {
 
           <div className="flex items-center gap-2 flex-wrap">
             {!isFlourished ? (
-              <>
-                <button
-                  onClick={handleFix}
-                  className="pixel-btn-green px-4 py-2 text-[10px] font-bold flex items-center gap-1.5"
-                  title="Fix this crop immediately"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#fde68a]" />
-                  <span>RESTORE & FIX CROP</span>
-                </button>
-
-                <button
-                  onClick={handleTravelToBiome}
-                  className="pixel-btn px-4 py-2 text-[10px] font-bold text-[#fde68a] flex items-center gap-1.5"
-                >
-                  <span>TRAVEL TO {biomeInfo.name.toUpperCase()}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </>
+              <button
+                onClick={handleTravelToBiome}
+                className="pixel-btn px-4 py-2 text-[10px] font-bold text-[#fde68a] flex items-center gap-1.5"
+              >
+                <span>TRAVEL TO {biomeInfo.name.toUpperCase()}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             ) : isGrowing ? (
               <>
                 <button

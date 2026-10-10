@@ -36,6 +36,7 @@ export default function PhaserWorld() {
     activeCropModal,
     cropPlots,
     harvestCrop,
+    boostGrowingCrops,
     recentBuyerEvent,
     clearBuyerEvent,
     addCoins,
@@ -90,6 +91,7 @@ export default function PhaserWorld() {
     openCropModal,
     cropPlots,
     harvestCrop,
+    boostGrowingCrops,
     recentBuyerEvent,
     clearBuyerEvent,
     addCoins,
@@ -117,6 +119,7 @@ export default function PhaserWorld() {
   stateRef.current.openCropModal = openCropModal;
   stateRef.current.cropPlots = cropPlots;
   stateRef.current.harvestCrop = harvestCrop;
+  stateRef.current.boostGrowingCrops = boostGrowingCrops;
   stateRef.current.recentBuyerEvent = recentBuyerEvent;
   stateRef.current.clearBuyerEvent = clearBuyerEvent;
   stateRef.current.addCoins = addCoins;
@@ -256,6 +259,7 @@ export default function PhaserWorld() {
           private ignorePathClickUntil: number = 0;
           private mushroomObj: Phaser.GameObjects.Container | null = null;
           private mushroomJumpTween: Phaser.Tweens.Tween | null = null;
+          private windmillBoostUntil = 0;
           private tundraIcePatch: Phaser.Geom.Rectangle | null = null;
           private isSlidingOnIce: boolean = false;
           private lastIceSlideSoundTime: number = 0;
@@ -1238,7 +1242,8 @@ export default function PhaserWorld() {
             this.worldContainer.add(barn);
 
             // Moving Windmill (Clean energy for the farm, uses images, NOT polygons!)
-            this.renderFarmWindmill(w / 2 + 185, 110);
+            // Sits on the open lawn south of the main road, clear of every crop plot
+            this.renderFarmWindmill(w / 2 + 150, 565);
 
             // 4. Six Dedicated Crop Fields (Displays Specific Dead, Baby, or Flourishing Image!)
             this.renderFarmCropField(w / 2 - 360, 290, 'lake', 'Golden Sweet Corn', 'Lake Water Polluted');
@@ -1302,36 +1307,40 @@ export default function PhaserWorld() {
               ease: 'Linear',
             });
 
-            // Clickable and glows on hover!
-            this.makeClickableAndGlow(tower, () => {
-              sounds.playRustle();
+            // Fast spin while a recent boost is active (survives the room rebuild that the boost triggers)
+            const applyBoostSpin = () => {
+              const remaining = this.windmillBoostUntil - this.time.now;
+              if (remaining <= 0) return;
               spinTween.setTimeScale(2.6);
-              this.time.delayedCall(2200, () => spinTween.setTimeScale(1.0));
-              this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: 100% clean wind power running the farm drip irrigation!');
-            }, { parentContainer: container, glowRadius: 130 });
+              this.time.delayedCall(remaining, () => spinTween.setTimeScale(1.0));
+            };
+            applyBoostSpin();
 
-            this.makeClickableAndGlow(blades, () => {
+            // Click: shave 10 seconds off the remaining grow time of every restored crop
+            const onWindmillClick = () => {
               sounds.playRustle();
-              spinTween.setTimeScale(2.6);
-              this.time.delayedCall(2200, () => spinTween.setTimeScale(1.0));
-              this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: 100% clean wind power running the farm drip irrigation!');
-            }, { parentContainer: container, glowRadius: 140 });
+              this.windmillBoostUntil = this.time.now + 2200;
+              applyBoostSpin();
+              const boosted = stateRef.current.boostGrowingCrops(10_000);
+              if (boosted === 0) {
+                this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: No sprouts growing right now. Harvest a restored crop first!');
+              }
+            };
+
+            // Clickable and glows on hover!
+            this.makeClickableAndGlow(tower, onWindmillClick, { parentContainer: container, glowRadius: 130 });
+            this.makeClickableAndGlow(blades, onWindmillClick, { parentContainer: container, glowRadius: 140 });
 
             // Vintage wooden sign beside the windmill
             this.createVintageWoodenSign(
               x,
               y + 80,
               '💨 ECO-WINDMILL',
-              'Clean Energy • Tap to spin!',
-              155,
+              'Tap: crops grow 10s faster!',
+              165,
               28,
               '#93c5fd',
-              () => {
-                sounds.playRustle();
-                spinTween.setTimeScale(2.6);
-                this.time.delayedCall(2200, () => spinTween.setTimeScale(1.0));
-                this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: 100% clean wind energy powering sustainable irrigation!');
-              },
+              onWindmillClick,
               'bottom'
             );
           }
@@ -1357,7 +1366,7 @@ export default function PhaserWorld() {
 
             const shadow = this.add.ellipse(0, 10, 52, 18, 0x000000, 0.4);
             const buyerSprite = this.add.image(0, 0, 'buyer');
-            buyerSprite.setDisplaySize(70, 92);
+            buyerSprite.setDisplaySize(50, 96);
             buyerSprite.setOrigin(0.5, 0.9);
 
             buyerContainer.add([shadow, buyerSprite]);
@@ -2583,19 +2592,28 @@ export default function PhaserWorld() {
 
             this.makeClickableAndGlow(sprite, triggerChat, { parentContainer: container, glowRadius: 110 });
 
-            this.worldContainer.add(container);
+            // Floating name label above the animal (sits above the rain cloud while sad)
+            const nameLabel = this.add.text(0, isRestored ? -58 : -100, info.name, {
+              fontSize: '12px',
+              fontStyle: 'bold',
+              fontFamily: "'Silkscreen', monospace",
+              color: '#ffffff',
+              stroke: '#140702',
+              strokeThickness: 3,
+              align: 'center',
+              resolution: 3,
+            }).setOrigin(0.5);
+            container.add(nameLabel);
+            this.tweens.add({
+              targets: nameLabel,
+              y: nameLabel.y - 4,
+              duration: 1600,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
 
-            this.createVintageWoodenSign(
-              x,
-              y + 48,
-              info.name,
-              `${info.species} • ${hasMiniGame ? 'Tap to Play' : 'Tap to Chat'}`,
-              138,
-              28,
-              '#fde68a',
-              triggerChat,
-              'none'
-            );
+            this.worldContainer.add(container);
 
             this.currentHotspots.push({
               id: `animal_${animalId}`,
@@ -3628,11 +3646,12 @@ export default function PhaserWorld() {
                   sounds.playBoing();
                   const mSprite = this.mushroomObj.getByName('mushroom_sprite') as Phaser.GameObjects.Image;
                   if (mSprite) {
-                    // Squash only, scale never exceeds 1.0
+                    // Squash/stretch peaks at ~100px wide (half the previous 200px max)
+                    const maxBounceScale = 100 / mSprite.width;
                     this.tweens.add({
                       targets: mSprite,
-                      scaleX: 1.0,
-                      scaleY: 0.8,
+                      scaleX: maxBounceScale,
+                      scaleY: maxBounceScale * 0.8,
                       duration: 110,
                       yoyo: true,
                       ease: 'Sine.easeInOut',
