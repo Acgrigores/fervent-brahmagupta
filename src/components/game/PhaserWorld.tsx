@@ -1337,6 +1337,7 @@ export default function PhaserWorld() {
 
           private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number, isRestored: boolean) {
             const info = ANIMALS[animalId];
+            const hasMiniGame = animalId === 'manatee' || animalId === 'butterfly';
             const container = this.add.container(x, y);
 
             // Ground shadow
@@ -1410,7 +1411,7 @@ export default function PhaserWorld() {
               x,
               y + 48,
               info.name,
-              `${info.species} • Tap to Chat`,
+              `${info.species} • ${hasMiniGame ? 'Tap to Play' : 'Tap to Chat'}`,
               138,
               28,
               '#fde68a',
@@ -1420,7 +1421,7 @@ export default function PhaserWorld() {
 
             this.currentHotspots.push({
               id: `animal_${animalId}`,
-              name: `Talk to ${info.name}`,
+              name: hasMiniGame ? `Play with ${info.name}` : `Talk to ${info.name}`,
               x,
               y,
               iconSprite: animalId,
