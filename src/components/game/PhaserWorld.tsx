@@ -85,6 +85,8 @@ export default function PhaserWorld() {
           private playerBody!: Phaser.Physics.Arcade.Body;
           private cursors!: any;
           private moveTarget: { x: number; y: number } | null = null;
+          private currentPathWaypoints: { x: number; y: number }[] = [];
+          private readonly TILE_SIZE: number = 15;
           public currentRoomId: BiomeId = 'clearing';
           private worldContainer!: Phaser.GameObjects.Container;
           private pathPolygons: Phaser.Geom.Rectangle[] = [];
@@ -165,21 +167,43 @@ export default function PhaserWorld() {
               };
             }
 
-            // Click-to-move strictly on paths
+            // Click-to-move along paths (supports multi-turn navigation & path-snapping)
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
               if (this.isTransitioning) return;
 
-              if (this.isPointOnWalkablePath(pointer.x, pointer.y)) {
-                this.moveTarget = { x: pointer.x, y: pointer.y };
+              const target = this.getClosestPointOnWalkablePath(pointer.x, pointer.y);
+              const clickDistFromPath = Phaser.Math.Distance.Between(pointer.x, pointer.y, target.x, target.y);
 
-                const ripple = this.add.circle(pointer.x, pointer.y, 8, 0xfbbf24, 0.9);
-                this.tweens.add({
-                  targets: ripple,
-                  scale: 2.2,
-                  alpha: 0,
-                  duration: 300,
-                  onComplete: () => ripple.destroy(),
-                });
+              // Allow clicks directly on path or within 90px (e.g. clicking animals, signs, or path edges)
+              if (clickDistFromPath <= 90) {
+                // Determine player start position (snap to path if player is slightly off)
+                const playerStart = this.isPointOnWalkablePath(this.player.x, this.player.y, 0)
+                  ? { x: this.player.x, y: this.player.y }
+                  : this.getClosestPointOnWalkablePath(this.player.x, this.player.y);
+
+                const waypoints = this.findPath(playerStart.x, playerStart.y, target.x, target.y);
+
+                // If first waypoint is directly under player, advance to next
+                if (
+                  waypoints.length > 0 &&
+                  Phaser.Math.Distance.Between(this.player.x, this.player.y, waypoints[0].x, waypoints[0].y) < 14
+                ) {
+                  waypoints.shift();
+                }
+
+                if (waypoints.length > 0) {
+                  this.currentPathWaypoints = waypoints;
+                  this.moveTarget = waypoints[waypoints.length - 1];
+
+                  const ripple = this.add.circle(target.x, target.y, 8, 0xfbbf24, 0.9);
+                  this.tweens.add({
+                    targets: ripple,
+                    scale: 2.2,
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => ripple.destroy(),
+                  });
+                }
               }
             });
 
@@ -299,15 +323,284 @@ export default function PhaserWorld() {
               this.playerBody.setVelocity(0, 0);
             }
             this.moveTarget = null;
+            this.currentPathWaypoints = [];
           }
 
-          private isPointOnWalkablePath(x: number, y: number): boolean {
+          private isPointOnWalkablePath(x: number, y: number, margin: number = 0): boolean {
             for (const poly of this.pathPolygons) {
-              if (poly.contains(x, y)) {
+              const minX = poly.x - margin;
+              const maxX = poly.x + poly.width + margin;
+              const minY = poly.y - margin;
+              const maxY = poly.y + poly.height + margin;
+              if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
                 return true;
               }
             }
             return false;
+          }
+
+          private getClosestPointOnWalkablePath(x: number, y: number): { x: number; y: number } {
+            if (this.pathPolygons.length === 0) {
+              return { x, y };
+            }
+
+            let bestX = x;
+            let bestY = y;
+            let minDistanceSq = Number.POSITIVE_INFINITY;
+
+            for (const poly of this.pathPolygons) {
+              // Clamp with a small internal margin so the point is safely inside the corridor
+              const minX = poly.x + 4;
+              const maxX = poly.x + poly.width - 4;
+              const minY = poly.y + 4;
+              const maxY = poly.y + poly.height - 4;
+
+              const clampedX = minX <= maxX ? Phaser.Math.Clamp(x, minX, maxX) : poly.x + poly.width / 2;
+              const clampedY = minY <= maxY ? Phaser.Math.Clamp(y, minY, maxY) : poly.y + poly.height / 2;
+
+              const dSq = (x - clampedX) * (x - clampedX) + (y - clampedY) * (y - clampedY);
+              if (dSq < minDistanceSq) {
+                minDistanceSq = dSq;
+                bestX = clampedX;
+                bestY = clampedY;
+              }
+            }
+
+            return { x: bestX, y: bestY };
+          }
+
+          private hasDirectLineOfSight(
+            x1: number,
+            y1: number,
+            x2: number,
+            y2: number,
+            margin: number = 0
+          ): boolean {
+            const dist = Phaser.Math.Distance.Between(x1, y1, x2, y2);
+            if (dist < 6) return true;
+
+            const stepSize = 10;
+            const steps = Math.ceil(dist / stepSize);
+            const dx = (x2 - x1) / steps;
+            const dy = (y2 - y1) / steps;
+
+            for (let i = 1; i < steps; i++) {
+              const sx = x1 + dx * i;
+              const sy = y1 + dy * i;
+              if (!this.isPointOnWalkablePath(sx, sy, margin)) {
+                return false;
+              }
+            }
+
+            return this.isPointOnWalkablePath(x2, y2, margin);
+          }
+
+          private findPath(
+            startX: number,
+            startY: number,
+            targetX: number,
+            targetY: number
+          ): { x: number; y: number }[] {
+            // 1. Direct Line-of-Sight check (fastest path: ~0ms)
+            if (this.hasDirectLineOfSight(startX, startY, targetX, targetY, 0)) {
+              return [{ x: targetX, y: targetY }];
+            }
+
+            // 2. Orthogonal A* Grid Pathfinding
+            const TILE = this.TILE_SIZE; // 15px
+            const COLS = Math.ceil(this.canvasW / TILE);
+            const ROWS = Math.ceil(this.canvasH / TILE);
+            const TOTAL_CELLS = COLS * ROWS;
+
+            const toCell = (x: number, y: number) => ({
+              c: Phaser.Math.Clamp(Math.floor(x / TILE), 0, COLS - 1),
+              r: Phaser.Math.Clamp(Math.floor(y / TILE), 0, ROWS - 1),
+            });
+
+            const startCell = toCell(startX, startY);
+            const targetCell = toCell(targetX, targetY);
+
+            if (startCell.c === targetCell.c && startCell.r === targetCell.r) {
+              return [{ x: targetX, y: targetY }];
+            }
+
+            const isCellWalkable = (c: number, r: number): boolean => {
+              const cx = c * TILE + TILE / 2;
+              const cy = r * TILE + TILE / 2;
+              return this.isPointOnWalkablePath(cx, cy, 2);
+            };
+
+            const getNearestWalkableCell = (orig: { c: number; r: number }) => {
+              if (isCellWalkable(orig.c, orig.r)) return orig;
+              for (let radius = 1; radius <= 4; radius++) {
+                for (let dc = -radius; dc <= radius; dc++) {
+                  for (let dr = -radius; dr <= radius; dr++) {
+                    const nc = orig.c + dc;
+                    const nr = orig.r + dr;
+                    if (nc >= 0 && nc < COLS && nr >= 0 && nr < ROWS && isCellWalkable(nc, nr)) {
+                      return { c: nc, r: nr };
+                    }
+                  }
+                }
+              }
+              return orig;
+            };
+
+            const actualStart = getNearestWalkableCell(startCell);
+            const actualTarget = getNearestWalkableCell(targetCell);
+
+            const startId = actualStart.r * COLS + actualStart.c;
+            const targetId = actualTarget.r * COLS + actualTarget.c;
+
+            const gScore = new Float32Array(TOTAL_CELLS).fill(1e9);
+            const cameFrom = new Int32Array(TOTAL_CELLS).fill(-1);
+            const inClosed = new Uint8Array(TOTAL_CELLS);
+
+            const heapIds: number[] = [startId];
+            const heapScores: number[] = [0];
+
+            const pushHeap = (id: number, f: number) => {
+              heapIds.push(id);
+              heapScores.push(f);
+              let idx = heapIds.length - 1;
+              while (idx > 0) {
+                const parent = (idx - 1) >> 1;
+                if (heapScores[idx] < heapScores[parent]) {
+                  const tid = heapIds[idx]; heapIds[idx] = heapIds[parent]; heapIds[parent] = tid;
+                  const ts = heapScores[idx]; heapScores[idx] = heapScores[parent]; heapScores[parent] = ts;
+                  idx = parent;
+                } else {
+                  break;
+                }
+              }
+            };
+
+            const popHeap = (): number => {
+              const topId = heapIds[0];
+              const lastId = heapIds.pop()!;
+              const lastScore = heapScores.pop()!;
+              if (heapIds.length > 0) {
+                heapIds[0] = lastId;
+                heapScores[0] = lastScore;
+                let idx = 0;
+                const len = heapIds.length;
+                while (true) {
+                  const left = (idx << 1) + 1;
+                  const right = left + 1;
+                  let smallest = idx;
+                  if (left < len && heapScores[left] < heapScores[smallest]) smallest = left;
+                  if (right < len && heapScores[right] < heapScores[smallest]) smallest = right;
+                  if (smallest !== idx) {
+                    const tid = heapIds[idx]; heapIds[idx] = heapIds[smallest]; heapIds[smallest] = tid;
+                    const ts = heapScores[idx]; heapScores[idx] = heapScores[smallest]; heapScores[smallest] = ts;
+                    idx = smallest;
+                  } else {
+                    break;
+                  }
+                }
+              }
+              return topId;
+            };
+
+            gScore[startId] = 0;
+            const heuristic = (c: number, r: number) =>
+              Math.abs(c - actualTarget.c) + Math.abs(r - actualTarget.r);
+
+            let found = false;
+            let iterations = 0;
+            const maxIterations = 2500;
+
+            while (heapIds.length > 0 && iterations++ < maxIterations) {
+              const currentId = popHeap();
+              if (currentId === targetId) {
+                found = true;
+                break;
+              }
+
+              if (inClosed[currentId]) continue;
+              inClosed[currentId] = 1;
+
+              const currC = currentId % COLS;
+              const currR = Math.floor(currentId / COLS);
+              const currG = gScore[currentId];
+
+              const neighbors = [
+                { c: currC + 1, r: currR },
+                { c: currC - 1, r: currR },
+                { c: currC, r: currR + 1 },
+                { c: currC, r: currR - 1 },
+              ];
+
+              for (const nb of neighbors) {
+                if (nb.c < 0 || nb.c >= COLS || nb.r < 0 || nb.r >= ROWS) continue;
+                const nbId = nb.r * COLS + nb.c;
+                if (inClosed[nbId]) continue;
+                if (!isCellWalkable(nb.c, nb.r)) continue;
+
+                const tentativeG = currG + 1;
+                if (tentativeG < gScore[nbId]) {
+                  cameFrom[nbId] = currentId;
+                  gScore[nbId] = tentativeG;
+                  const fScore = tentativeG + heuristic(nb.c, nb.r);
+                  pushHeap(nbId, fScore);
+                }
+              }
+            }
+
+            if (!found) {
+              return [{ x: targetX, y: targetY }];
+            }
+
+            // Reconstruct path
+            const rawPoints: { x: number; y: number }[] = [];
+            let curr = targetId;
+            while (curr !== -1) {
+              const c = curr % COLS;
+              const r = Math.floor(curr / COLS);
+              rawPoints.push({ x: c * TILE + TILE / 2, y: r * TILE + TILE / 2 });
+              if (curr === startId) break;
+              curr = cameFrom[curr];
+            }
+            rawPoints.reverse();
+
+            if (rawPoints.length <= 1) {
+              return [{ x: targetX, y: targetY }];
+            }
+
+            rawPoints[0] = { x: startX, y: startY };
+            rawPoints[rawPoints.length - 1] = { x: targetX, y: targetY };
+
+            // 3. String-Pulling / Line-of-Sight smoothing
+            const smoothed: { x: number; y: number }[] = [];
+            let currentIndex = 0;
+
+            while (currentIndex < rawPoints.length - 1) {
+              let furthestVisible = currentIndex + 1;
+              for (let k = rawPoints.length - 1; k > currentIndex; k--) {
+                if (
+                  this.hasDirectLineOfSight(
+                    rawPoints[currentIndex].x,
+                    rawPoints[currentIndex].y,
+                    rawPoints[k].x,
+                    rawPoints[k].y,
+                    0
+                  )
+                ) {
+                  furthestVisible = k;
+                  break;
+                }
+              }
+              smoothed.push(rawPoints[furthestVisible]);
+              currentIndex = furthestVisible;
+            }
+
+            if (smoothed.length > 0) {
+              smoothed[smoothed.length - 1] = { x: targetX, y: targetY };
+            } else {
+              smoothed.push({ x: targetX, y: targetY });
+            }
+
+            return smoothed;
           }
 
           private buildRoom(biome: BiomeId) {
@@ -864,47 +1157,98 @@ export default function PhaserWorld() {
             });
           }
 
-          update(time: number) {
+          update(time: number, delta: number) {
             if (this.isTransitioning) return;
 
             let vx = 0;
             let vy = 0;
 
-            // Navigation uses ARROW KEYS ONLY
-            if (this.cursors) {
+            // 1. Navigation uses ARROW KEYS ONLY
+            const isArrowDown =
+              this.cursors &&
+              (this.cursors.left?.isDown ||
+                this.cursors.right?.isDown ||
+                this.cursors.up?.isDown ||
+                this.cursors.down?.isDown);
+
+            if (isArrowDown) {
+              // Arrow keys immediately override click waypoints
+              this.currentPathWaypoints = [];
+              this.moveTarget = null;
+
               if (this.cursors.left?.isDown) vx -= 1;
               if (this.cursors.right?.isDown) vx += 1;
               if (this.cursors.up?.isDown) vy -= 1;
               if (this.cursors.down?.isDown) vy += 1;
-            }
+            } else if (this.currentPathWaypoints.length > 0) {
+              // 2. Multi-turn Waypoint navigation
+              const target = this.currentPathWaypoints[0];
+              const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, target.x, target.y);
 
-            if (this.moveTarget) {
-              const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.moveTarget.x, this.moveTarget.y);
-              if (dist > 8) {
-                const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, this.moveTarget.x, this.moveTarget.y);
+              if (dist <= 12) {
+                this.currentPathWaypoints.shift();
+                if (this.currentPathWaypoints.length > 0) {
+                  const nextTarget = this.currentPathWaypoints[0];
+                  const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, nextTarget.x, nextTarget.y);
+                  vx = Math.cos(angle);
+                  vy = Math.sin(angle);
+                } else {
+                  this.moveTarget = null;
+                }
+              } else {
+                const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, target.x, target.y);
                 vx = Math.cos(angle);
                 vy = Math.sin(angle);
-              } else {
-                this.moveTarget = null;
               }
             }
 
-            // Path constraint check: Prevent stepping off the path!
+            const dt = delta ? Math.min(delta / 1000, 0.04) : 0.016;
+            const closestNow = this.getClosestPointOnWalkablePath(this.player.x, this.player.y);
+            const currentDistFromPath = Phaser.Math.Distance.Between(
+              this.player.x,
+              this.player.y,
+              closestNow.x,
+              closestNow.y
+            );
+
+            // Path constraint check & Anti-stuck recovery
             if (vx !== 0 || vy !== 0) {
               const len = Math.sqrt(vx * vx + vy * vy);
-              const step = this.speed * 0.016;
-              const nextX = this.player.x + (vx / len) * step;
-              const nextY = this.player.y + (vy / len) * step;
+              const nvx = vx / len;
+              const nvy = vy / len;
+              const step = this.speed * dt;
 
-              if (this.isPointOnWalkablePath(nextX, nextY)) {
-                this.playerBody.setVelocity((vx / len) * this.speed, (vy / len) * this.speed);
-              } else if (this.isPointOnWalkablePath(nextX, this.player.y)) {
-                this.playerBody.setVelocity((vx / len) * this.speed, 0);
-              } else if (this.isPointOnWalkablePath(this.player.x, nextY)) {
-                this.playerBody.setVelocity(0, (vy / len) * this.speed);
+              const nextX = this.player.x + nvx * step;
+              const nextY = this.player.y + nvy * step;
+
+              const canMoveBoth = this.isPointOnWalkablePath(nextX, nextY, 4);
+              const canMoveX = this.isPointOnWalkablePath(nextX, this.player.y, 4);
+              const canMoveY = this.isPointOnWalkablePath(this.player.x, nextY, 4);
+
+              if (canMoveBoth) {
+                this.playerBody.setVelocity(nvx * this.speed, nvy * this.speed);
+              } else if (canMoveX && !canMoveY) {
+                this.playerBody.setVelocity(nvx * this.speed, 0);
+              } else if (canMoveY && !canMoveX) {
+                this.playerBody.setVelocity(0, nvy * this.speed);
               } else {
-                this.playerBody.setVelocity(0, 0);
-                this.moveTarget = null;
+                // If moving toward path when slightly off-path, allow movement that decreases distance
+                const nextClosest = this.getClosestPointOnWalkablePath(nextX, nextY);
+                const nextDist = Phaser.Math.Distance.Between(
+                  nextX,
+                  nextY,
+                  nextClosest.x,
+                  nextClosest.y
+                );
+
+                if (nextDist < currentDistFromPath) {
+                  this.playerBody.setVelocity(nvx * this.speed, nvy * this.speed);
+                } else {
+                  this.playerBody.setVelocity(0, 0);
+                  if (this.currentPathWaypoints.length > 0) {
+                    this.currentPathWaypoints.shift();
+                  }
+                }
               }
 
               if (this.playerSprite) {
@@ -915,49 +1259,75 @@ export default function PhaserWorld() {
               if (this.playerSprite) {
                 this.playerSprite.angle = 0;
               }
+
+              // Anti-stuck recovery for stationary player:
+              // Gently slide back onto the path if slightly displaced
+              if (currentDistFromPath > 1) {
+                if (currentDistFromPath > 10) {
+                  this.player.setPosition(closestNow.x, closestNow.y);
+                  this.playerBody?.reset(closestNow.x, closestNow.y);
+                } else {
+                  const nx = Phaser.Math.Linear(this.player.x, closestNow.x, 0.25);
+                  const ny = Phaser.Math.Linear(this.player.y, closestNow.y, 0.25);
+                  this.player.setPosition(nx, ny);
+                  this.playerBody?.reset(nx, ny);
+                }
+              }
+            }
+
+            // Safety Boundary Clamp: Never permit player to remain > 6px off-path
+            if (currentDistFromPath > 6) {
+              this.player.setPosition(closestNow.x, closestNow.y);
+              this.playerBody?.reset(closestNow.x, closestNow.y);
             }
 
             // Screen edge transitions (Guarded by transitionCooldownUntil)
             if (time > this.transitionCooldownUntil) {
               if (this.currentRoomId === 'clearing') {
-                if (this.player.x <= 15) {
+                if (this.player.x <= 22) {
                   stateRef.current.setCurrentBiome('lake');
                   return;
                 }
-                if (this.player.x >= this.canvasW - 15) {
+                if (this.player.x >= this.canvasW - 22) {
                   stateRef.current.setCurrentBiome('grasslands');
                   return;
                 }
-                if (this.player.y <= 15 && this.player.x < 450) {
+                if (this.player.y <= 22 && this.player.x < 450) {
                   stateRef.current.setCurrentBiome('forest');
                   return;
                 }
-                if (this.player.y <= 15 && this.player.x >= 450) {
+                if (this.player.y <= 22 && this.player.x >= 450) {
                   stateRef.current.setCurrentBiome('tundra');
                   return;
                 }
-                if (this.player.y >= this.canvasH - 15 && this.player.x < 950) {
+                if (this.player.y >= this.canvasH - 22 && this.player.x < 950) {
                   stateRef.current.setCurrentBiome('reefs');
                   return;
                 }
-                if (this.player.y >= this.canvasH - 15 && this.player.x >= 950) {
+                if (this.player.y >= this.canvasH - 22 && this.player.x >= 950) {
                   stateRef.current.setCurrentBiome('desert');
                   return;
                 }
               } else {
-                if (this.currentRoomId === 'lake' && this.player.x >= this.canvasW - 15) {
+                if (this.currentRoomId === 'lake' && this.player.x >= this.canvasW - 22) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
-                if (this.currentRoomId === 'grasslands' && this.player.x <= 15) {
+                if (this.currentRoomId === 'grasslands' && this.player.x <= 22) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
-                if ((this.currentRoomId === 'forest' || this.currentRoomId === 'tundra') && this.player.y >= this.canvasH - 15) {
+                if (
+                  (this.currentRoomId === 'forest' || this.currentRoomId === 'tundra') &&
+                  this.player.y >= this.canvasH - 22
+                ) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
-                if ((this.currentRoomId === 'reefs' || this.currentRoomId === 'desert') && this.player.y <= 15) {
+                if (
+                  (this.currentRoomId === 'reefs' || this.currentRoomId === 'desert') &&
+                  this.player.y <= 22
+                ) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
