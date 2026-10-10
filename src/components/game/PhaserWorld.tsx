@@ -1405,7 +1405,31 @@ export default function PhaserWorld() {
             buyerSprite.setDisplaySize(50, 96);
             buyerSprite.setOrigin(0.5, 0.9);
 
-            buyerContainer.add([shadow, buyerSprite]);
+            // Text floating gently above buyer's head (no wooden sign)
+            const pixelFont = "'Silkscreen', monospace";
+            const floatingText = this.add.text(0, -96, `Smelling fresh ${cropName}!`, {
+              fontSize: '11px',
+              fontFamily: pixelFont,
+              fontStyle: 'bold',
+              color: '#ffffff',
+              stroke: '#0f172a',
+              strokeThickness: 2.5,
+              shadow: { offsetX: 0.8, offsetY: 1.2, color: '#000000', blur: 1, fill: true },
+              align: 'center',
+              resolution: 3,
+            }).setOrigin(0.5);
+
+            buyerContainer.add([shadow, buyerSprite, floatingText]);
+
+            // Subtle gentle bob of floating text above head
+            this.tweens.add({
+              targets: floatingText,
+              y: -100,
+              duration: 800,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
 
             // Clickable & glows on hover
             this.makeClickableAndGlow(buyerSprite, () => {
@@ -1432,98 +1456,46 @@ export default function PhaserWorld() {
             });
             this.roomTimers.push(stepTimer);
 
-            // Speech sign while walking up the path
-            const walkSign = this.createVintageWoodenSign(
-              startX,
-              startY - 90,
-              '🚶 VISITING BUYER',
-              `Smelling fresh ${cropName}!`,
-              175,
-              26,
-              '#fde68a',
-              undefined,
-              'none'
-            );
-
-            // Move container up the path towards farm plaza
+            // Move buyerContainer up the path towards farm plaza
             this.tweens.add({
-              targets: [buyerContainer, walkSign],
+              targets: buyerContainer,
               y: '-= 300',
               duration: 2500,
               ease: 'Linear',
               onComplete: () => {
                 walkSway.stop();
                 buyerSprite.angle = 0;
-                walkSign.destroy();
 
                 // Arrived at farm!
                 sounds.playCoin();
 
-                // Produce icon flying from farm to buyer
+                // Produce icon flying from farm to buyer (smaller 22x22, clean generated image, no circle around it)
                 const defaultKey = `produce_${biome === 'lake' ? 'corn' : biome === 'forest' ? 'apple' : biome === 'tundra' ? 'wheat' : biome === 'grasslands' ? 'sunflower' : biome === 'desert' ? 'melon' : 'rice'}`;
                 const pKey = produceIconKey && this.textures.exists(produceIconKey) ? produceIconKey : defaultKey;
                 const textureToUse = this.textures.exists(pKey) ? pKey : 'crop_flourish';
-                const produceToken = this.add.image(startX, targetY - 40, textureToUse);
-                produceToken.setDisplaySize(42, 42).setDepth(36);
+                const produceToken = this.add.image(startX, targetY - 35, textureToUse);
+                produceToken.setDisplaySize(22, 22).setDepth(36);
                 this.tweens.add({
                   targets: produceToken,
-                  y: targetY - 75,
+                  y: targetY - 68,
                   alpha: { from: 1, to: 0 },
-                  scale: { from: 0.6, to: 1.1 },
-                  duration: 950,
+                  scale: { from: 0.9, to: 1.15 },
+                  duration: 900,
+                  ease: 'Sine.easeOut',
                   onComplete: () => produceToken.destroy(),
                 });
-
-                // Sparkling golden coin particles burst around the buyer
-                for (let i = 0; i < 12; i++) {
-                  const coin = this.add.circle(
-                    startX + Phaser.Math.Between(-28, 28),
-                    targetY - 45 + Phaser.Math.Between(-15, 15),
-                    4.5,
-                    0xfacc15
-                  ).setStrokeStyle(1.5, 0x854d0e);
-                  coin.setDepth(37);
-                  this.tweens.add({
-                    targets: coin,
-                    x: coin.x + Phaser.Math.Between(-40, 40),
-                    y: coin.y - Phaser.Math.Between(30, 70),
-                    alpha: 0,
-                    duration: 1000,
-                    onComplete: () => coin.destroy(),
-                  });
-                }
 
                 // Add coins to player ledger
                 stateRef.current.addCoins('clearing', 50);
 
-                // Cheerful purchase speech sign
-                const purchaseSign = this.createVintageWoodenSign(
-                  startX,
-                  targetY - 95,
-                  '🪙 PURCHASE COMPLETE!',
-                  `Bought ${cropName} (+50 Coins)`,
-                  215,
-                  28,
-                  '#86efac',
-                  undefined,
-                  'none'
-                );
+                // Update floating text above head for purchase completion
+                floatingText.setText(`🪙 Bought ${cropName}! (+50 Coins)`);
+                floatingText.setColor('#86efac');
 
-                // After 2.5s, buyer happily waves and walks back down the path!
+                // After 2.4s, buyer happily waves and walks back down the path!
                 this.time.delayedCall(2400, () => {
-                  purchaseSign.destroy();
-
-                  const departSign = this.createVintageWoodenSign(
-                    startX,
-                    targetY - 90,
-                    '👋 THANK YOU!',
-                    'Heading to town market',
-                    170,
-                    26,
-                    '#fde68a',
-                    undefined,
-                    'none'
-                  );
+                  floatingText.setText('👋 Thank you!');
+                  floatingText.setColor('#fde68a');
 
                   const returnSway = this.tweens.add({
                     targets: buyerSprite,
@@ -1534,13 +1506,12 @@ export default function PhaserWorld() {
                   });
 
                   this.tweens.add({
-                    targets: [buyerContainer, departSign],
+                    targets: buyerContainer,
                     y: '+= 320',
                     duration: 2500,
                     ease: 'Linear',
                     onComplete: () => {
                       returnSway.stop();
-                      departSign.destroy();
                       buyerContainer.destroy();
                     },
                   });
@@ -1588,16 +1559,17 @@ export default function PhaserWorld() {
                 sounds.playBloom();
                 const success = stateRef.current.harvestCrop(biome);
                 if (success) {
-                  // Floating produce animation
+                  // Floating produce animation (smaller 22x22, clean generated image, no circle around it)
                   const produceKey = `produce_${biome === 'lake' ? 'corn' : biome === 'forest' ? 'apple' : biome === 'tundra' ? 'wheat' : biome === 'grasslands' ? 'sunflower' : biome === 'desert' ? 'melon' : 'rice'}`;
                   if (this.textures.exists(produceKey)) {
-                    const token = this.add.image(x, y, produceKey).setDisplaySize(50, 50).setDepth(45);
+                    const token = this.add.image(x, y - 20, produceKey).setDisplaySize(22, 22).setDepth(45);
                     this.tweens.add({
                       targets: token,
-                      y: y - 60,
-                      scale: { from: 0.6, to: 1.1 },
+                      y: y - 65,
+                      scale: { from: 0.9, to: 1.15 },
                       alpha: { from: 1, to: 0 },
-                      duration: 1200,
+                      duration: 950,
+                      ease: 'Sine.easeOut',
                       onComplete: () => token.destroy(),
                     });
                   }
