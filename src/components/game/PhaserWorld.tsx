@@ -107,6 +107,33 @@ export default function PhaserWorld() {
           public canvasH: number = 750;
           private nextStepTime: number = 0;
           private stepInterval: number = 250;
+          private ignorePathClickUntil: number = 0;
+          private mushroomObj: Phaser.GameObjects.Container | null = null;
+          private mushroomJumpTween: Phaser.Tweens.Tween | null = null;
+          private tundraIcePatch: Phaser.Geom.Rectangle | null = null;
+          private isSlidingOnIce: boolean = false;
+          private lastIceSlideSoundTime: number = 0;
+          private grasslandsGrassPatch: {
+            x: number;
+            y: number;
+            container: Phaser.GameObjects.Container;
+            restingButterflies: Phaser.GameObjects.Image[];
+            triggered: boolean;
+            readyAt: number;
+          } | null = null;
+          private nemoObj: {
+            container: Phaser.GameObjects.Container;
+            sprite: Phaser.GameObjects.Image;
+            baseX: number;
+            baseY: number;
+            isSpinning: boolean;
+          } | null = null;
+          private nextNemoBubbleTime: number = 0;
+          private interactiveForestTrees: {
+            container: Phaser.GameObjects.Container;
+            sprite: Phaser.GameObjects.Image;
+            season: 'summer' | 'autumn';
+          }[] = [];
 
           constructor() {
             super({ key: 'GardenscapesWorldScene' });
@@ -155,6 +182,15 @@ export default function PhaserWorld() {
             this.load.image('path_grasslands', '/assets/paths/path_grasslands.png');
             this.load.image('path_desert', '/assets/paths/path_desert.png');
             this.load.image('path_reefs', '/assets/paths/path_reefs.png');
+
+            // Miniature Biome Easter Egg Sprites
+            this.load.image('mushroom', '/assets/sprites/mushroom.png');
+            this.load.image('nemo', '/assets/sprites/nemo.png');
+            this.load.image('cactus', '/assets/sprites/cactus.png');
+            this.load.image('cactus_trunk', '/assets/sprites/cactus_trunk.png');
+            this.load.image('cactus_arm', '/assets/sprites/cactus_arm.png');
+            this.load.image('tall_grass', '/assets/sprites/tall_grass.png');
+            this.load.image('ice_patch', '/assets/sprites/ice_patch.png');
           }
 
           create() {
@@ -191,40 +227,14 @@ export default function PhaserWorld() {
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
               sounds.initCtx();
               if (this.isTransitioning) return;
+              if (this.time.now < this.ignorePathClickUntil) return;
 
               const target = this.getClosestPointOnWalkablePath(pointer.x, pointer.y);
               const clickDistFromPath = Phaser.Math.Distance.Between(pointer.x, pointer.y, target.x, target.y);
 
               // Allow clicks directly on path or within 90px (e.g. clicking animals, signs, or path edges)
               if (clickDistFromPath <= 90) {
-                // Determine player start position (snap to path if player is slightly off)
-                const playerStart = this.isPointOnWalkablePath(this.player.x, this.player.y, 0)
-                  ? { x: this.player.x, y: this.player.y }
-                  : this.getClosestPointOnWalkablePath(this.player.x, this.player.y);
-
-                const waypoints = this.findPath(playerStart.x, playerStart.y, target.x, target.y);
-
-                // If first waypoint is directly under player, advance to next
-                if (
-                  waypoints.length > 0 &&
-                  Phaser.Math.Distance.Between(this.player.x, this.player.y, waypoints[0].x, waypoints[0].y) < 14
-                ) {
-                  waypoints.shift();
-                }
-
-                if (waypoints.length > 0) {
-                  this.currentPathWaypoints = waypoints;
-                  this.moveTarget = waypoints[waypoints.length - 1];
-
-                  const ripple = this.add.circle(target.x, target.y, 8, 0xfbbf24, 0.9);
-                  this.tweens.add({
-                    targets: ripple,
-                    scale: 2.2,
-                    alpha: 0,
-                    duration: 300,
-                    onComplete: () => ripple.destroy(),
-                  });
-                }
+                this.walkPlayerTo(pointer.x, pointer.y);
               }
             });
 
@@ -256,6 +266,36 @@ export default function PhaserWorld() {
             this.playerBody.setCircle(14, -14, -20);
             this.playerBody.setCollideWorldBounds(true);
             this.lastFootprintPos = { x, y };
+          }
+
+          private walkPlayerTo(targetX: number, targetY: number) {
+            const target = this.getClosestPointOnWalkablePath(targetX, targetY);
+            const playerStart = this.isPointOnWalkablePath(this.player.x, this.player.y, 0)
+              ? { x: this.player.x, y: this.player.y }
+              : this.getClosestPointOnWalkablePath(this.player.x, this.player.y);
+
+            const waypoints = this.findPath(playerStart.x, playerStart.y, target.x, target.y);
+
+            if (
+              waypoints.length > 0 &&
+              Phaser.Math.Distance.Between(this.player.x, this.player.y, waypoints[0].x, waypoints[0].y) < 14
+            ) {
+              waypoints.shift();
+            }
+
+            if (waypoints.length > 0) {
+              this.currentPathWaypoints = waypoints;
+              this.moveTarget = waypoints[waypoints.length - 1];
+
+              const ripple = this.add.circle(target.x, target.y, 8, 0xfbbf24, 0.9);
+              this.tweens.add({
+                targets: ripple,
+                scale: 2.2,
+                alpha: 0,
+                duration: 300,
+                onComplete: () => ripple.destroy(),
+              });
+            }
           }
 
           public rebuildCurrentRoom() {
@@ -643,6 +683,22 @@ export default function PhaserWorld() {
               this.lastFootprintPos = { x: this.player.x, y: this.player.y };
             }
 
+            // Reset miniature easter egg state
+            this.mushroomObj = null;
+            if (this.mushroomJumpTween) {
+              this.mushroomJumpTween.stop();
+              this.mushroomJumpTween = null;
+            }
+            this.tundraIcePatch = null;
+            this.isSlidingOnIce = false;
+            this.grasslandsGrassPatch = null;
+            this.nemoObj = null;
+            this.interactiveForestTrees = [];
+            if (this.playerSprite) {
+              this.playerSprite.y = 0;
+              this.playerSprite.angle = 0;
+            }
+
             const isRestored = (stateRef.current.restoration[biome] || 0) >= 80;
 
             if (biome === 'clearing') {
@@ -1013,7 +1069,22 @@ export default function PhaserWorld() {
             // 4. Action Plan Quest Station at (w / 2, 180)
             this.spawnBiomeQuestStation(biome, isRestored);
 
-            // 5. Return to Central Farm Signpost placed at exit edge
+            // 5. Miniature Biome Easter Eggs (Only unlocked after environment has been healed!)
+            if (isRestored) {
+              if (biome === 'forest') {
+                this.spawnForestEasterEggs();
+              } else if (biome === 'tundra') {
+                this.spawnTundraEasterEggs();
+              } else if (biome === 'grasslands') {
+                this.spawnGrasslandsEasterEggs();
+              } else if (biome === 'desert') {
+                this.spawnDesertEasterEggs();
+              } else if (biome === 'reefs') {
+                this.spawnReefEasterEggs();
+              }
+            }
+
+            // 6. Return to Central Farm Signpost placed at exit edge
             if (biome === 'lake') {
               this.createVintageWoodenSign(
                 w - 90,
@@ -1220,6 +1291,603 @@ export default function PhaserWorld() {
             });
           }
 
+          // ===============================================================
+          // 🐣 MINIATURE BIOME EASTER EGGS (UNLOCKED AFTER ENVIRONMENT HEALED)
+          // ===============================================================
+
+          // 1. 🍄 FOREST EASTER EGGS: Bouncy mushroom in corner of path & season-changing trees
+          private spawnForestEasterEggs() {
+            const w = this.canvasW;
+
+            // Mushroom in corner of path (dead-end of western horizontal trail)
+            const mx = w / 2 - 410;
+            const my = 375;
+
+            const mContainer = this.add.container(mx, my);
+            mContainer.setDepth(22);
+
+            const mShadow = this.add.ellipse(0, 16, 40, 14, 0x000000, 0.45);
+            const mSprite = this.add.image(0, 0, 'mushroom');
+            mSprite.setDisplaySize(48, 48);
+            mSprite.setName('mushroom_sprite');
+
+            // Gentle ambient glow inviting the sprite
+            const mGlow = this.add.circle(0, 2, 24, 0xef4444, 0.2);
+            this.tweens.add({
+              targets: mGlow,
+              scale: 1.3,
+              alpha: 0.05,
+              duration: 900,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            mContainer.add([mShadow, mGlow, mSprite]);
+
+            mSprite.setInteractive({ useHandCursor: true });
+            mSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.walkPlayerTo(mx, my);
+            });
+
+            this.worldContainer.add(mContainer);
+            this.mushroomObj = mContainer;
+
+            // Interactive season-changing trees around the forest
+            this.interactiveForestTrees = [];
+            const treePositions = [
+              { x: w / 2 - 300, y: 220 },
+              { x: w / 2 + 300, y: 220 },
+              { x: w / 2 - 300, y: 530 },
+              { x: w / 2 + 300, y: 530 },
+              { x: w / 2 - 440, y: 210 },
+              { x: w / 2 + 440, y: 210 },
+            ];
+
+            treePositions.forEach((pos) => {
+              const tContainer = this.add.container(pos.x, pos.y);
+              tContainer.setDepth(24);
+
+              const tShadow = this.add.ellipse(0, 42, 90, 26, 0x000000, 0.35);
+              const tSprite = this.add.image(0, 0, 'trees');
+              tSprite.setDisplaySize(115, 115);
+              tSprite.setOrigin(0.5, 0.85);
+
+              tContainer.add([tShadow, tSprite]);
+
+              const treeData = {
+                container: tContainer,
+                sprite: tSprite,
+                season: 'summer' as 'summer' | 'autumn',
+              };
+              this.interactiveForestTrees.push(treeData);
+
+              tSprite.setInteractive({ useHandCursor: true });
+              tSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event?.stopPropagation?.();
+                this.ignorePathClickUntil = this.time.now + 250;
+                this.toggleForestTreeSeason(treeData);
+              });
+
+              this.worldContainer.add(tContainer);
+            });
+          }
+
+          private toggleForestTreeSeason(treeData: {
+            container: Phaser.GameObjects.Container;
+            sprite: Phaser.GameObjects.Image;
+            season: 'summer' | 'autumn';
+          }) {
+            sounds.playRustle();
+
+            // Joyful wobble
+            this.tweens.add({
+              targets: treeData.container,
+              angle: { from: -4, to: 4 },
+              duration: 80,
+              yoyo: true,
+              repeat: 3,
+              onComplete: () => {
+                treeData.container.angle = 0;
+              },
+            });
+
+            if (treeData.season === 'summer') {
+              treeData.season = 'autumn';
+              const autumnTints = [0xf59e0b, 0xea580c, 0xd97706, 0xf97316];
+              const tint = autumnTints[Phaser.Math.Between(0, autumnTints.length - 1)];
+              treeData.sprite.setTint(tint);
+              this.spawnAutumnLeafParticles(treeData.container.x, treeData.container.y - 25);
+            } else {
+              treeData.season = 'summer';
+              treeData.sprite.clearTint();
+              this.spawnSummerSparkleParticles(treeData.container.x, treeData.container.y - 25);
+            }
+          }
+
+          private spawnMushroomSporeParticles(x: number, y: number) {
+            const sporeColors = [0xfef08a, 0xfca5a5, 0xffffff, 0xfde047];
+            for (let i = 0; i < 7; i++) {
+              const sp = this.add.circle(
+                x + Phaser.Math.Between(-16, 16),
+                y + Phaser.Math.Between(-8, 8),
+                Phaser.Math.Between(2, 4),
+                sporeColors[i % sporeColors.length],
+                0.9
+              );
+              sp.setDepth(55);
+              this.tweens.add({
+                targets: sp,
+                x: sp.x + Phaser.Math.Between(-28, 28),
+                y: sp.y - Phaser.Math.Between(15, 36),
+                alpha: 0,
+                scale: 0.2,
+                duration: Phaser.Math.Between(450, 750),
+                onComplete: () => sp.destroy(),
+              });
+            }
+          }
+
+          private spawnAutumnLeafParticles(x: number, y: number) {
+            const leafColors = [0xf59e0b, 0xea580c, 0xd97706, 0xef4444, 0xfbbf24];
+            for (let i = 0; i < 16; i++) {
+              const leaf = this.add.ellipse(
+                x + Phaser.Math.Between(-45, 45),
+                y + Phaser.Math.Between(-35, 15),
+                8,
+                5,
+                leafColors[i % leafColors.length],
+                0.95
+              );
+              leaf.setDepth(55);
+              const driftX = Phaser.Math.Between(-40, 40);
+              const fallY = Phaser.Math.Between(60, 110);
+              this.tweens.add({
+                targets: leaf,
+                x: leaf.x + driftX,
+                y: leaf.y + fallY,
+                angle: Phaser.Math.Between(120, 360),
+                alpha: 0,
+                duration: Phaser.Math.Between(1200, 2000),
+                ease: 'Quad.easeOut',
+                onComplete: () => leaf.destroy(),
+              });
+            }
+          }
+
+          private spawnSummerSparkleParticles(x: number, y: number) {
+            for (let i = 0; i < 10; i++) {
+              const sp = this.add.circle(
+                x + Phaser.Math.Between(-35, 35),
+                y + Phaser.Math.Between(-25, 25),
+                3,
+                0x86efac,
+                0.9
+              );
+              sp.setDepth(55);
+              this.tweens.add({
+                targets: sp,
+                y: sp.y - 45,
+                alpha: 0,
+                scale: 0.3,
+                duration: 900,
+                onComplete: () => sp.destroy(),
+              });
+            }
+          }
+
+          // 2. ❄️ TUNDRA EASTER EGG: Patch of ice on less-used path that the sprite can slide on
+          private spawnTundraEasterEggs() {
+            const w = this.canvasW;
+
+            // Ice patch on western horizontal side path
+            const iceX = w / 2 - 270;
+            const iceY = 375;
+            const iceW = 160;
+            const iceH = 65;
+
+            this.tundraIcePatch = new Phaser.Geom.Rectangle(iceX - iceW / 2, iceY - iceH / 2, iceW, iceH);
+
+            const iceContainer = this.add.container(iceX, iceY);
+            iceContainer.setDepth(12);
+
+            // Translucent crystalline pack ice
+            const iceBase = this.add.rectangle(0, 0, iceW, iceH, 0x67e8f9, 0.75)
+              .setStrokeStyle(2.5, 0xbae6fd, 0.95);
+
+            // Glossy reflection gleam
+            const shine = this.add.rectangle(0, -6, iceW - 20, 12, 0xffffff, 0.55);
+            shine.setRotation(-0.06);
+
+            // Frosted fracture lines
+            const crack1 = this.add.line(0, 0, -50, 10, -10, -8, 0xffffff, 0.8).setLineWidth(1.5);
+            const crack2 = this.add.line(0, 0, 15, -12, 55, 8, 0xffffff, 0.7).setLineWidth(1.5);
+
+            // Sparkling frost glint
+            const glint = this.add.circle(45, -16, 3, 0xffffff, 0.9);
+            this.tweens.add({
+              targets: glint,
+              scale: { from: 0.6, to: 1.5 },
+              alpha: { from: 0.3, to: 1.0 },
+              duration: 700,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            iceContainer.add([iceBase, shine, crack1, crack2, glint]);
+            this.worldContainer.add(iceContainer);
+
+            // Warning sign beside ice
+            this.createVintageWoodenSign(
+              iceX,
+              iceY - 50,
+              '❄️ GLACIAL ICE SHEET',
+              'Caution: Slippery! Slide across',
+              180,
+              30,
+              '#bae6fd',
+              () => {
+                this.walkPlayerTo(iceX, iceY);
+              },
+              'none'
+            );
+          }
+
+          private spawnIceGliderParticles(x: number, y: number) {
+            for (let i = 0; i < 2; i++) {
+              const spark = this.add.circle(
+                x + Phaser.Math.Between(-8, 8),
+                y + Phaser.Math.Between(-2, 4),
+                Phaser.Math.Between(2, 3),
+                0xffffff,
+                0.85
+              );
+              spark.setDepth(55);
+              this.tweens.add({
+                targets: spark,
+                alpha: 0,
+                scale: 0.2,
+                duration: 250,
+                onComplete: () => spark.destroy(),
+              });
+            }
+          }
+
+          // 3. 🦋 GRASSLANDS EASTER EGG: Patch of grass with butterflies that fly up and away
+          private spawnGrasslandsEasterEggs() {
+            const w = this.canvasW;
+
+            // Patch of grass along the path
+            const gx = w / 2 + 250;
+            const gy = 375;
+
+            const grassContainer = this.add.container(gx, gy);
+            grassContainer.setDepth(18);
+
+            const grassSprite = this.add.image(0, 0, 'tall_grass');
+            grassSprite.setDisplaySize(64, 64);
+            grassContainer.add(grassSprite);
+
+            // Resting butterflies gently fluttering wings
+            const restingButterflies: Phaser.GameObjects.Image[] = [];
+            const restingOffsets = [
+              { x: -14, y: -16, tint: 0xf97316 },
+              { x: 12, y: -20, tint: 0x38bdf8 },
+              { x: 0, y: -26, tint: 0xfacc15 },
+            ];
+
+            restingOffsets.forEach((off) => {
+              const bf = this.add.image(off.x, off.y, 'butterfly');
+              bf.setDisplaySize(20, 20);
+              bf.setTint(off.tint);
+              this.tweens.add({
+                targets: bf,
+                scaleX: 0.6,
+                duration: Phaser.Math.Between(350, 600),
+                yoyo: true,
+                repeat: -1,
+              });
+              grassContainer.add(bf);
+              restingButterflies.push(bf);
+            });
+
+            this.worldContainer.add(grassContainer);
+
+            this.grasslandsGrassPatch = {
+              x: gx,
+              y: gy,
+              container: grassContainer,
+              restingButterflies,
+              triggered: false,
+              readyAt: 0,
+            };
+          }
+
+          private triggerButterflySwarm(
+            gx: number,
+            gy: number,
+            grassContainer: Phaser.GameObjects.Container,
+            restingButterflies: Phaser.GameObjects.Image[]
+          ) {
+            sounds.playFlutter();
+
+            // Rustle grass blades
+            this.tweens.add({
+              targets: grassContainer,
+              scaleX: 1.2,
+              scaleY: 0.8,
+              duration: 90,
+              yoyo: true,
+              repeat: 3,
+            });
+
+            // Hide resting butterflies
+            restingButterflies.forEach((bf) => bf.setVisible(false));
+
+            // Swarm of vibrant butterflies flying up and away into the sky
+            const colors = [0xf97316, 0x38bdf8, 0xfacc15, 0xec4899, 0xa855f7, 0x22c55e];
+
+            for (let i = 0; i < 11; i++) {
+              const startX = gx + Phaser.Math.Between(-18, 18);
+              const startY = gy + Phaser.Math.Between(-15, 5);
+
+              const bf = this.add.image(startX, startY, 'butterfly');
+              bf.setDisplaySize(24, 24);
+              bf.setTint(colors[i % colors.length]);
+              bf.setDepth(60);
+
+              // Fast wing flapping
+              this.tweens.add({
+                targets: bf,
+                scaleX: { from: 0.85, to: -0.85 },
+                duration: 65,
+                yoyo: true,
+                repeat: -1,
+              });
+
+              // Upward & away flight trajectory
+              const targetX = gx + Phaser.Math.Between(-180, 180);
+              const targetY = -70; // ascends into the open sky
+
+              this.tweens.add({
+                targets: bf,
+                x: targetX,
+                y: targetY,
+                duration: Phaser.Math.Between(1800, 2600),
+                ease: 'Sine.easeOut',
+                onComplete: () => {
+                  bf.destroy();
+                },
+              });
+            }
+          }
+
+          private respawnRestingButterflies(patch: {
+            container: Phaser.GameObjects.Container;
+            restingButterflies: Phaser.GameObjects.Image[];
+          }) {
+            patch.restingButterflies.forEach((bf) => {
+              bf.setVisible(true);
+              bf.setAlpha(0);
+              this.tweens.add({
+                targets: bf,
+                alpha: 1,
+                duration: 800,
+              });
+            });
+          }
+
+          // 4. 🌵 DESERT EASTER EGG: Cacti that wave (two arms; one arm moves as if waving)
+          private spawnDesertEasterEggs() {
+            const w = this.canvasW;
+
+            const cactusPositions = [
+              { x: w / 2 - 250, y: 240, scale: 1.0 },
+              { x: w / 2 + 250, y: 480, scale: 1.05 },
+              { x: w / 2 - 320, y: 500, scale: 0.95 },
+            ];
+
+            cactusPositions.forEach((pos) => {
+              const cContainer = this.add.container(pos.x, pos.y);
+              cContainer.setDepth(20);
+              cContainer.setScale(pos.scale);
+
+              const shadow = this.add.ellipse(0, 36, 56, 18, 0x000000, 0.35);
+
+              // Trunk with stationary left arm
+              const trunk = this.add.image(0, 0, 'cactus_trunk');
+              trunk.setDisplaySize(76, 76);
+
+              // Right arm that waves back and forth
+              const arm = this.add.image(16, -2, 'cactus_arm');
+              arm.setDisplaySize(54, 54);
+              arm.setOrigin(0.25, 0.8);
+
+              // Friendly waving animation
+              const waveTween = this.tweens.add({
+                targets: arm,
+                angle: { from: -16, to: 32 },
+                duration: 520,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+              });
+
+              cContainer.add([shadow, trunk, arm]);
+
+              trunk.setInteractive({ useHandCursor: true });
+              arm.setInteractive({ useHandCursor: true });
+
+              const onCactusClick = (pointer: Phaser.Input.Pointer) => {
+                pointer.event?.stopPropagation?.();
+                this.ignorePathClickUntil = this.time.now + 200;
+                sounds.playClick();
+
+                waveTween.setTimeScale(2.5);
+                this.time.delayedCall(1600, () => waveTween.setTimeScale(1.0));
+
+                this.spawnFloatingBubble(pos.x, pos.y - 48, '🌵 👋 Howdy!');
+              };
+
+              trunk.on('pointerdown', onCactusClick);
+              arm.on('pointerdown', onCactusClick);
+
+              this.worldContainer.add(cContainer);
+            });
+          }
+
+          // 5. 🐠 REEF EASTER EGG: Nemo swimming around his sea anemone
+          private spawnReefEasterEggs() {
+            const w = this.canvasW;
+
+            const nemoX = w / 2 + 250;
+            const nemoY = 270;
+
+            // Sea anemone cluster on the coral seabed
+            const anemoneContainer = this.add.container(nemoX, nemoY + 45);
+            anemoneContainer.setDepth(16);
+
+            const shadow = this.add.ellipse(0, 18, 54, 16, 0x000000, 0.35);
+            anemoneContainer.add(shadow);
+
+            const tentacleColors = [0xf472b6, 0xa855f7, 0xec4899, 0x38bdf8];
+            for (let i = -4; i <= 4; i++) {
+              const tentacle = this.add.ellipse(
+                i * 6,
+                -10 + Math.abs(i) * 2,
+                8,
+                28,
+                tentacleColors[(i + 4) % tentacleColors.length]
+              );
+              this.tweens.add({
+                targets: tentacle,
+                angle: { from: -14, to: 14 },
+                duration: 1100 + i * 100,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+              });
+              anemoneContainer.add(tentacle);
+            }
+            this.worldContainer.add(anemoneContainer);
+
+            // Nemo clownfish sprite
+            const nemoContainer = this.add.container(nemoX, nemoY);
+            nemoContainer.setDepth(25);
+
+            const nemoSprite = this.add.image(0, 0, 'nemo');
+            nemoSprite.setDisplaySize(54, 54);
+            nemoSprite.setOrigin(0.5, 0.5);
+
+            nemoContainer.add(nemoSprite);
+            this.worldContainer.add(nemoContainer);
+
+            const nemoData = {
+              container: nemoContainer,
+              sprite: nemoSprite,
+              baseX: nemoX,
+              baseY: nemoY,
+              isSpinning: false,
+            };
+            this.nemoObj = nemoData;
+
+            nemoSprite.setInteractive({ useHandCursor: true });
+            nemoSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 200;
+              this.triggerNemoLoop(nemoData);
+            });
+          }
+
+          private triggerNemoLoop(nemoData: {
+            container: Phaser.GameObjects.Container;
+            sprite: Phaser.GameObjects.Image;
+            baseX: number;
+            baseY: number;
+            isSpinning: boolean;
+          }) {
+            if (nemoData.isSpinning) return;
+            nemoData.isSpinning = true;
+            sounds.playBubble();
+
+            // Burst bubbles
+            for (let i = 0; i < 6; i++) {
+              this.spawnReefBubble(
+                nemoData.container.x + Phaser.Math.Between(-15, 15),
+                nemoData.container.y + Phaser.Math.Between(-10, 10)
+              );
+            }
+
+            // 360 loop-de-loop spin
+            this.tweens.add({
+              targets: nemoData.sprite,
+              angle: 360,
+              scaleX: 1.25,
+              scaleY: 1.25,
+              duration: 650,
+              ease: 'Cubic.easeInOut',
+              onComplete: () => {
+                nemoData.sprite.angle = 0;
+                nemoData.sprite.setScale(1);
+                nemoData.isSpinning = false;
+              },
+            });
+
+            this.spawnFloatingBubble(
+              nemoData.container.x,
+              nemoData.container.y - 36,
+              'Nemo! 🐠 "Just keep swimming!"'
+            );
+          }
+
+          private spawnReefBubble(x: number, y: number) {
+            const bubble = this.add.circle(x, y, Phaser.Math.Between(3, 6), 0xbae6fd, 0.85)
+              .setStrokeStyle(1, 0xffffff, 0.9);
+            bubble.setDepth(55);
+
+            this.tweens.add({
+              targets: bubble,
+              y: y - Phaser.Math.Between(50, 90),
+              x: x + Phaser.Math.Between(-12, 12),
+              alpha: 0,
+              duration: Phaser.Math.Between(900, 1500),
+              ease: 'Sine.easeOut',
+              onComplete: () => bubble.destroy(),
+            });
+          }
+
+          private spawnFloatingBubble(x: number, y: number, text: string) {
+            const font = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            const bubbleCont = this.add.container(x, y);
+            bubbleCont.setDepth(60);
+
+            const label = this.add.text(0, 0, text, {
+              fontSize: '11px',
+              fontStyle: 'bold',
+              fontFamily: font,
+              color: '#ffffff',
+              stroke: '#1c0d02',
+              strokeThickness: 2.5,
+            }).setOrigin(0.5);
+
+            const padW = label.width + 16;
+            const padH = label.height + 8;
+            const bg = this.add.rectangle(0, 0, padW, padH, 0x1c1917, 0.85)
+              .setStrokeStyle(1.5, 0xfbbf24, 0.9);
+
+            bubbleCont.add([bg, label]);
+
+            this.tweens.add({
+              targets: bubbleCont,
+              y: y - 26,
+              alpha: 0,
+              delay: 800,
+              duration: 800,
+              ease: 'Quad.easeOut',
+              onComplete: () => bubbleCont.destroy(),
+            });
+          }
+
           update(time: number, delta: number) {
             if (this.isTransitioning) return;
 
@@ -1274,12 +1942,21 @@ export default function PhaserWorld() {
               closestNow.y
             );
 
+            // Check if sprite is on Tundra Glacial Ice Patch
+            const isOnIce =
+              this.currentRoomId === 'tundra' &&
+              this.tundraIcePatch &&
+              this.tundraIcePatch.contains(this.player.x, this.player.y);
+
+            this.isSlidingOnIce = !!isOnIce;
+            const currentSpeed = isOnIce ? 460 : this.speed;
+
             // Path constraint check & Anti-stuck recovery
             if (vx !== 0 || vy !== 0) {
               const len = Math.sqrt(vx * vx + vy * vy);
               const nvx = vx / len;
               const nvy = vy / len;
-              const step = this.speed * dt;
+              const step = currentSpeed * dt;
 
               const nextX = this.player.x + nvx * step;
               const nextY = this.player.y + nvy * step;
@@ -1289,11 +1966,11 @@ export default function PhaserWorld() {
               const canMoveY = this.isPointOnWalkablePath(this.player.x, nextY, 4);
 
               if (canMoveBoth) {
-                this.playerBody.setVelocity(nvx * this.speed, nvy * this.speed);
+                this.playerBody.setVelocity(nvx * currentSpeed, nvy * currentSpeed);
               } else if (canMoveX && !canMoveY) {
-                this.playerBody.setVelocity(nvx * this.speed, 0);
+                this.playerBody.setVelocity(nvx * currentSpeed, 0);
               } else if (canMoveY && !canMoveX) {
-                this.playerBody.setVelocity(0, nvy * this.speed);
+                this.playerBody.setVelocity(0, nvy * currentSpeed);
               } else {
                 // If moving toward path when slightly off-path, allow movement that decreases distance
                 const nextClosest = this.getClosestPointOnWalkablePath(nextX, nextY);
@@ -1305,7 +1982,7 @@ export default function PhaserWorld() {
                 );
 
                 if (nextDist < currentDistFromPath) {
-                  this.playerBody.setVelocity(nvx * this.speed, nvy * this.speed);
+                  this.playerBody.setVelocity(nvx * currentSpeed, nvy * currentSpeed);
                 } else {
                   this.playerBody.setVelocity(0, 0);
                   if (this.currentPathWaypoints.length > 0) {
@@ -1314,41 +1991,131 @@ export default function PhaserWorld() {
                 }
               }
 
-              if (this.playerSprite) {
-                this.playerSprite.angle = Math.sin(time * 0.015) * 5;
-              }
-
-              // Spawn footprints while walking (fading after 3 seconds)
-              const movedDist = Phaser.Math.Distance.Between(
-                this.player.x,
-                this.player.y,
-                this.lastFootprintPos.x,
-                this.lastFootprintPos.y
-              );
-              if (movedDist >= this.FOOTSTEP_DISTANCE) {
-                this.spawnFootprint();
-                this.lastFootprintPos = { x: this.player.x, y: this.player.y };
+              if (isOnIce) {
+                // Ice skating posture: tilt slightly and spray frost sparks
+                if (this.playerSprite) {
+                  this.playerSprite.angle = nvx >= 0 ? 8 : -8;
+                }
+                this.spawnIceGliderParticles(this.player.x, this.player.y);
+                if (time >= this.lastIceSlideSoundTime) {
+                  sounds.playIceSlide();
+                  this.lastIceSlideSoundTime = time + 260;
+                }
+              } else {
+                if (this.playerSprite) {
+                  this.playerSprite.angle = Math.sin(time * 0.015) * 5;
+                }
+                // Spawn footprints while walking (fading after 3 seconds)
+                const movedDist = Phaser.Math.Distance.Between(
+                  this.player.x,
+                  this.player.y,
+                  this.lastFootprintPos.x,
+                  this.lastFootprintPos.y
+                );
+                if (movedDist >= this.FOOTSTEP_DISTANCE) {
+                  this.spawnFootprint();
+                  this.lastFootprintPos = { x: this.player.x, y: this.player.y };
+                }
               }
             } else {
               this.playerBody.setVelocity(0, 0);
-              if (this.playerSprite) {
+              if (this.playerSprite && !this.mushroomJumpTween) {
                 this.playerSprite.angle = 0;
               }
             }
 
-            // Step sounds for when avatar is moving around on the map
+            // Step sounds for when avatar is moving around on the map (suppressed while sliding on ice)
             const isMoving =
               this.playerBody &&
               (Math.abs(this.playerBody.velocity.x) > 10 || Math.abs(this.playerBody.velocity.y) > 10);
 
             if (isMoving) {
-              if (time >= this.nextStepTime) {
+              if (!isOnIce && time >= this.nextStepTime) {
                 sounds.playStep(this.currentRoomId);
                 this.nextStepTime = time + this.stepInterval;
               }
             } else {
               // Reset so footsteps trigger promptly when walking starts again
               this.nextStepTime = Math.min(this.nextStepTime, time + 40);
+            }
+
+            // ===============================================================
+            // 🍄 FOREST MUSHROOM BOUNCING EASTER EGG
+            // If sprite gets on top of mushroom, start jumping up and down
+            // ===============================================================
+            if (this.currentRoomId === 'forest' && this.mushroomObj) {
+              const distToMushroom = Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                this.mushroomObj.x,
+                this.mushroomObj.y
+              );
+
+              if (distToMushroom < 28) {
+                if (!this.mushroomJumpTween) {
+                  sounds.playBoing();
+                  const mSprite = this.mushroomObj.getByName('mushroom_sprite') as Phaser.GameObjects.Image;
+                  if (mSprite) {
+                    this.tweens.add({
+                      targets: mSprite,
+                      scaleX: 1.35,
+                      scaleY: 0.7,
+                      duration: 110,
+                      yoyo: true,
+                      ease: 'Sine.easeInOut',
+                    });
+                  }
+                  this.mushroomJumpTween = this.tweens.add({
+                    targets: this.playerSprite,
+                    y: -44,
+                    duration: 220,
+                    yoyo: true,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => {
+                      this.mushroomJumpTween = null;
+                    },
+                  });
+                  this.spawnMushroomSporeParticles(this.mushroomObj.x, this.mushroomObj.y);
+                }
+              } else if (!this.mushroomJumpTween && this.playerSprite && this.playerSprite.y !== 0) {
+                this.playerSprite.y = 0;
+              }
+            }
+
+            // ===============================================================
+            // 🦋 GRASSLANDS BUTTERFLY PATCH EASTER EGG
+            // When sprite walks through grass, butterflies fly up and away
+            // ===============================================================
+            if (this.currentRoomId === 'grasslands' && this.grasslandsGrassPatch) {
+              const patch = this.grasslandsGrassPatch;
+              const distToPatch = Phaser.Math.Distance.Between(this.player.x, this.player.y, patch.x, patch.y);
+
+              if (distToPatch < 42 && !patch.triggered) {
+                patch.triggered = true;
+                patch.readyAt = time + 7500;
+                this.triggerButterflySwarm(patch.x, patch.y, patch.container, patch.restingButterflies);
+              } else if (patch.triggered && time > patch.readyAt && distToPatch > 90) {
+                patch.triggered = false;
+                this.respawnRestingButterflies(patch);
+              }
+            }
+
+            // ===============================================================
+            // 🐠 REEF NEMO SWIMMING EASTER EGG
+            // ===============================================================
+            if (this.currentRoomId === 'reefs' && this.nemoObj) {
+              const nemo = this.nemoObj;
+              if (!nemo.isSpinning) {
+                const t = time * 0.0016;
+                nemo.container.x = nemo.baseX + Math.sin(t) * 44;
+                nemo.container.y = nemo.baseY + Math.sin(t * 2) * 16;
+                nemo.sprite.flipX = Math.cos(t) > 0;
+                nemo.sprite.angle = Math.sin(time * 0.012) * 6;
+              }
+              if (time >= this.nextNemoBubbleTime) {
+                this.spawnReefBubble(nemo.container.x, nemo.container.y - 10);
+                this.nextNemoBubbleTime = time + Phaser.Math.Between(800, 1600);
+              }
             }
 
             // ===============================================================

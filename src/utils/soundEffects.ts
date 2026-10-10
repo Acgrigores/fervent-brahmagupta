@@ -357,6 +357,158 @@ class SoundEngine {
     osc.start(t);
     osc.stop(t + 0.04);
   }
+
+  // 🍄 Spring boing sound for mushroom jumping
+  public playBoing() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.exponentialRampToValueAtTime(580, t + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(380, t + 0.28);
+
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.32);
+  }
+
+  // ❄️ Crisp swoosh ice slide sound for tundra ice patch
+  public playIceSlide() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const noise = this.getNoiseBuffer();
+    if (!noise) return;
+
+    const t = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    src.buffer = noise;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2400, t);
+    filter.frequency.exponentialRampToValueAtTime(1400, t + 0.25);
+    filter.Q.value = 3.0;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    src.start(t);
+    src.stop(t + 0.3);
+  }
+
+  // 🦋 Butterfly flutter flutter sound
+  public playFlutter() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    [0, 0.05, 0.11, 0.18, 0.26].forEach((delay, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      const freq = 650 + idx * 160;
+      osc.frequency.setValueAtTime(freq, t + delay);
+      osc.frequency.exponentialRampToValueAtTime(freq + 80, t + delay + 0.05);
+
+      gain.gain.setValueAtTime(0.06, t + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.06);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.06);
+    });
+  }
+
+  // 🍂 Rustling leaves & wind chime for seasonal tree transition
+  public playRustle() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const noise = this.getNoiseBuffer();
+    if (noise) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1200, t);
+      filter.frequency.exponentialRampToValueAtTime(600, t + 0.45);
+      filter.Q.value = 1.5;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      src.start(t);
+      src.stop(t + 0.5);
+    }
+
+    // Melodic gentle chime tone
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, t);
+    osc.frequency.exponentialRampToValueAtTime(1174, t + 0.35);
+
+    oscGain.gain.setValueAtTime(0.05, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.45);
+  }
+
+  // 🫧 Bubble pop sound for Nemo in reef
+  public playBubble() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(420, t);
+    osc.frequency.exponentialRampToValueAtTime(860, t + 0.08);
+
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.1);
+  }
 }
 
 export const sounds = new SoundEngine();
