@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="160%" height="160%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1.2" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <!-- Curved Sprout Stem pointing from (22, 26) up to (12, 12) -->
+    <path d="M22 26 C21 20 18 15 13 12 C12 10.5 10.5 12 11.5 14 C15 17 18 21 19 26 Z" fill="#15803d" stroke="#14532d" stroke-width="1"/>
+    <!-- Left Leaf pointing towards (2, 4) -->
+    <path d="M13 12 C8 7 3 3 2 4 C1 6 5 12 10 16 C12 15 13 13 13 12 Z" fill="#22c55e" stroke="#14532d" stroke-width="1.2"/>
+    <path d="M11 13 C8 9 5 6 3 5" stroke="#86efac" stroke-width="1" stroke-linecap="round"/>
+    <!-- Right Leaf unfurling -->
+    <path d="M14 11 C18 5 24 5 26 8 C26 12 21 15 15 14 Z" fill="#4ade80" stroke="#14532d" stroke-width="1.2"/>
+    <path d="M16 12 C20 8 23 8 25 9" stroke="#bbf7d0" stroke-width="1" stroke-linecap="round"/>
+    <!-- Little glowing golden sprout pointer bud at apex (2.5, 4) -->
+    <circle cx="2.5" cy="4" r="1.8" fill="#fef08a" stroke="#ca8a04" stroke-width="0.8"/>
+  </g>
+</svg>
