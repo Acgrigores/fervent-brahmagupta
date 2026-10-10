@@ -800,93 +800,95 @@ export default function PhaserWorld() {
           }
 
           // ===============================================================
-          // 🪵 VINTAGE WOODEN POSTED SIGN HELPER (RUSTIC CARVED SIGNS)
-          // Text is white, larger, non-pixelated, and signs expand dynamically in height
+          // 🪵 VINTAGE WOODEN POSTED SIGN HELPER (COMPACT RUSTIC SIGNS)
+          // Crisp, high-resolution (3x) text with balanced, slim wooden posts
           // ===============================================================
           private createVintageWoodenSign(
             x: number,
             y: number,
             title: string,
             subtitle?: string,
-            width: number = 190,
-            baseHeight: number = 46,
-            statusColor: string = '#ffffff',
+            width: number = 135,
+            baseHeight: number = 28,
+            statusColor: string = '#fde68a',
             onClick?: () => void,
             postPos: 'bottom' | 'top' | 'none' = 'bottom'
           ): Phaser.GameObjects.Container {
             const container = this.add.container(x, y);
 
-            // Clean, non-pixelated, smooth modern font
-            const smoothFont = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            // Crisp, readable system font with native subpixel antialiasing
+            const crispFont = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-            // Title Text: Pure white, larger font size, crisp high-DPI rendering
-            const titleFontSize = subtitle ? '14px' : '15.5px';
+            // Title Text: Pure white, clean 1.2px stroke outline, resolution: 3 for tack-sharp camera zoom
+            const titleFontSize = subtitle ? '11px' : '11.5px';
             const titleText = this.add.text(0, 0, title, {
               fontSize: titleFontSize,
               fontStyle: 'bold',
-              fontFamily: smoothFont,
+              fontFamily: crispFont,
               color: '#ffffff',
-              stroke: '#1c0d02',
-              strokeThickness: 3,
-              wordWrap: { width: width - 16, useAdvancedWrap: true },
+              stroke: '#140702',
+              strokeThickness: 1.2,
+              shadow: { offsetX: 0.5, offsetY: 0.8, color: '#140702', blur: 0, fill: true },
+              wordWrap: { width: width - 12, useAdvancedWrap: true },
               align: 'center',
-              resolution: 2,
+              resolution: 3,
             }).setOrigin(0.5);
 
             let subText: Phaser.GameObjects.Text | null = null;
             if (subtitle) {
               subText = this.add.text(0, 0, subtitle, {
-                fontSize: '11.5px',
+                fontSize: '9.5px',
                 fontStyle: '600',
-                fontFamily: smoothFont,
-                color: statusColor || '#ffffff',
-                stroke: '#1c0d02',
-                strokeThickness: 2.5,
-                wordWrap: { width: width - 16, useAdvancedWrap: true },
+                fontFamily: crispFont,
+                color: statusColor || '#fde68a',
+                stroke: '#140702',
+                strokeThickness: 1.0,
+                shadow: { offsetX: 0.5, offsetY: 0.8, color: '#140702', blur: 0, fill: true },
+                wordWrap: { width: width - 12, useAdvancedWrap: true },
                 align: 'center',
-                resolution: 2,
+                resolution: 3,
               }).setOrigin(0.5);
             }
 
-            // Calculate needed height so text NEVER runs off of the sign
-            const titleHeight = titleText.height;
-            const subHeight = subText ? subText.height : 0;
-            const textSpacing = 4;
-            const verticalPadding = 20;
+            // Compact padding so sign fits Users snugly around text without bulky billboard edges
+            const titleHeight = Math.ceil(titleText.height);
+            const subHeight = subText ? Math.ceil(subText.height) : 0;
+            const textSpacing = 2;
+            const verticalPadding = 8;
             const totalContentHeight = titleHeight + (subHeight > 0 ? subHeight + textSpacing : 0);
-            const actualHeight = Math.max(baseHeight, totalContentHeight + verticalPadding);
+            const actualHeight = Math.max(baseHeight, Math.round(totalContentHeight + verticalPadding));
 
-            // Position text elements vertically centered
+            // Integer-rounded positioning to prevent subpixel rasterization blurring
             if (subText) {
-              titleText.y = -actualHeight / 2 + verticalPadding / 2 + titleHeight / 2;
-              subText.y = titleText.y + titleHeight / 2 + textSpacing + subHeight / 2;
+              titleText.y = Math.round(-actualHeight / 2 + verticalPadding / 2 + titleHeight / 2);
+              subText.y = Math.round(titleText.y + titleHeight / 2 + textSpacing + subHeight / 2);
             } else {
               titleText.y = 0;
             }
 
-            // 1. Sturdy Wooden Post (connected cleanly to actualHeight)
+            // 1. Slim Sturdy Wooden Post (compact 8px width)
             if (postPos === 'bottom') {
-              const post = this.add.rectangle(0, actualHeight / 2 + 10, 14, 26, 0x451a03);
-              const postHighlight = this.add.rectangle(-2, actualHeight / 2 + 10, 4, 24, 0x78350f);
+              const post = this.add.rectangle(0, Math.round(actualHeight / 2 + 7), 8, 14, 0x451a03);
+              const postHighlight = this.add.rectangle(-1.5, Math.round(actualHeight / 2 + 7), 2, 12, 0x78350f);
               container.add([post, postHighlight]);
             } else if (postPos === 'top') {
-              const post = this.add.rectangle(0, -actualHeight / 2 - 10, 14, 26, 0x451a03);
-              const postHighlight = this.add.rectangle(-2, -actualHeight / 2 - 10, 4, 24, 0x78350f);
+              const post = this.add.rectangle(0, Math.round(-actualHeight / 2 - 7), 8, 14, 0x451a03);
+              const postHighlight = this.add.rectangle(-1.5, Math.round(-actualHeight / 2 - 7), 2, 12, 0x78350f);
               container.add([post, postHighlight]);
             }
 
-            // 2. Vintage Wooden Plank Board (Sized dynamically to actualHeight)
-            const shadow = this.add.rectangle(2, 2, width, actualHeight, 0x000000, 0.45);
+            // 2. Vintage Wooden Plank Board (Pixel-aligned, high contrast)
+            const shadow = this.add.rectangle(1.5, 1.5, width, actualHeight, 0x000000, 0.4);
             const boardRim = this.add.rectangle(0, 0, width, actualHeight, 0x3e1a06);
-            const boardFace = this.add.rectangle(0, 0, width - 4, actualHeight - 4, 0x78350f);
-            const grain1 = this.add.rectangle(0, -actualHeight / 4 + 2, width - 12, 1, 0x92400e, 0.7);
-            const grain2 = this.add.rectangle(0, actualHeight / 4 - 2, width - 12, 1, 0x5c2c16, 0.7);
+            const boardFace = this.add.rectangle(0, 0, width - 3, actualHeight - 3, 0x78350f);
+            const grain1 = this.add.rectangle(0, Math.round(-actualHeight / 4), width - 8, 1, 0x92400e, 0.4);
+            const grain2 = this.add.rectangle(0, Math.round(actualHeight / 4), width - 8, 1, 0x5c2c16, 0.4);
 
-            // Corner nail rivets
-            const nail1 = this.add.circle(-width / 2 + 7, -actualHeight / 2 + 7, 2.5, 0xd97706);
-            const nail2 = this.add.circle(width / 2 - 7, -actualHeight / 2 + 7, 2.5, 0xd97706);
-            const nail3 = this.add.circle(-width / 2 + 7, actualHeight / 2 - 7, 2.5, 0xd97706);
-            const nail4 = this.add.circle(width / 2 - 7, actualHeight / 2 - 7, 2.5, 0xd97706);
+            // Small corner nail rivets
+            const nail1 = this.add.circle(-Math.round(width / 2) + 5, -Math.round(actualHeight / 2) + 5, 1.5, 0xd97706);
+            const nail2 = this.add.circle(Math.round(width / 2) - 5, -Math.round(actualHeight / 2) + 5, 1.5, 0xd97706);
+            const nail3 = this.add.circle(-Math.round(width / 2) + 5, Math.round(actualHeight / 2) - 5, 1.5, 0xd97706);
+            const nail4 = this.add.circle(Math.round(width / 2) - 5, Math.round(actualHeight / 2) - 5, 1.5, 0xd97706);
 
             container.add([shadow, boardRim, boardFace, grain1, grain2, nail1, nail2, nail3, nail4]);
             container.add(titleText);
@@ -1038,11 +1040,11 @@ export default function PhaserWorld() {
             // Vintage wooden posted sign right at the crop plot
             this.createVintageWoodenSign(
               x,
-              y + 46,
+              y + 40,
               cropName,
               isFlourished ? '✓ Flourishing Harvest' : `⚠ ${crisisNotice}`,
-              185,
-              36,
+              135,
+              28,
               isFlourished ? '#86efac' : '#fca5a5',
               () => {
                 sounds.playClick();
@@ -1085,9 +1087,9 @@ export default function PhaserWorld() {
               y,
               label,
               sublabel,
-              180,
-              40,
-              '#ffffff',
+              130,
+              28,
+              '#fde68a',
               () => {
                 sounds.playClick();
                 stateRef.current.setCurrentBiome(targetBiome);
@@ -1193,9 +1195,9 @@ export default function PhaserWorld() {
                 375,
                 'FARM PORTAL →',
                 'Return to Central Farm',
-                190,
-                40,
-                '#ffffff',
+                130,
+                28,
+                '#fde68a',
                 () => {
                   sounds.playClick();
                   stateRef.current.setCurrentBiome('clearing');
@@ -1216,9 +1218,9 @@ export default function PhaserWorld() {
                 375,
                 '← FARM PORTAL',
                 'Return to Central Farm',
-                190,
-                40,
-                '#ffffff',
+                130,
+                28,
+                '#fde68a',
                 () => {
                   sounds.playClick();
                   stateRef.current.setCurrentBiome('clearing');
@@ -1237,11 +1239,11 @@ export default function PhaserWorld() {
               this.createVintageWoodenSign(
                 w / 2,
                 710,
-                '↓ RETURN TO CENTRAL FARM',
-                'Opposite Portal to Bayer Farm',
-                250,
-                40,
-                '#ffffff',
+                '↓ RETURN TO FARM',
+                'Portal to Central Farm',
+                140,
+                28,
+                '#fde68a',
                 () => {
                   sounds.playClick();
                   stateRef.current.setCurrentBiome('clearing');
@@ -1260,11 +1262,11 @@ export default function PhaserWorld() {
               this.createVintageWoodenSign(
                 w / 2,
                 40,
-                '↑ RETURN TO CENTRAL FARM',
-                'Opposite Portal to Bayer Farm',
-                250,
-                40,
-                '#ffffff',
+                '↑ RETURN TO FARM',
+                'Portal to Central Farm',
+                140,
+                28,
+                '#fde68a',
                 () => {
                   sounds.playClick();
                   stateRef.current.setCurrentBiome('clearing');
@@ -1305,10 +1307,10 @@ export default function PhaserWorld() {
               this.canvasW / 2,
               180,
               isRestored ? `✓ RESTORED: ${qInfo.name}` : `ACTION PLAN: ${qInfo.name}`,
-              isRestored ? 'Habitat Flourishing • Tap to review action' : 'Tap sign to launch environmental action',
-              350,
-              46,
-              '#ffffff',
+              isRestored ? 'Habitat Flourishing • Tap to review' : 'Tap sign to launch action plan',
+              210,
+              32,
+              '#fde68a',
               triggerAction,
               'bottom'
             );
@@ -1335,6 +1337,7 @@ export default function PhaserWorld() {
 
           private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number, isRestored: boolean) {
             const info = ANIMALS[animalId];
+            const hasMiniGame = animalId === 'manatee' || animalId === 'butterfly';
             const container = this.add.container(x, y);
 
             // Ground shadow
@@ -1406,11 +1409,11 @@ export default function PhaserWorld() {
 
             this.createVintageWoodenSign(
               x,
-              y + 54,
+              y + 48,
               info.name,
-              `${info.species} • Tap to Chat`,
-              190,
-              36,
+              `${info.species} • ${hasMiniGame ? 'Tap to Play' : 'Tap to Chat'}`,
+              138,
+              28,
               '#fde68a',
               triggerChat,
               'none'
@@ -1418,7 +1421,7 @@ export default function PhaserWorld() {
 
             this.currentHotspots.push({
               id: `animal_${animalId}`,
-              name: `Talk to ${info.name}`,
+              name: hasMiniGame ? `Play with ${info.name}` : `Talk to ${info.name}`,
               x,
               y,
               iconSprite: animalId,
@@ -1847,9 +1850,9 @@ export default function PhaserWorld() {
               iceX,
               iceY - 50,
               '❄️ GLACIAL ICE SHEET',
-              'Step on to slide across!',
-              190,
-              32,
+              'Caution: Slippery! Slide across',
+              145,
+              28,
               '#bae6fd',
               () => {
                 this.walkPlayerTo(iceX, iceY);
@@ -2798,6 +2801,11 @@ export default function PhaserWorld() {
           width: gameW,
           height: gameH,
           backgroundColor: '#1b4332',
+          render: {
+            antialias: true,
+            antialiasGL: true,
+            roundPixels: true,
+          },
           physics: {
             default: 'arcade',
             arcade: { gravity: { x: 0, y: 0 }, debug: false },
@@ -2850,7 +2858,7 @@ export default function PhaserWorld() {
       {/* HTML5 Canvas Stretching Edge-to-Edge Horizontally across the entire screen without beige borders */}
       <div
         ref={containerRef}
-        className="w-full h-full flex items-center justify-center overflow-hidden border-y-4 border-[#3e1a06] bg-[#1c1917] shadow-inner [&>canvas]:!w-full [&>canvas]:!h-full [&>canvas]:!object-cover"
+        className="w-full h-full flex items-center justify-center overflow-hidden border-y-4 border-[#3e1a06] bg-[#1c1917] shadow-inner [&>canvas]:!w-full [&>canvas]:!h-full [&>canvas]:!object-cover [&>canvas]:![image-rendering:auto]"
         style={{ cursor: "url('/assets/sprout_cursor.svg') 2 4, auto" }}
       />
 

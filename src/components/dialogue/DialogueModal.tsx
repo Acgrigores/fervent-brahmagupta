@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { ANIMALS } from '@/data/animals';
+import MoSortingGame from '@/components/minigames/MoSortingGame';
+import AuraFlappyGame from '@/components/minigames/AuraFlappyGame';
 import { sounds } from '@/utils/soundEffects';
 import { X, Send, Sparkles, Coins, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -55,6 +57,23 @@ export default function DialogueModal() {
 
   const currentRestoration = restoration[animal.biome] || 0;
   const biomeQuest = quests.find((q) => q.biome === animal.biome);
+
+  // Some animals play a mini-game instead of chatting (locked until their biome is restored)
+  const MiniGame = animal.id === 'manatee' ? MoSortingGame : animal.id === 'butterfly' ? AuraFlappyGame : null;
+  if (MiniGame) {
+    return (
+      <MiniGame
+        animal={animal}
+        isHappy={currentRestoration >= 80}
+        quest={biomeQuest}
+        onClose={closeDialogue}
+        onStartQuest={() => {
+          closeDialogue();
+          if (biomeQuest) openQuestModal(biomeQuest.actionType);
+        }}
+      />
+    );
+  }
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputText;
