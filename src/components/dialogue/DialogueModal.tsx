@@ -61,6 +61,8 @@ export default function DialogueModal() {
 
   const currentRestoration = restoration[animal.biome] || 0;
   const biomeQuest = quests.find((q) => q.biome === animal.biome);
+  // The animal is only happy (and its mini-game unlocked) once the biome's restoration activity is done
+  const isHappy = currentRestoration >= 80 && (!biomeQuest || biomeQuest.completed);
 
   // Some animals play a mini-game instead of chatting (locked until their biome is restored)
   const MINI_GAMES: Partial<Record<typeof animal.id, typeof MoSortingGame>> = {
@@ -76,7 +78,7 @@ export default function DialogueModal() {
     return (
       <MiniGame
         animal={animal}
-        isHappy={currentRestoration >= 80}
+        isHappy={isHappy}
         quest={biomeQuest}
         onClose={closeDialogue}
         onStartQuest={() => {
@@ -158,7 +160,7 @@ export default function DialogueModal() {
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 border-2 border-[#fde68a] bg-[#2e1005] overflow-hidden flex-shrink-0">
               <img
-                src={currentRestoration >= 80 ? animal.avatar : animal.avatar.replace('.png', '_sad.png')}
+                src={isHappy ? animal.avatar : animal.avatar.replace('.png', '_sad.png')}
                 alt={animal.name}
                 className="w-full h-full object-cover"
               />

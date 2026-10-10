@@ -3,16 +3,19 @@
 import React, { useState } from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { sounds } from '@/utils/soundEffects';
-import { X, Copy, Check, Share2, Mail, Sparkles, Camera, ExternalLink } from 'lucide-react';
+import { X, Copy, Check, Mail, Sparkles, Camera, ExternalLink } from 'lucide-react';
 
 export default function ForestFireModal() {
-  const { activeQuestModal, closeQuestModal, completeQuest } = useGameState();
+  const { activeQuestModal, closeQuestModal, completeQuest, quests, restoration } = useGameState();
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [tab, setTab] = useState<'social' | 'email'>('social');
-  const [completed, setCompleted] = useState(false);
 
   if (activeQuestModal !== 'forest_campaign') return null;
+
+  // Read the real game state (not a local flag) so a reset game can be restored again
+  const forestQuest = quests.find((q) => q.id === 'quest_forest');
+  const completed = !!forestQuest?.completed && (restoration.forest || 0) >= 80;
 
   const socialCaption = `🔥 Did you know mega-wildfires are devastating the cloud forest canopies where endangered Red Pandas like Paku live? 
 
@@ -35,26 +38,49 @@ Please support funding for proactive canopy protection and smart forest manageme
 Sincerely,
 An Advocate for Environmental Solutions & Biodiversity`;
 
+  // Copying either message or opening the email restores the forest
+  const restoreForest = () => {
+    if (completed) return;
+    completeQuest(
+      'quest_forest',
+      'Published viral forest fire prevention awareness campaign and submitted official early-warning drone petition letter.'
+    );
+  };
+
+  // Clipboard can be blocked (e.g. non-secure pages), so fall back to a hidden textarea and never throw
+  const copyText = (text: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).catch(() => undefined);
+        return;
+      }
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      document.body.removeChild(area);
+    } catch {
+      /* copying failed; the forest is still restored */
+    }
+  };
+
   const handleCopyCaption = () => {
-    navigator.clipboard.writeText(socialCaption);
+    restoreForest();
+    copyText(socialCaption);
     sounds.playCoin();
     setCopiedCaption(true);
     setTimeout(() => setCopiedCaption(false), 2500);
   };
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`);
+    restoreForest();
+    copyText(`Subject: ${emailSubject}\n\n${emailBody}`);
     sounds.playCoin();
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2500);
-  };
-
-  const handlePublish = () => {
-    setCompleted(true);
-    completeQuest(
-      'quest_forest',
-      'Published viral forest fire prevention awareness campaign and submitted official early-warning drone petition letter.'
-    );
   };
 
   return (
@@ -155,44 +181,38 @@ An Advocate for Environmental Solutions & Biodiversity`;
               </div>
 
               <div className="flex gap-2">
-                <button
-                  onClick={handleCopyEmail}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 pixel-btn text-[10px]"
-                >
-                  {copiedEmail ? <Check className="w-4 h-4 text-[#86efac]" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedEmail ? 'COPIED EMAIL DRAFT!' : 'COPY EMAIL TEXT'}</span>
-                </button>
                 <a
                   href={`mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`}
+                  onClick={restoreForest}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 pixel-btn-green text-[11px] font-bold"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>OPEN IN MAIL</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  onClick={handleCopyEmail}
                   className="flex items-center justify-center gap-1.5 px-3 py-2 pixel-btn text-[10px]"
                 >
-                  <span>OPEN MAIL</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                  {copiedEmail ? <Check className="w-3.5 h-3.5 text-[#86efac]" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedEmail ? 'COPIED!' : 'COPY EMAIL TEXT'}</span>
+                </button>
               </div>
             </div>
           )}
 
-          {/* Publish & Complete Action Button */}
-          <div className="pt-3 border-t-2 border-[#5c2c16] flex items-center justify-between">
+          {/* Reward status: the forest is restored as soon as a message is copied or opened in mail */}
+          <div className="pt-3 border-t-2 border-[#5c2c16] flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-[10px] text-[#15803d] font-bold">
               <Sparkles className="w-4 h-4 text-[#16a34a]" />
-              <span>REWARD: +350 COINS & 100% CANOPY FLOURISH</span>
+              <span>
+                {completed
+                  ? 'FOREST RESTORED! +350 COINS & 100% CANOPY FLOURISH'
+                  : 'COPY A MESSAGE OR OPEN IN MAIL TO RESTORE THE FOREST (+350 COINS)'}
+              </span>
             </div>
-
-            {!completed ? (
-              <button
-                onClick={handlePublish}
-                className="flex items-center gap-2 px-4 py-2 pixel-btn-green text-[10px]"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>LAUNCH CAMPAIGN</span>
-              </button>
-            ) : (
-              <button
-                onClick={closeQuestModal}
-                className="px-4 py-2 pixel-btn text-[10px]"
-              >
+            {completed && (
+              <button onClick={closeQuestModal} className="px-4 py-2 pixel-btn text-[10px] flex-shrink-0">
                 CLOSE HUB
               </button>
             )}

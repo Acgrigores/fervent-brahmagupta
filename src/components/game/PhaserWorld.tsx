@@ -2212,12 +2212,12 @@ export default function PhaserWorld() {
 
           private spawnBiomeQuestStation(biome: BiomeId, isRestored: boolean) {
             const questMap: Record<BiomeId, { name: string; action: any }> = {
-              lake: { name: 'Circular Waste Recycling Quiz', action: 'lake_recycling' },
+              lake: { name: "Saving Mo's Marsh Guide", action: 'lake_recycling' },
               forest: { name: 'Fire Prevention & Email Campaign', action: 'forest_campaign' },
               tundra: { name: 'Coal Plant Shutdown Petition', action: 'tundra_petition' },
-              grasslands: { name: 'Bayer Smart Precision Simulator', action: 'grasslands_farming' },
-              desert: { name: 'Solar Artesian Well & Aquifer Restoration', action: 'desert_aquifer' },
-              reefs: { name: 'Maritime GPS Radar Redirection', action: 'reef_navigation' },
+              grasslands: { name: 'Bayer Pollinator & Buffer Program', action: 'grasslands_farming' },
+              desert: { name: 'Desert Health Across the USA', action: 'desert_aquifer' },
+              reefs: { name: 'Safe Passage & Reef-Safe Vacation', action: 'reef_navigation' },
               clearing: { name: 'Water Usage Pledge to Prevent Droughts', action: 'wildfire_quench' },
             };
 
@@ -2241,7 +2241,11 @@ export default function PhaserWorld() {
               : `ACTION PLAN: ${qInfo.name}`;
             const subtitle = isRestored
               ? (biome === 'clearing' ? 'Water Conserved • Tap to review pledge' : 'Habitat Flourishing • Tap to review')
-              : (biome === 'clearing' ? 'Pledge water usage to prevent droughts' : 'Tap sign to launch action plan');
+              : biome === 'clearing'
+                ? 'Pledge water usage to prevent droughts'
+                : biome === 'lake'
+                  ? 'Tap to read & complete the guide'
+                  : 'Tap sign to launch action plan';
 
             this.createVintageWoodenSign(
               signX,

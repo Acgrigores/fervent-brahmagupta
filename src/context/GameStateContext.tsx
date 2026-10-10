@@ -116,12 +116,25 @@ const GameStateContext = createContext<GameStateContextType | undefined>(undefin
 
 const STORAGE_KEY = 'field_to_future_state_v1';
 
+// A biome counts as restored at this level, and only its restoration activity (quest) can get it there.
+// Other boosts (ads, crop fixes) can raise restoration, but it stays just below this until the quest is done.
+const RESTORED_LEVEL = 80;
+const capUntilQuestDone = (restoration: Record<BiomeId, number>, quests: Quest[]) =>
+  Object.fromEntries(
+    (Object.keys(restoration) as BiomeId[]).map((b) => {
+      const questDone = quests.some((q) => q.biome === b && q.completed);
+      return [b, questDone ? restoration[b] : Math.min(restoration[b] || 0, RESTORED_LEVEL - 1)];
+    })
+  ) as Record<BiomeId, number>;
+
 export function GameStateProvider({ children }: { children: ReactNode }) {
   const [currentBiome, setCurrentBiomeState] = useState<BiomeId>('clearing');
   const [restoration, setRestoration] = useState<Record<BiomeId, number>>(defaultRestoration);
   const [coins, setCoins] = useState<CoinLedger>(defaultCoins);
   const [biomeTimeSpent, setBiomeTimeSpent] = useState<Record<BiomeId, number>>(defaultBiomeTimeSpent);
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
+  const questsRef = useRef<Quest[]>(INITIAL_QUESTS);
+  questsRef.current = quests;
   const [badges, setBadges] = useState<Badge[]>(INITIAL_BADGES);
   const [actions, setActions] = useState<ActionRecord[]>([]);
   const [activeDialogueAnimal, setActiveDialogueAnimal] = useState<AnimalId | null>(null);
@@ -324,7 +337,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.restoration) setRestoration(parsed.restoration);
+        // Older saves may have a biome restored without its activity done, so cap those back down
+        if (parsed.restoration) setRestoration(capUntilQuestDone({ ...defaultRestoration, ...parsed.restoration }, parsed.quests ?? INITIAL_QUESTS));
         if (parsed.coins) setCoins(parsed.coins);
         if (parsed.quests) setQuests(parsed.quests);
         if (parsed.badges) setBadges(parsed.badges);
@@ -498,7 +512,9 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const boostRestoration = useCallback((biome: BiomeId, amount: number) => {
     setRestoration((prev) => {
       const current = prev[biome] || 0;
-      const next = Math.min(100, current + amount);
+      const questDone = questsRef.current.some((q) => q.biome === biome && q.completed);
+      // Only the biome's restoration activity can push it to "restored"
+      const next = Math.min(questDone ? 100 : RESTORED_LEVEL - 1, current + amount);
       return {
         ...prev,
         [biome]: next,
@@ -535,7 +551,12 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   // Complete Quest
   const completeQuest = (questId: string, impactSummary: string) => {
     const quest = quests.find((q) => q.id === questId);
-    if (!quest || quest.completed) return;
+    if (!quest) return;
+    if (quest.completed) {
+      // Already rewarded (e.g. from an older save): just make sure the biome is restored
+      setRestoration((prev) => ({ ...prev, [quest.biome]: 100 }));
+      return;
+    }
 
     sounds.playFanfare();
     sounds.playBloom();
