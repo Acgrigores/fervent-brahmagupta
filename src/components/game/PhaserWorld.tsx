@@ -12,7 +12,7 @@ interface Hotspot {
   name: string;
   x: number;
   y: number;
-  icon: string;
+  iconSprite?: string;
   type: 'animal' | 'crop' | 'gate' | 'quest';
   animalId?: AnimalId;
   targetBiome?: BiomeId;
@@ -72,6 +72,7 @@ export default function PhaserWorld() {
 
         class GardenscapesWorldScene extends Phaser.Scene {
           private player!: Phaser.GameObjects.Container;
+          private playerSprite!: Phaser.GameObjects.Image;
           private playerBody!: Phaser.Physics.Arcade.Body;
           private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
           private wasd!: {
@@ -85,7 +86,6 @@ export default function PhaserWorld() {
           private moveTarget: { x: number; y: number } | null = null;
           public currentRoomId: BiomeId = 'clearing';
           private worldContainer!: Phaser.GameObjects.Container;
-          private windmillBlades: Phaser.GameObjects.Container | null = null;
           private pathPolygons: Phaser.Geom.Rectangle[] = [];
           private currentHotspots: Hotspot[] = [];
           private nearbyHotspot: Hotspot | null = null;
@@ -96,6 +96,33 @@ export default function PhaserWorld() {
 
           constructor() {
             super({ key: 'GardenscapesWorldScene' });
+          }
+
+          preload() {
+            // Sprites & generated images
+            this.load.image('farmer', '/assets/sprites/farmer.png');
+            this.load.image('house', '/assets/sprites/house.png');
+            this.load.image('barn', '/assets/sprites/barn.png');
+            this.load.image('trees', '/assets/sprites/trees.png');
+            this.load.image('crop_dead', '/assets/crops/crop_dead.png');
+            this.load.image('crop_flourish', '/assets/crops/crop_flourish.png');
+
+            // Animals
+            this.load.image('manatee', '/assets/sprites/manatee.png');
+            this.load.image('red_panda', '/assets/sprites/red_panda.png');
+            this.load.image('polar_bear', '/assets/sprites/polar_bear.png');
+            this.load.image('butterfly', '/assets/sprites/butterfly.png');
+            this.load.image('cheetah', '/assets/sprites/cheetah.png');
+            this.load.image('sea_turtle', '/assets/sprites/sea_turtle.png');
+
+            // Biome Paths
+            this.load.image('path_farm', '/assets/paths/path_farm.png');
+            this.load.image('path_lake', '/assets/paths/path_lake.png');
+            this.load.image('path_forest', '/assets/paths/path_forest.png');
+            this.load.image('path_tundra', '/assets/paths/path_tundra.png');
+            this.load.image('path_grasslands', '/assets/paths/path_grasslands.png');
+            this.load.image('path_desert', '/assets/paths/path_desert.png');
+            this.load.image('path_reefs', '/assets/paths/path_reefs.png');
           }
 
           create() {
@@ -139,7 +166,7 @@ export default function PhaserWorld() {
                 setOffPathWarning(true);
                 setTimeout(() => setOffPathWarning(false), 1400);
 
-                const redX = this.add.text(pointer.x, pointer.y, '⛔ Stay on Stone Path', {
+                const redX = this.add.text(pointer.x, pointer.y, 'Stay on Path', {
                   fontSize: '11px',
                   fontStyle: 'bold',
                   fontFamily: 'system-ui',
@@ -158,7 +185,7 @@ export default function PhaserWorld() {
               }
             });
 
-            // Create Farmer Avatar at central farm plaza
+            // Create Farmer Avatar Sprite at central farm plaza
             this.createFarmerPlayer(500, 470);
 
             // Initial Room Build
@@ -170,22 +197,18 @@ export default function PhaserWorld() {
             this.player = this.add.container(x, y);
 
             // Ground shadow
-            const shadow = this.add.ellipse(0, 16, 26, 12, 0x000000, 0.35);
+            const shadow = this.add.ellipse(0, 22, 32, 14, 0x000000, 0.4);
 
-            // Farmer aura & circle
-            const aura = this.add.circle(0, 0, 22, 0x10b981, 0.25);
-            this.tweens.add({ targets: aura, scale: 1.25, alpha: 0.1, duration: 800, yoyo: true, repeat: -1 });
+            // Farmer image sprite (No emojis!)
+            this.playerSprite = this.add.image(0, 0, 'farmer');
+            this.playerSprite.setDisplaySize(54, 54);
+            this.playerSprite.setOrigin(0.5, 0.7);
 
-            const baseCircle = this.add.circle(0, 0, 15, 0x0284c7, 1);
-            baseCircle.setStrokeStyle(2, 0xffffff);
-
-            const emoji = this.add.text(0, -3, '👨‍🌾', { fontSize: '22px' }).setOrigin(0.5);
-
-            this.player.add([shadow, aura, baseCircle, emoji]);
+            this.player.add([shadow, this.playerSprite]);
             this.physics.add.existing(this.player);
 
             this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
-            this.playerBody.setCircle(14, -14, -14);
+            this.playerBody.setCircle(16, -16, -6);
             this.playerBody.setCollideWorldBounds(true);
           }
 
@@ -205,7 +228,7 @@ export default function PhaserWorld() {
               if (biome === 'clearing') {
                 this.teleportPlayer(500, 470);
               } else {
-                this.teleportPlayer(500, 600);
+                this.teleportPlayer(500, 590);
               }
 
               this.cameras.main.fadeIn(150, 0, 0, 0);
@@ -241,7 +264,6 @@ export default function PhaserWorld() {
             this.worldContainer.removeAll(true);
             this.pathPolygons = [];
             this.currentHotspots = [];
-            this.windmillBlades = null;
             this.nearbyHotspot = null;
             stateRef.current.activeHotspotId = null;
             setActiveNearbyHotspot(null);
@@ -256,162 +278,120 @@ export default function PhaserWorld() {
           }
 
           // ===============================================================
-          // 🏡 MAXIMALIST CENTRAL BAYER FARM (GARDENSCAPES / HAY DAY STYLE)
+          // 🏡 CENTRAL BAYER FARM (DIRT PATHS, SPRITES, 6 CROP FIELDS)
           // ===============================================================
           private buildMaximalistFarmRoom() {
             const w = this.canvasW;
             const h = this.canvasH;
             const isFarmRestored = (stateRef.current.restoration['clearing'] || 0) >= 80;
 
-            // 1. Lush Green Lawn Base with diagonal mowing stripes
+            // 1. Lawn Base
             const lawn = this.add.graphics();
             lawn.fillStyle(isFarmRestored ? 0x48bb78 : 0x27272a, 1);
             lawn.fillRect(0, 0, w, h);
-
-            lawn.fillStyle(isFarmRestored ? 0x38a169 : 0x212124, 0.45);
+            lawn.fillStyle(isFarmRestored ? 0x38a169 : 0x202023, 0.45);
             for (let i = -w; i < w * 2; i += 70) {
               lawn.fillTriangle(i, 0, i + 35, 0, i + h + 35, h);
               lawn.fillTriangle(i, 0, i + h + 35, h, i + h, h);
             }
             this.worldContainer.add(lawn);
 
-            // 2. Strict Walkable Flagstone Path Network (Every gate is inside!)
+            // 2. Walkable Dirt Path Network
             this.pathPolygons = [
               // Central Main Plaza
-              new Phaser.Geom.Rectangle(420, 350, 160, 170),
-              // Main Horizontal Highway (reaching Lake on West, Grasslands on East)
-              new Phaser.Geom.Rectangle(50, 430, 900, 75),
-              // Main Vertical Grand Avenue (reaching Tundra on North, Reefs on South)
+              new Phaser.Geom.Rectangle(410, 340, 180, 180),
+              // Main Horizontal Dirt Highway (reaching Lake on West, Grasslands on East)
+              new Phaser.Geom.Rectangle(50, 425, 900, 80),
+              // Main Vertical Dirt Avenue (reaching Tundra on North, Reefs on South)
               new Phaser.Geom.Rectangle(460, 90, 80, 600),
               // Northwest Branch (reaching Forest gate & House)
-              new Phaser.Geom.Rectangle(100, 220, 380, 70),
-              new Phaser.Geom.Rectangle(100, 140, 75, 160),
-              // Northeast Branch (reaching Barn, Windmill, Wheat)
-              new Phaser.Geom.Rectangle(520, 220, 380, 70),
-              new Phaser.Geom.Rectangle(760, 140, 75, 160),
+              new Phaser.Geom.Rectangle(90, 220, 390, 75),
+              new Phaser.Geom.Rectangle(90, 140, 80, 160),
+              // Northeast Branch (reaching Barn, Wheat)
+              new Phaser.Geom.Rectangle(520, 220, 390, 75),
+              new Phaser.Geom.Rectangle(760, 140, 80, 160),
               // Southwest Branch (reaching Corn & Pool)
-              new Phaser.Geom.Rectangle(180, 480, 75, 170),
-              new Phaser.Geom.Rectangle(180, 610, 300, 70),
+              new Phaser.Geom.Rectangle(180, 480, 80, 170),
+              new Phaser.Geom.Rectangle(180, 610, 300, 75),
               // Southeast Branch (reaching Desert gate & Melons)
-              new Phaser.Geom.Rectangle(750, 480, 75, 170),
-              new Phaser.Geom.Rectangle(520, 610, 410, 70),
+              new Phaser.Geom.Rectangle(750, 480, 80, 170),
+              new Phaser.Geom.Rectangle(520, 610, 410, 75),
             ];
 
-            // Render Flagstone Slabs on all paths
-            this.renderFlagstonePaths();
+            // Render Packed Dirt Paths ("dirt for the farm")
+            this.renderBiomePaths('path_farm');
 
-            // 3. Buildings & Architecture
-            this.renderCottageHouse(240, 165);
-            this.renderRedBarn(500, 115);
-            this.renderWindmill(820, 125);
+            // 3. Generated Building & Tree Sprites (No polygons!)
+            // Farmhouse
+            const house = this.add.image(240, 150, 'house');
+            house.setDisplaySize(150, 150);
+            this.worldContainer.add(house);
+
+            // Barn & Silo
+            const barn = this.add.image(500, 105, 'barn');
+            barn.setDisplaySize(160, 160);
+            this.worldContainer.add(barn);
+
+            // Apple Tree Clusters
+            const trees1 = this.add.image(130, 320, 'trees');
+            trees1.setDisplaySize(115, 115);
+            const trees2 = this.add.image(870, 260, 'trees');
+            trees2.setDisplaySize(115, 115);
+            const trees3 = this.add.image(690, 155, 'trees');
+            trees3.setDisplaySize(105, 105);
+            this.worldContainer.add([trees1, trees2, trees3]);
+
+            // Swimming Pool
             this.renderSwimmingPool(140, 540);
 
-            // 4. White Picket Fences bordering paths
+            // Fences along dirt paths
             this.renderPicketFences();
 
-            // 5. Six Dedicated Crop Fields along paths
-            this.renderFarmCropField(270, 395, 'lake', '🌽', '🥀', 'Sweet Golden Corn', 'Lake Water Polluted');
-            this.renderFarmCropField(180, 195, 'forest', '🍎', '🪵', 'Apple Orchard', 'Wildfire Smoke Blight');
-            this.renderFarmCropField(720, 195, 'tundra', '🌾', '🍂', 'Glacial Winter Wheat', 'Coal Soot Fallout');
-            this.renderFarmCropField(820, 395, 'grasslands', '🌻', '🥀', 'Pollinator Sunflowers', 'Pesticide & Topsoil Loss');
-            this.renderFarmCropField(740, 580, 'desert', '🍈', '🏜️', 'Sugar Melons', 'Aquifer Depleted');
-            this.renderFarmCropField(400, 620, 'reefs', '🌱', '🌊', 'Tidal Rice & Kelp', 'Boat Propellers & Oil');
+            // 4. Six Dedicated Crop Fields (One Dead Picture or Flourishing Picture!)
+            this.renderFarmCropField(270, 385, 'lake', 'Golden Sweet Corn', 'Lake Water Polluted');
+            this.renderFarmCropField(180, 185, 'forest', 'Apple Orchard', 'Wildfire Smoke Blight');
+            this.renderFarmCropField(730, 185, 'tundra', 'Glacial Winter Wheat', 'Coal Soot Fallout');
+            this.renderFarmCropField(830, 385, 'grasslands', 'Giant Sunflowers', 'Pesticide & Topsoil Loss');
+            this.renderFarmCropField(750, 575, 'desert', 'Sugar Melons', 'Aquifer Depleted');
+            this.renderFarmCropField(390, 615, 'reefs', 'Tidal Rice & Kelp', 'Boat Propellers & Oil');
 
-            // 6. Maximalist Gardenscapes Props (Trees, Flowerbeds, Arches, Benches)
-            this.renderGardenProps();
-
-            // 7. Interactive Directional Signs right at the path ends!
+            // 5. Directional Navigation Signs (No emojis!)
             this.renderPathGateSigns();
           }
 
-          private renderFlagstonePaths() {
-            const gfx = this.add.graphics();
-
-            // Terracotta brick border
-            gfx.fillStyle(0xb45309, 0.9);
+          private renderBiomePaths(textureKey: string) {
+            // Render tiled path texture matching the biome
             this.pathPolygons.forEach((poly) => {
-              gfx.fillRoundedRect(poly.x - 4, poly.y - 4, poly.width + 8, poly.height + 8, 8);
+              // Subtle dark shadow border
+              const border = this.add.rectangle(
+                poly.x + poly.width / 2,
+                poly.y + poly.height / 2,
+                poly.width + 6,
+                poly.height + 6,
+                0x18181b,
+                0.7
+              );
+              this.worldContainer.add(border);
+
+              // Tiled path texture
+              const tile = this.add.tileSprite(
+                poly.x,
+                poly.y,
+                poly.width,
+                poly.height,
+                textureKey
+              ).setOrigin(0, 0);
+              this.worldContainer.add(tile);
             });
-
-            // Light-grey flagstone slabs
-            gfx.fillStyle(0xe2e8f0, 1);
-            this.pathPolygons.forEach((poly) => {
-              gfx.fillRoundedRect(poly.x, poly.y, poly.width, poly.height, 6);
-            });
-
-            // Stone slab mortar lines
-            gfx.lineStyle(2, 0x94a3b8, 0.6);
-            this.pathPolygons.forEach((poly) => {
-              for (let px = poly.x + 24; px < poly.x + poly.width; px += 26) {
-                gfx.lineBetween(px, poly.y + 2, px, poly.y + poly.height - 2);
-              }
-              for (let py = poly.y + 22; py < poly.y + poly.height; py += 24) {
-                gfx.lineBetween(poly.x + 2, py, poly.x + poly.width - 2, py);
-              }
-            });
-
-            this.worldContainer.add(gfx);
-          }
-
-          private renderCottageHouse(x: number, y: number) {
-            const container = this.add.container(x, y);
-            container.add(this.add.ellipse(0, 36, 110, 24, 0x000000, 0.3));
-
-            const walls = this.add.rectangle(0, 10, 96, 60, 0xd97706).setStrokeStyle(2, 0x78350f);
-            const roof = this.add.triangle(0, -32, -60, 14, 60, 14, 0, -32, 0x2563eb).setStrokeStyle(2, 0x1e3a8a);
-            const door = this.add.rectangle(0, 24, 20, 32, 0x451a03);
-            const w1 = this.add.rectangle(-26, 8, 16, 18, 0xbae6fd).setStrokeStyle(2, 0xffffff);
-            const w2 = this.add.rectangle(26, 8, 16, 18, 0xbae6fd).setStrokeStyle(2, 0xffffff);
-            const flowers = this.add.rectangle(26, 20, 20, 6, 0xfacc15);
-
-            container.add([walls, roof, door, w1, w2, flowers]);
-            this.worldContainer.add(container);
-          }
-
-          private renderRedBarn(x: number, y: number) {
-            const container = this.add.container(x, y);
-            container.add(this.add.ellipse(0, 40, 120, 26, 0x000000, 0.3));
-
-            const barnBody = this.add.rectangle(0, 10, 100, 65, 0xb91c1c).setStrokeStyle(2, 0xffffff);
-            const roof = this.add.triangle(0, -34, -58, 14, 58, 14, 0, -34, 0x991b1b).setStrokeStyle(2, 0xffffff);
-            const barnDoor = this.add.rectangle(0, 24, 30, 38, 0x450a0a).setStrokeStyle(2, 0xfef08a);
-            const silo = this.add.rectangle(65, 8, 30, 70, 0x94a3b8).setStrokeStyle(2, 0xe2e8f0);
-            const dome = this.add.arc(65, -27, 15, 180, 360, false, 0x64748b).setStrokeStyle(2, 0xe2e8f0);
-
-            container.add([silo, dome, barnBody, roof, barnDoor]);
-            this.worldContainer.add(container);
-          }
-
-          private renderWindmill(x: number, y: number) {
-            const container = this.add.container(x, y);
-            container.add(this.add.ellipse(0, 40, 70, 20, 0x000000, 0.3));
-
-            const tower = this.add.triangle(0, 10, -26, 35, 26, 35, 0, -35, 0x78716c).setStrokeStyle(2, 0xffffff);
-            this.windmillBlades = this.add.container(0, -25);
-            this.windmillBlades.add([
-              this.add.rectangle(0, 0, 6, 68, 0xf5f5f4),
-              this.add.rectangle(0, 0, 68, 6, 0xf5f5f4),
-            ]);
-            container.add([tower, this.windmillBlades]);
-
-            this.tweens.add({
-              targets: this.windmillBlades,
-              angle: 360,
-              duration: 4000,
-              repeat: -1,
-            });
-
-            this.worldContainer.add(container);
           }
 
           private renderSwimmingPool(x: number, y: number) {
             const container = this.add.container(x, y);
             const patio = this.add.rectangle(0, 0, 110, 80, 0xd97706).setStrokeStyle(3, 0xb45309);
             const water = this.add.rectangle(0, 0, 94, 64, 0x06b6d4).setStrokeStyle(2, 0x38bdf8);
-            const floatie = this.add.text(-15, -10, '🟡', { fontSize: '18px' }).setOrigin(0.5);
             const board = this.add.rectangle(35, 0, 24, 8, 0xffffff);
 
-            container.add([patio, water, floatie, board]);
+            container.add([patio, water, board]);
             this.worldContainer.add(container);
           }
 
@@ -433,77 +413,54 @@ export default function PhaserWorld() {
               gfx.lineBetween(x1, y1 - 8, x2, y2 - 8);
             };
 
-            // Fences bordering the main highway
-            drawFenceSegment(60, 424, 410, 424);
-            drawFenceSegment(590, 424, 940, 424);
-            drawFenceSegment(60, 510, 410, 510);
-            drawFenceSegment(590, 510, 940, 510);
-
-            // Fences along vertical avenue
-            drawFenceSegment(454, 150, 454, 340);
-            drawFenceSegment(546, 150, 546, 340);
+            drawFenceSegment(60, 420, 400, 420);
+            drawFenceSegment(600, 420, 940, 420);
+            drawFenceSegment(60, 510, 400, 510);
+            drawFenceSegment(600, 510, 940, 510);
+            drawFenceSegment(454, 150, 454, 335);
+            drawFenceSegment(546, 150, 546, 335);
 
             this.worldContainer.add(gfx);
           }
 
+          // CROP FIELD: Displays Dead Picture or Flourishing Picture!
           private renderFarmCropField(
             x: number,
             y: number,
             biome: Exclude<BiomeId, 'clearing'>,
-            flourishIcon: string,
-            deadIcon: string,
             cropName: string,
             crisisNotice: string
           ) {
             const isFlourished = (stateRef.current.restoration[biome] || 0) >= 80;
             const container = this.add.container(x, y);
 
-            // Soil Bed
-            const soil = this.add.rectangle(0, 0, 116, 68, isFlourished ? 0x3f2e1e : 0x1f1f23);
-            soil.setStrokeStyle(2, isFlourished ? 0x22c55e : 0xd97706);
+            // Ground shadow
+            const shadow = this.add.ellipse(0, 36, 105, 24, 0x000000, 0.35);
 
-            // Crop Label Tag
-            const title = this.add.text(0, -26, isFlourished ? `✨ ${cropName}` : `⚠️ ${cropName}`, {
-              fontSize: '10px',
-              fontStyle: 'bold',
-              fontFamily: 'system-ui',
-              color: isFlourished ? '#86efac' : '#fef08a',
-              backgroundColor: '#09090bf0',
-              padding: { x: 5, y: 2 },
-            }).setOrigin(0.5);
+            // Image sprite: One Dead Picture or Flourishing Picture! (No polygons!)
+            const textureKey = isFlourished ? 'crop_flourish' : 'crop_dead';
+            const cropImage = this.add.image(0, 0, textureKey);
+            cropImage.setDisplaySize(120, 120);
 
-            container.add([soil, title]);
+            // Status label badge (No emojis!)
+            const badgeBg = this.add.rectangle(0, 48, 160, 22, 0x18181b, 0.95);
+            badgeBg.setStrokeStyle(1.5, isFlourished ? 0x22c55e : 0xef4444);
 
-            // Stalks
-            for (let i = 0; i < 3; i++) {
-              const sx = -30 + i * 30;
-              const emoji = this.add.text(sx, 4, isFlourished ? flourishIcon : deadIcon, {
-                fontSize: '22px',
-              }).setOrigin(0.5);
-
-              if (isFlourished) {
-                this.tweens.add({
-                  targets: emoji,
-                  angle: { from: -4, to: 4 },
-                  duration: 1200 + i * 200,
-                  yoyo: true,
-                  repeat: -1,
-                });
+            const badgeText = this.add.text(
+              0,
+              48,
+              isFlourished ? `Flourishing: ${cropName}` : `${cropName} • ${crisisNotice}`,
+              {
+                fontSize: '8.5px',
+                fontStyle: 'bold',
+                fontFamily: 'system-ui',
+                color: isFlourished ? '#86efac' : '#fca5a5',
               }
-              container.add(emoji);
-            }
+            ).setOrigin(0.5);
 
-            // Subtitle
-            const sub = this.add.text(0, 25, isFlourished ? 'Harvest Thriving' : crisisNotice, {
-              fontSize: '8px',
-              fontFamily: 'system-ui',
-              color: isFlourished ? '#4ade80' : '#f87171',
-            }).setOrigin(0.5);
-            container.add(sub);
-
-            container.setSize(116, 68);
-            soil.setInteractive({ useHandCursor: true });
-            soil.on('pointerdown', () => {
+            container.add([shadow, cropImage, badgeBg, badgeText]);
+            cropImage.setInteractive({ useHandCursor: true });
+            cropImage.on('pointerdown', () => {
               sounds.playClick();
               stateRef.current.setCurrentBiome(biome);
             });
@@ -512,102 +469,28 @@ export default function PhaserWorld() {
 
             this.currentHotspots.push({
               id: `crop_${biome}`,
-              name: `${cropName} (${isFlourished ? 'Thriving' : 'Failing'})`,
+              name: `${cropName} (${isFlourished ? 'Flourishing' : 'Crisis'})`,
               x,
               y,
-              icon: isFlourished ? flourishIcon : deadIcon,
+              iconSprite: textureKey,
               type: 'crop',
               targetBiome: biome,
             });
           }
 
-          private renderGardenProps() {
-            this.addAppleTree(130, 340);
-            this.addAppleTree(360, 310);
-            this.addAppleTree(640, 310);
-            this.addAppleTree(880, 280);
-
-            this.addFlowerBed(320, 415, '🌼');
-            this.addFlowerBed(680, 415, '🌻');
-            this.addFlowerBed(320, 520, '🌷');
-            this.addFlowerBed(680, 520, '🌼');
-
-            // Mushroom table & stools
-            const mTable = this.add.container(700, 330);
-            mTable.add([
-              this.add.circle(0, 0, 14, 0xef4444).setStrokeStyle(2, 0xffffff),
-              this.add.text(0, -1, '🍄', { fontSize: '18px' }).setOrigin(0.5),
-            ]);
-            this.worldContainer.add(mTable);
-
-            // Bicycles parked
-            const bike = this.add.text(440, 420, '🚲', { fontSize: '18px' }).setOrigin(0.5);
-            this.worldContainer.add(bike);
-
-            // Picnic table with red cloth
-            const picnic = this.add.container(850, 595);
-            picnic.add([
-              this.add.rectangle(0, 0, 36, 24, 0xd97706),
-              this.add.rectangle(0, 0, 30, 18, 0xef4444).setStrokeStyle(1, 0xffffff),
-            ]);
-            this.worldContainer.add(picnic);
-
-            // Street lamps
-            this.addStreetLamp(455, 330);
-            this.addStreetLamp(545, 330);
-            this.addStreetLamp(455, 525);
-            this.addStreetLamp(545, 525);
-
-            // Rose Trellis Arch across the path
-            const arch = this.add.container(500, 350);
-            const archFrame = this.add.arc(0, 0, 28, 180, 360, false, 0xffffff).setStrokeStyle(3, 0xffffff);
-            const roses = this.add.text(0, -28, '🌹🌹🌹', { fontSize: '12px' }).setOrigin(0.5);
-            arch.add([archFrame, roses]);
-            this.worldContainer.add(arch);
-          }
-
-          private addAppleTree(x: number, y: number) {
-            const container = this.add.container(x, y);
-            container.add(this.add.ellipse(0, 22, 40, 14, 0x000000, 0.3));
-            container.add(this.add.rectangle(0, 12, 10, 26, 0x451a03));
-            container.add(this.add.circle(0, -6, 26, 0x16a34a).setStrokeStyle(1.5, 0x22c55e));
-            container.add(this.add.circle(-10, -12, 16, 0x15803d));
-            container.add(this.add.circle(10, -12, 16, 0x15803d));
-            container.add(this.add.text(-8, -8, '🍎', { fontSize: '11px' }).setOrigin(0.5));
-            container.add(this.add.text(8, -12, '🍎', { fontSize: '11px' }).setOrigin(0.5));
-            container.add(this.add.text(0, 4, '🍎', { fontSize: '11px' }).setOrigin(0.5));
-            this.worldContainer.add(container);
-          }
-
-          private addFlowerBed(x: number, y: number, flowerEmoji: string) {
-            const bed = this.add.container(x, y);
-            bed.add(this.add.rectangle(0, 0, 55, 12, 0x3f2e1e).setStrokeStyle(1, 0x78350f));
-            for (let i = -18; i <= 18; i += 12) {
-              bed.add(this.add.text(i, -2, flowerEmoji, { fontSize: '12px' }).setOrigin(0.5));
-            }
-            this.worldContainer.add(bed);
-          }
-
-          private addStreetLamp(x: number, y: number) {
-            const lamp = this.add.container(x, y);
-            lamp.add(this.add.rectangle(0, 0, 3, 24, 0x1e3a8a));
-            lamp.add(this.add.circle(0, -14, 6, 0xfef08a, 0.9).setStrokeStyle(1, 0x1e3a8a));
-            this.worldContainer.add(lamp);
-          }
-
           private renderPathGateSigns() {
-            this.createGateSign(75, 465, 'lake', '⬅️ LAKE (🌽 Corn)');
-            this.createGateSign(130, 160, 'forest', '↖️ FOREST (🍎 Apples)');
-            this.createGateSign(500, 115, 'tundra', '⬆️ TUNDRA (🌾 Wheat)');
-            this.createGateSign(925, 465, 'grasslands', '➡️ PRAIRIE (🌻 Sunflowers)');
-            this.createGateSign(900, 645, 'desert', '↘️ DESERT (🍈 Melons)');
-            this.createGateSign(500, 660, 'reefs', '⬇️ REEFS (🌱 Rice)');
+            this.createGateSign(75, 465, 'lake', 'LAKE [Golden Corn]');
+            this.createGateSign(130, 160, 'forest', 'FOREST [Apple Orchard]');
+            this.createGateSign(500, 115, 'tundra', 'TUNDRA [Winter Wheat]');
+            this.createGateSign(925, 465, 'grasslands', 'PRAIRIE [Sunflowers]');
+            this.createGateSign(900, 645, 'desert', 'DESERT [Sugar Melons]');
+            this.createGateSign(500, 660, 'reefs', 'REEFS [Tidal Rice]');
           }
 
           private createGateSign(x: number, y: number, targetBiome: BiomeId, label: string) {
             const container = this.add.container(x, y);
 
-            const bg = this.add.rectangle(0, 0, 136, 30, 0x18181b, 0.95);
+            const bg = this.add.rectangle(0, 0, 142, 30, 0x18181b, 0.95);
             bg.setStrokeStyle(1.5, 0x10b981);
 
             const text = this.add.text(0, 0, label, {
@@ -631,14 +514,13 @@ export default function PhaserWorld() {
               name: label,
               x,
               y,
-              icon: '🚪',
               type: 'gate',
               targetBiome,
             });
           }
 
           // ===============================================================
-          // 🗺️ MAXIMALIST BIOME ROOMS (LAKE, FOREST, TUNDRA, ETC.)
+          // 🗺️ BIOME ROOMS (TEXTURED PATHS: DOCK, ICE, SAND, ETC.)
           // ===============================================================
           private buildMaximalistBiomeRoom(biome: BiomeId, isRestored: boolean) {
             const w = this.canvasW;
@@ -661,37 +543,30 @@ export default function PhaserWorld() {
             terrain.fillRect(0, 0, w, h);
             this.worldContainer.add(terrain);
 
-            // 2. Render Flagstone Boardwalk / Path
-            this.renderFlagstonePaths();
+            // 2. Render Path matching the biome! ("a dock for the lake, etc.")
+            let pathKey = 'path_farm';
+            if (biome === 'lake') pathKey = 'path_lake';
+            else if (biome === 'forest') pathKey = 'path_forest';
+            else if (biome === 'tundra') pathKey = 'path_tundra';
+            else if (biome === 'grasslands') pathKey = 'path_grasslands';
+            else if (biome === 'desert') pathKey = 'path_desert';
+            else if (biome === 'reefs') pathKey = 'path_reefs';
 
-            // 3. Fences along path sides
-            const fenceGfx = this.add.graphics();
-            fenceGfx.fillStyle(0xffffff, 0.9);
-            fenceGfx.fillRect(426, 170, 4, 500);
-            fenceGfx.fillRect(570, 170, 4, 500);
-            this.worldContainer.add(fenceGfx);
+            this.renderBiomePaths(pathKey);
 
-            // 4. Biome-Specific Maximalist Foreground Elements
-            if (biome === 'lake') this.renderLakeForeground(isRestored);
-            else if (biome === 'forest') this.renderForestForeground(isRestored);
-            else if (biome === 'tundra') this.renderTundraForeground(isRestored);
-            else if (biome === 'grasslands') this.renderGrasslandsForeground(isRestored);
-            else if (biome === 'desert') this.renderDesertForeground(isRestored);
-            else if (biome === 'reefs') this.renderReefsForeground(isRestored);
-
-            // 5. Endangered Animal Friend at Center (500, 330)
+            // 3. Animal Friend at Center (500, 330) using real transparent sprite!
             const animalId = this.getAnimalForBiome(biome);
             if (animalId) {
               this.spawnBiomeAnimal(animalId, 500, 330);
             }
 
-            // 6. Action Plan Quest Station at (500, 180)
+            // 4. Action Plan Quest Station at (500, 180) (No emojis!)
             this.spawnBiomeQuestStation(biome, isRestored);
 
-            // 7. Return to Farm Gate at Bottom (500, 670)
+            // 5. Return to Farm Gate at Bottom (500, 670)
             const returnSign = this.add.container(500, 670);
             const returnBg = this.add.rectangle(0, 0, 250, 36, 0x18181b, 0.95).setStrokeStyle(2, 0xf59e0b);
-            const returnText = this.add.text(0, 0, '🏡 RETURN TO CENTRAL FARM', {
+            const returnText = this.add.text(0, 0, 'RETURN TO CENTRAL FARM', {
               fontSize: '11px',
               fontStyle: 'bold',
               fontFamily: 'system-ui',
@@ -711,209 +586,22 @@ export default function PhaserWorld() {
               name: 'Return to Central Farm',
               x: 500,
               y: 670,
-              icon: '🏡',
               type: 'gate',
               targetBiome: 'clearing',
             });
           }
 
-          // --- BIOME FOREGROUND GENERATORS ---
-          private renderLakeForeground(isRestored: boolean) {
-            if (!isRestored) {
-              // Floating plastics, oil barrels, murky sludge
-              const trash = ['🛢️', '🧴', '📦', '🗑️', '☣️'];
-              trash.forEach((icon, i) => {
-                const t = this.add.text(120 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.tweens.add({ targets: t, y: t.y - 10, duration: 1500 + i * 200, yoyo: true, repeat: -1 });
-                this.worldContainer.add(t);
-              });
-              const notice = this.add.text(250, 140, '☣️ TOXIC RUNOFF: Plastics & heavy metals choke water feeding corn fields!', {
-                fontSize: '11px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: '#f87171',
-                backgroundColor: '#450a0aee',
-                padding: { x: 8, y: 4 },
-              });
-              this.worldContainer.add(notice);
-            } else {
-              // Water lilies, blooming lotus, clean water intake station
-              ['🪷', '🌸', '🪷', '🌸', '🦆'].forEach((icon, i) => {
-                const f = this.add.text(120 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '26px' }).setOrigin(0.5);
-                this.tweens.add({ targets: f, angle: { from: -5, to: 5 }, duration: 2000, yoyo: true, repeat: -1 });
-                this.worldContainer.add(f);
-              });
-              const pump = this.add.container(260, 220);
-              pump.add([
-                this.add.rectangle(0, 0, 90, 40, 0x0284c7).setStrokeStyle(2, 0x38bdf8),
-                this.add.text(0, -6, '💧 Eco-Pump', { fontSize: '10px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
-                this.add.text(0, 8, 'Watering Sweet Corn', { fontSize: '8px', color: '#bae6fd' }).setOrigin(0.5),
-              ]);
-              this.worldContainer.add(pump);
-            }
-          }
-
-          private renderForestForeground(isRestored: boolean) {
-            if (!isRestored) {
-              ['🔥', '🪵', '🔥', '🪵', '⚠️'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const notice = this.add.text(260, 140, '🔥 WILDFIRE EMERGENCY: Dense smoke & ash blocking sun to apple orchard!', {
-                fontSize: '11px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: '#f87171',
-                backgroundColor: '#450a0aee',
-                padding: { x: 8, y: 4 },
-              });
-              this.worldContainer.add(notice);
-            } else {
-              ['🌲', '🌳', '🌸', '🍄', '🐦'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '30px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const nursery = this.add.container(260, 220);
-              nursery.add([
-                this.add.rectangle(0, 0, 95, 40, 0x16a34a).setStrokeStyle(2, 0x86efac),
-                this.add.text(0, -6, '🌲 Pioneer Saplings', { fontSize: '9px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
-                this.add.text(0, 8, 'Canopy Restored!', { fontSize: '8px', color: '#bbf7d0' }).setOrigin(0.5),
-              ]);
-              this.worldContainer.add(nursery);
-            }
-          }
-
-          private renderTundraForeground(isRestored: boolean) {
-            if (!isRestored) {
-              ['🏭', '🛢️', '🏭', '🛢️', '☠️'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const notice = this.add.text(240, 140, '🏭 COAL PLANT SOOT: Acid ash falling on permafrost & killing winter wheat!', {
-                fontSize: '11px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: '#f87171',
-                backgroundColor: '#450a0aee',
-                padding: { x: 8, y: 4 },
-              });
-              this.worldContainer.add(notice);
-            } else {
-              ['❄️', '💎', '🎄', '🌬️', '✨'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const turbine = this.add.container(260, 220);
-              turbine.add([
-                this.add.rectangle(0, 0, 95, 40, 0x0284c7).setStrokeStyle(2, 0x38bdf8),
-                this.add.text(0, -6, '⚡ Clean Energy', { fontSize: '10px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
-                this.add.text(0, 8, 'Wheat Ground Pure', { fontSize: '8px', color: '#bae6fd' }).setOrigin(0.5),
-              ]);
-              this.worldContainer.add(turbine);
-            }
-          }
-
-          private renderGrasslandsForeground(isRestored: boolean) {
-            if (!isRestored) {
-              ['☠️', '🛢️', '🥀', '🏜️', '⚠️'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const notice = this.add.text(240, 140, '☠️ CHEMICAL TOXICITY: Overspray wiped out pollinators & sunflower seeds!', {
-                fontSize: '11px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: '#f87171',
-                backgroundColor: '#450a0aee',
-                padding: { x: 8, y: 4 },
-              });
-              this.worldContainer.add(notice);
-            } else {
-              ['🌻', '🪻', '🦋', '🐝', '🌾'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '30px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const sensor = this.add.container(260, 220);
-              sensor.add([
-                this.add.rectangle(0, 0, 105, 40, 0x15803d).setStrokeStyle(2, 0x4ade80),
-                this.add.text(0, -6, '📡 Bayer Smart Farm', { fontSize: '9px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
-                this.add.text(0, 8, 'Precision Drip & Sensors', { fontSize: '8px', color: '#bbf7d0' }).setOrigin(0.5),
-              ]);
-              this.worldContainer.add(sensor);
-            }
-          }
-
-          private renderDesertForeground(isRestored: boolean) {
-            if (!isRestored) {
-              ['🦴', '🏜️', '🥀', '💨', '⚠️'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const notice = this.add.text(260, 140, '🏜️ SEVERE DROUGHT: Aquifers depleted, melon vines withered and dying!', {
-                fontSize: '11px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: '#f87171',
-                backgroundColor: '#450a0aee',
-                padding: { x: 8, y: 4 },
-              });
-              this.worldContainer.add(notice);
-            } else {
-              ['🌴', '💧', '🍈', '🌸', '✨'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '30px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const oasis = this.add.container(260, 220);
-              oasis.add([
-                this.add.rectangle(0, 0, 95, 40, 0xd97706).setStrokeStyle(2, 0xfde047),
-                this.add.text(0, -6, '💧 Living Oasis', { fontSize: '10px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
-                this.add.text(0, 8, 'Sugar Melons Growing', { fontSize: '8px', color: '#fef08a' }).setOrigin(0.5),
-              ]);
-              this.worldContainer.add(oasis);
-            }
-          }
-
-          private renderReefsForeground(isRestored: boolean) {
-            if (!isRestored) {
-              ['⚓', '🛢️', '🚤', '☠️', '⚠️'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const notice = this.add.text(240, 140, '🚤 SPEEDBOAT WAKES: Propellers destroying reef & smothering tidal rice!', {
-                fontSize: '11px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: '#f87171',
-                backgroundColor: '#450a0aee',
-                padding: { x: 8, y: 4 },
-              });
-              this.worldContainer.add(notice);
-            } else {
-              ['🪸', '🐠', '🐟', '🌊', '✨'].forEach((icon, i) => {
-                const f = this.add.text(130 + i * 180, 220 + (i % 2) * 260, icon, { fontSize: '28px' }).setOrigin(0.5);
-                this.worldContainer.add(f);
-              });
-              const buoy = this.add.container(260, 220);
-              buoy.add([
-                this.add.rectangle(0, 0, 105, 40, 0x0891b2).setStrokeStyle(2, 0x67e8f9),
-                this.add.text(0, -6, '🧭 Sanctuary Zone', { fontSize: '9px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
-                this.add.text(0, 8, 'Tidal Rice Thriving', { fontSize: '8px', color: '#cffafe' }).setOrigin(0.5),
-              ]);
-              this.worldContainer.add(buoy);
-            }
-          }
-
           private spawnBiomeQuestStation(biome: BiomeId, isRestored: boolean) {
             const container = this.add.container(500, 180);
 
-            const questMap: Record<BiomeId, { name: string; icon: string; action: any }> = {
-              lake: { name: 'Circular Waste Recycling Quiz', icon: '♻️', action: 'lake_quiz' },
-              forest: { name: 'Fire Prevention & Email Campaign', icon: '🚒', action: 'forest_post' },
-              tundra: { name: 'Coal Plant Shutdown Petition', icon: '⚡', action: 'tundra_petition' },
-              grasslands: { name: 'Bayer Smart Precision Simulator', icon: '🚜', action: 'grasslands_petition' },
-              desert: { name: 'Aquifer Restoration & Quench', icon: '💧', action: 'wildfire_quench' },
-              reefs: { name: 'Maritime GPS Radar Redirection', icon: '🧭', action: 'reef_divert' },
-              clearing: { name: 'Restore Habitats', icon: '🏡', action: null },
+            const questMap: Record<BiomeId, { name: string; action: any }> = {
+              lake: { name: 'Circular Waste Recycling Quiz', action: 'lake_quiz' },
+              forest: { name: 'Fire Prevention & Email Campaign', action: 'forest_post' },
+              tundra: { name: 'Coal Plant Shutdown Petition', action: 'tundra_petition' },
+              grasslands: { name: 'Bayer Smart Precision Simulator', action: 'grasslands_petition' },
+              desert: { name: 'Aquifer Restoration & Quench', action: 'wildfire_quench' },
+              reefs: { name: 'Maritime GPS Radar Redirection', action: 'reef_divert' },
+              clearing: { name: 'Restore Habitats', action: null },
             };
 
             const qInfo = questMap[biome];
@@ -925,7 +613,7 @@ export default function PhaserWorld() {
             const text = this.add.text(
               0,
               0,
-              isRestored ? `✅ ${qInfo.name} Completed` : `🎯 Take Action: ${qInfo.name}`,
+              isRestored ? `Completed: ${qInfo.name}` : `Take Action: ${qInfo.name}`,
               {
                 fontSize: '10px',
                 fontStyle: 'bold',
@@ -948,7 +636,6 @@ export default function PhaserWorld() {
               name: qInfo.name,
               x: 500,
               y: 180,
-              icon: qInfo.icon,
               type: 'quest',
               questAction: qInfo.action,
             });
@@ -964,29 +651,46 @@ export default function PhaserWorld() {
             return null;
           }
 
+          // ANIMAL SPRITE: Real transparent image sprite! (No emojis!)
           private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number) {
             const info = ANIMALS[animalId];
             const container = this.add.container(x, y);
 
-            const glow = this.add.circle(0, 0, 46, 0x10b981, 0.35);
-            this.tweens.add({ targets: glow, scale: 1.35, alpha: 0.1, duration: 900, yoyo: true, repeat: -1 });
+            // Ground shadow
+            const shadow = this.add.ellipse(0, 44, 76, 22, 0x000000, 0.35);
 
-            const bubble = this.add.circle(0, 0, 36, 0x09090b, 0.95).setStrokeStyle(3, 0x10b981);
-            const emoji = this.add.text(0, -2, info.avatar, { fontSize: '40px' }).setOrigin(0.5);
+            // Ambient breathing glow
+            const glow = this.add.circle(0, 0, 46, 0x10b981, 0.25);
+            this.tweens.add({ targets: glow, scale: 1.25, alpha: 0.08, duration: 900, yoyo: true, repeat: -1 });
 
-            const tag = this.add.text(0, 52, `💬 Talk to ${info.name} • ${info.species}`, {
-              fontSize: '12px',
+            // Animal image sprite
+            const sprite = this.add.image(0, 0, animalId);
+            sprite.setDisplaySize(80, 80);
+            sprite.setOrigin(0.5, 0.5);
+
+            // Gentle float tween
+            this.tweens.add({
+              targets: sprite,
+              y: sprite.y - 6,
+              duration: 1400,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            // Name Tag
+            const tagBg = this.add.rectangle(0, 52, 170, 24, 0x18181b, 0.95);
+            tagBg.setStrokeStyle(1.5, 0x10b981);
+            const tagText = this.add.text(0, 52, `${info.name} • ${info.species}`, {
+              fontSize: '11px',
               fontStyle: 'bold',
               fontFamily: 'system-ui',
               color: '#ffffff',
-              backgroundColor: '#09090bf0',
-              padding: { x: 10, y: 4 },
             }).setOrigin(0.5);
 
-            container.add([glow, bubble, emoji, tag]);
+            container.add([shadow, glow, sprite, tagBg, tagText]);
 
-            bubble.setInteractive({ useHandCursor: true });
-            bubble.on('pointerdown', () => {
+            sprite.setInteractive({ useHandCursor: true });
+            sprite.on('pointerdown', () => {
               sounds.playClick();
               stateRef.current.openDialogue(animalId);
             });
@@ -998,13 +702,13 @@ export default function PhaserWorld() {
               name: `Talk to ${info.name}`,
               x,
               y,
-              icon: info.avatar,
+              iconSprite: animalId,
               type: 'animal',
               animalId,
             });
           }
 
-          update() {
+          update(time: number) {
             if (this.isTransitioning) return;
 
             let vx = 0;
@@ -1054,8 +758,16 @@ export default function PhaserWorld() {
                 this.playerBody.setVelocity(0, 0);
                 this.moveTarget = null;
               }
+
+              // Subtle walking wobble on the farmer sprite
+              if (this.playerSprite) {
+                this.playerSprite.angle = Math.sin(time * 0.015) * 5;
+              }
             } else {
               this.playerBody.setVelocity(0, 0);
+              if (this.playerSprite) {
+                this.playerSprite.angle = 0;
+              }
             }
 
             // Proximity to hotspots
@@ -1171,7 +883,7 @@ export default function PhaserWorld() {
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 animate-bounce pointer-events-none">
           <div className="flex items-center gap-2 px-4 py-2 bg-red-950/90 border border-red-500/80 rounded-full shadow-2xl text-xs font-bold text-red-200 backdrop-blur-md">
             <ShieldAlert className="w-4 h-4 text-red-400" />
-            <span>Stay on the stone paths! Picket fences protect the farm crops and flowers.</span>
+            <span>Stay on the paths! Picket fences protect the farm crops and garden beds.</span>
           </div>
         </div>
       )}
@@ -1189,7 +901,7 @@ export default function PhaserWorld() {
         </div>
       )}
 
-      {/* Proximity Interaction Prompt */}
+      {/* Proximity Interaction Prompt (No emojis!) */}
       {activeNearbyHotspot && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 animate-bounce">
           <button
@@ -1207,7 +919,13 @@ export default function PhaserWorld() {
             }}
             className="flex items-center gap-3 px-6 py-3 bg-zinc-900/95 hover:bg-zinc-850 text-white rounded-full border-2 border-emerald-500 shadow-2xl backdrop-blur-lg transition-transform active:scale-95"
           >
-            <span className="text-2xl">{activeNearbyHotspot.icon}</span>
+            {activeNearbyHotspot.animalId && (
+              <img
+                src={`/assets/sprites/${activeNearbyHotspot.animalId}.png`}
+                alt={activeNearbyHotspot.name}
+                className="w-8 h-8 rounded-full object-cover border border-emerald-400"
+              />
+            )}
             <div className="text-left">
               <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                 <span>{activeNearbyHotspot.name}</span>
@@ -1229,7 +947,7 @@ export default function PhaserWorld() {
       {/* Controls Hint */}
       <div className="absolute bottom-20 left-4 z-20 hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 backdrop-blur-md rounded-xl border border-zinc-800 text-zinc-400 text-[11px]">
         <Footprints className="w-3.5 h-3.5 text-emerald-400" />
-        <span>WASD / Arrow Keys or Click on stone paths • Stay on the pathways</span>
+        <span>WASD / Arrow Keys or Click on paths • Stay on the pathways</span>
       </div>
     </div>
   );

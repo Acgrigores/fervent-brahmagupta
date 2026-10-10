@@ -5,7 +5,7 @@ import { useGameState } from '@/context/GameStateContext';
 import { FARM_CROPS } from '@/data/animals';
 import { BiomeId } from '@/types/game';
 import { sounds } from '@/utils/soundEffects';
-import { ChevronDown, ChevronUp, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle2, ArrowRight, Home } from 'lucide-react';
 
 export default function FarmStatusWidget() {
   const { restoration, setCurrentBiome } = useGameState();
@@ -23,8 +23,8 @@ export default function FarmStatusWidget() {
           className="p-3 bg-zinc-900/90 border-b border-zinc-800 flex items-center justify-between cursor-pointer hover:bg-zinc-850 transition-colors"
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-base">
-              🏡
+            <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+              <Home className="w-4 h-4 text-amber-400" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -59,9 +59,11 @@ export default function FarmStatusWidget() {
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-2xl flex-shrink-0 filter drop-shadow">
-                      {isFlourished ? crop.icon : crop.deadIcon}
-                    </span>
+                    <img
+                      src={isFlourished ? crop.icon : crop.deadIcon}
+                      alt={crop.name}
+                      className="w-10 h-10 object-contain rounded-lg border border-zinc-700 bg-zinc-950 flex-shrink-0"
+                    />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-white truncate">{crop.name}</span>

@@ -4,22 +4,22 @@ import React from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { BiomeId } from '@/types/game';
 import { sounds } from '@/utils/soundEffects';
-import { Compass } from 'lucide-react';
+import { Compass, Home, Droplets, Trees, Snowflake, Sun, Flame, Waves } from 'lucide-react';
 
 interface BiomeDockEntry {
   id: BiomeId;
   label: string;
-  avatar: string;
+  icon: React.ReactNode;
 }
 
 const DOCK_ENTRIES: BiomeDockEntry[] = [
-  { id: 'clearing', label: 'Central Farm', avatar: '🏡' },
-  { id: 'lake', label: 'Lake (Corn)', avatar: '🌽' },
-  { id: 'forest', label: 'Forest (Apples)', avatar: '🍎' },
-  { id: 'tundra', label: 'Tundra (Wheat)', avatar: '🌾' },
-  { id: 'grasslands', label: 'Grasslands (Sunflowers)', avatar: '🌻' },
-  { id: 'desert', label: 'Desert (Melons)', avatar: '🍈' },
-  { id: 'reefs', label: 'Reefs (Rice)', avatar: '🌱' },
+  { id: 'clearing', label: 'Central Farm', icon: <Home className="w-3.5 h-3.5 text-amber-400" /> },
+  { id: 'lake', label: 'Lake (Corn)', icon: <Droplets className="w-3.5 h-3.5 text-cyan-400" /> },
+  { id: 'forest', label: 'Forest (Apples)', icon: <Trees className="w-3.5 h-3.5 text-emerald-400" /> },
+  { id: 'tundra', label: 'Tundra (Wheat)', icon: <Snowflake className="w-3.5 h-3.5 text-sky-300" /> },
+  { id: 'grasslands', label: 'Grasslands (Sunflowers)', icon: <Sun className="w-3.5 h-3.5 text-amber-300" /> },
+  { id: 'desert', label: 'Desert (Melons)', icon: <Flame className="w-3.5 h-3.5 text-orange-400" /> },
+  { id: 'reefs', label: 'Reefs (Rice)', icon: <Waves className="w-3.5 h-3.5 text-teal-400" /> },
 ];
 
 export default function FastTravelDock() {
@@ -51,7 +51,7 @@ export default function FastTravelDock() {
                 : 'bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
             }`}
           >
-            <span className="text-sm">{entry.avatar}</span>
+            <span>{entry.icon}</span>
             <span className="hidden lg:inline">{entry.label}</span>
             {isFlourished && (
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />

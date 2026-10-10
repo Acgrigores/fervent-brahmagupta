@@ -10,6 +10,7 @@ import {
   Heart,
   FileCheck,
   CheckCircle,
+  Globe,
 } from 'lucide-react';
 
 interface CharityOrg {
@@ -27,7 +28,7 @@ const CHARITIES: CharityOrg[] = [
     name: 'Bayer ForwardFarming & Soil Health Initiative',
     mission: 'Empowering smallholder and family farmers with precision regenerative agriculture, cover crops, and pollinator corridors.',
     cause: 'Sustainable Food Security & Soil Conservation',
-    icon: '🌾',
+    icon: '/assets/sprites/butterfly.png',
     matchSponsor: 'Bayer Crop Science Grant Pool',
   },
   {
@@ -35,7 +36,7 @@ const CHARITIES: CharityOrg[] = [
     name: 'World Wildlife Fund (WWF) - Red Panda Canopy Defense',
     mission: 'Guarding cloud forest bamboo habitats from climate-driven wildfires and establishing community firebreaks.',
     cause: 'Forest Fire Resilience & Endangered Species',
-    icon: '🎋',
+    icon: '/assets/sprites/red_panda.png',
     matchSponsor: '1% for the Planet Match',
   },
   {
@@ -43,7 +44,7 @@ const CHARITIES: CharityOrg[] = [
     name: 'The Ocean Cleanup & Freshwater Interceptor Project',
     mission: 'Deploying solar river interceptors to block plastic waste before it pollutes manatee lagoons and oceanic reefs.',
     cause: 'Marine & Wetland Debris Diversion',
-    icon: '🦭',
+    icon: '/assets/sprites/manatee.png',
     matchSponsor: 'EcoAd Ad Revenue Pool',
   },
   {
@@ -51,7 +52,7 @@ const CHARITIES: CharityOrg[] = [
     name: 'Polar Bears International - Arctic Sea Ice Action',
     mission: 'Advocating to retire coal and industrial emissions, funding real-time radar tracking on sea ice floes.',
     cause: 'Cryosphere Climate Tech & Clean Energy',
-    icon: '🐻‍❄️',
+    icon: '/assets/sprites/polar_bear.png',
     matchSponsor: 'Clean Energy Foundation',
   },
   {
@@ -59,7 +60,7 @@ const CHARITIES: CharityOrg[] = [
     name: 'Xerces Society for Invertebrate Conservation',
     mission: 'Restoring native milkweed nectar pathways for migrating Monarch butterflies across agricultural corridors.',
     cause: 'Pollinator Sanctuaries & Biodiversity',
-    icon: '🦋',
+    icon: '/assets/sprites/butterfly.png',
     matchSponsor: 'Bayer Pollinator Pledge',
   },
   {
@@ -67,7 +68,7 @@ const CHARITIES: CharityOrg[] = [
     name: 'Coral Restoration Foundation',
     mission: 'Outplanting heat-resilient micro-fragment corals onto barrier reefs and educating maritime vessel corridors.',
     cause: 'Oceanic Coral Nurseries & Marine Preserves',
-    icon: '🪸',
+    icon: '/assets/sprites/sea_turtle.png',
     matchSponsor: 'Global Reef Initiative',
   },
 ];
@@ -94,17 +95,17 @@ export default function ProfileModal() {
     sounds.playCoin();
     sounds.playBloom();
     setAllocatedCharity(charity.name);
-    setNotification(`💖 Allocated $${donationPoolDollars.toFixed(2)} USD in sponsored funding to ${charity.name}!`);
+    setNotification(`Allocated $${donationPoolDollars.toFixed(2)} USD in sponsored funding to ${charity.name}!`);
     setTimeout(() => setNotification(null), 5000);
   };
 
   const coinEntries = [
-    { key: 'forest', name: 'Amber Bamboo Coin', icon: '🎋', balance: coins.forest, animal: 'Paku the Red Panda', color: 'from-amber-950 to-emerald-950 border-amber-600' },
-    { key: 'lake', name: 'Azure Ripple Coin', icon: '💧', balance: coins.lake, animal: 'Mo the Manatee', color: 'from-cyan-950 to-blue-950 border-cyan-500' },
-    { key: 'tundra', name: 'Frost Auric Coin', icon: '❄️', balance: coins.tundra, animal: 'Nanuk the Polar Bear', color: 'from-sky-950 to-indigo-950 border-sky-400' },
-    { key: 'grasslands', name: 'Golden Pollen Coin', icon: '🌻', balance: coins.grasslands, animal: 'Aura the Monarch Butterfly', color: 'from-yellow-950 to-amber-950 border-yellow-500' },
-    { key: 'desert', name: 'Sunfire Dune Coin', icon: '⚡', balance: coins.desert, animal: 'Zuri the Cheetah', color: 'from-orange-950 to-red-950 border-orange-500' },
-    { key: 'reefs', name: 'Coral Pearl Coin', icon: '🪸', balance: coins.reefs, animal: 'Coralia the Sea Turtle', color: 'from-teal-950 to-blue-950 border-teal-400' },
+    { key: 'forest', name: 'Amber Bamboo Coin', sprite: '/assets/sprites/red_panda.png', balance: coins.forest, animal: 'Paku the Red Panda', color: 'from-amber-950 to-emerald-950 border-amber-600' },
+    { key: 'lake', name: 'Azure Ripple Coin', sprite: '/assets/sprites/manatee.png', balance: coins.lake, animal: 'Mo the Manatee', color: 'from-cyan-950 to-blue-950 border-cyan-500' },
+    { key: 'tundra', name: 'Frost Auric Coin', sprite: '/assets/sprites/polar_bear.png', balance: coins.tundra, animal: 'Nanuk the Polar Bear', color: 'from-sky-950 to-indigo-950 border-sky-400' },
+    { key: 'grasslands', name: 'Golden Pollen Coin', sprite: '/assets/sprites/butterfly.png', balance: coins.grasslands, animal: 'Aura the Monarch Butterfly', color: 'from-yellow-950 to-amber-950 border-yellow-500' },
+    { key: 'desert', name: 'Sunfire Dune Coin', sprite: '/assets/sprites/cheetah.png', balance: coins.desert, animal: 'Zuri the Cheetah', color: 'from-orange-950 to-red-950 border-orange-500' },
+    { key: 'reefs', name: 'Coral Pearl Coin', sprite: '/assets/sprites/sea_turtle.png', balance: coins.reefs, animal: 'Coralia the Sea Turtle', color: 'from-teal-950 to-blue-950 border-teal-400' },
   ];
 
   return (
@@ -113,8 +114,8 @@ export default function ProfileModal() {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-2xl shadow-lg shadow-emerald-950/60">
-              🌍
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-950/60">
+              <Globe className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="font-bold text-lg text-white">Eco-Impact Portfolio & Treasury</h3>
@@ -209,7 +210,7 @@ export default function ProfileModal() {
                   className={`p-4 rounded-2xl border bg-gradient-to-br ${c.color} flex items-center justify-between shadow-lg`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl filter drop-shadow">{c.icon}</span>
+                    <img src={c.sprite} alt={c.name} className="w-10 h-10 rounded-full object-cover border border-zinc-700 shadow" />
                     <div>
                       <h4 className="text-xs font-bold text-white">{c.name}</h4>
                       <p className="text-[11px] text-zinc-300">{c.animal}</p>
@@ -236,8 +237,8 @@ export default function ProfileModal() {
                       : 'bg-zinc-950/40 border-zinc-800 opacity-50 grayscale'
                   }`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-2xl flex-shrink-0">
-                    {b.icon}
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+                    <Award className={`w-5 h-5 ${b.unlocked ? 'text-amber-400' : 'text-zinc-600'}`} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
@@ -262,7 +263,7 @@ export default function ProfileModal() {
           {activeTab === 'donations' && (
             <div className="space-y-3">
               <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 text-xs text-zinc-300 leading-relaxed">
-                💡 <strong>How Free-to-Play Funds Real Conservation:</strong> Every coin you earn through gameplay, talking with animals, and viewing sponsored ads translates into verified corporate match dollars provided by <strong>Bayer Crop Science & Eco-Partners</strong>. Choose where to allocate your balance!
+                <strong>How Free-to-Play Funds Real Conservation:</strong> Every coin you earn through gameplay, talking with animals, and viewing sponsored ads translates into verified corporate match dollars provided by <strong>Bayer Crop Science & Eco-Partners</strong>. Choose where to allocate your balance!
               </div>
 
               {CHARITIES.map((c) => (
@@ -271,7 +272,7 @@ export default function ProfileModal() {
                   className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{c.icon}</span>
+                    <img src={c.icon} alt={c.name} className="w-10 h-10 rounded-full object-cover border border-zinc-700" />
                     <div>
                       <h4 className="text-xs font-bold text-white">{c.name}</h4>
                       <p className="text-[11px] text-zinc-400 mt-0.5">{c.mission}</p>

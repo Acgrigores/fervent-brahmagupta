@@ -15,6 +15,7 @@ import {
   Key,
   Compass,
   RotateCcw,
+  Sprout,
 } from 'lucide-react';
 
 export default function TopNavHUD() {
@@ -50,7 +51,9 @@ export default function TopNavHUD() {
         {/* Logo & Theme Title */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl filter drop-shadow">🌱</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-500/50 flex items-center justify-center">
+              <Sprout className="w-4 h-4 text-emerald-400" />
+            </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="font-extrabold text-sm tracking-wide text-white">

@@ -126,8 +126,11 @@ export default function DialogueModal() {
         <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-950/60">
           <div className="flex items-center gap-3.5">
             <div className="relative">
-              <span className="text-4xl filter drop-shadow-md">{animal.avatar}</span>
-              <span className="absolute -bottom-1 -right-1 text-sm">{animal.coinIcon}</span>
+              <img
+                src={animal.avatar}
+                alt={animal.name}
+                className="w-14 h-14 rounded-full object-cover border-2 border-emerald-500 shadow-lg bg-zinc-900"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -218,7 +221,7 @@ export default function DialogueModal() {
         {biomeQuest && !biomeQuest.completed && (
           <div className="px-5 py-2.5 bg-emerald-950/40 border-t border-emerald-900/50 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs text-emerald-200">
-              <span>{biomeQuest.icon}</span>
+              <Sparkles className="w-4 h-4 text-emerald-400" />
               <span>
                 Ready to take action? <strong>{biomeQuest.title}</strong>
               </span>
