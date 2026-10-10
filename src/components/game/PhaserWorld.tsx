@@ -3171,7 +3171,7 @@ export default function PhaserWorld() {
               const startY = gy + Phaser.Math.Between(-15, 5);
 
               const bf = this.add.image(startX, startY, 'butterfly');
-              bf.setDisplaySize(6, 12);
+              bf.setDisplaySize(9, 12);
               bf.setTint(colors[i % colors.length]);
               bf.setDepth(60);
 
