@@ -52,10 +52,10 @@ const ITEMS_TO_SORT: QuizItem[] = [
 ];
 
 const CATEGORIES = [
-  { id: 'plastic_recycling', label: 'Circular Plastics Recycling', icon: '♻️', color: 'border-cyan-500 bg-cyan-950/30' },
-  { id: 'compost', label: 'Organic Composting', icon: '🌱', color: 'border-emerald-500 bg-emerald-950/30' },
-  { id: 'hazardous', label: 'Hazardous Waste Depot', icon: '⚠️', color: 'border-amber-500 bg-amber-950/30' },
-  { id: 'runoff_filter', label: 'Agri-Runoff Biofilter', icon: '🌾', color: 'border-blue-500 bg-blue-950/30' },
+  { id: 'plastic_recycling', label: 'Circular Plastics Recycling', icon: '♻️', color: 'border-sky-300 bg-sky-50 text-sky-950' },
+  { id: 'compost', label: 'Organic Composting', icon: '🌱', color: 'border-emerald-300 bg-emerald-50 text-emerald-950' },
+  { id: 'hazardous', label: 'Hazardous Waste Depot', icon: '⚠️', color: 'border-amber-300 bg-amber-50 text-amber-950' },
+  { id: 'runoff_filter', label: 'Agri-Runoff Biofilter', icon: '🌾', color: 'border-blue-300 bg-blue-50 text-blue-950' },
 ];
 
 export default function LakeRecyclingModal() {
@@ -71,7 +71,7 @@ export default function LakeRecyclingModal() {
   const currentItem = ITEMS_TO_SORT[currentIndex];
 
   const handleSelectCategory = (categoryId: string) => {
-    if (feedback) return; // prevent spamming while showing explanation
+    if (feedback) return;
 
     const correct = currentItem.category === categoryId;
     setIsCorrect(correct);
@@ -101,20 +101,20 @@ export default function LakeRecyclingModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-700 rounded-3xl p-6 shadow-2xl text-white">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in">
+      <div className="relative w-full max-w-xl bg-[#fffdfa] border-4 border-amber-950/20 rounded-3xl p-6 shadow-2xl text-stone-900">
+        {/* Vintage Wooden Plaque Header */}
+        <div className="flex items-center justify-between bg-gradient-to-r from-[#78350f] via-[#92400e] to-[#78350f] text-[#fffbeb] p-4 rounded-2xl border-2 border-[#451a03] shadow-md mb-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">🦭</span>
             <div>
-              <h3 className="font-bold text-lg text-white">Watershed Waste & Recycling Challenge</h3>
-              <p className="text-xs text-zinc-400">Crystal Marsh • Protect Mo the Manatee</p>
+              <h3 className="font-serif font-bold text-lg text-amber-100">Watershed Waste & Recycling Challenge</h3>
+              <p className="text-xs text-amber-200/90 font-sans">Crystal Marsh • Protect Mo the Manatee</p>
             </div>
           </div>
           <button
             onClick={closeQuestModal}
-            className="p-1.5 rounded-full bg-zinc-800 text-zinc-400 hover:text-white"
+            className="p-1.5 rounded-full bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -123,22 +123,22 @@ export default function LakeRecyclingModal() {
         {!isFinished ? (
           <div>
             {/* Progress bar */}
-            <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+            <div className="flex items-center justify-between text-xs text-stone-600 mb-2 font-medium">
               <span>Item {currentIndex + 1} of {ITEMS_TO_SORT.length}</span>
-              <span className="font-semibold text-emerald-400">Score: {score}</span>
+              <span className="font-bold text-emerald-700">Score: {score}</span>
             </div>
-            <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden mb-6">
+            <div className="w-full bg-amber-100 h-2.5 rounded-full overflow-hidden mb-6 border border-amber-200">
               <div
-                className="bg-cyan-500 h-full transition-all duration-300"
+                className="bg-cyan-600 h-full transition-all duration-300"
                 style={{ width: `${((currentIndex + 1) / ITEMS_TO_SORT.length) * 100}%` }}
               />
             </div>
 
             {/* Current Item Card */}
-            <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-2xl flex flex-col items-center text-center mb-5 shadow-inner">
-              <span className="text-5xl mb-3 filter drop-shadow-md">{currentItem.emoji}</span>
-              <h4 className="text-base font-bold text-white mb-1">{currentItem.item}</h4>
-              <p className="text-xs text-zinc-400">Where should this item be diverted to protect aquatic life?</p>
+            <div className="p-6 bg-[#fefce8] border border-amber-200/80 rounded-2xl flex flex-col items-center text-center mb-5 shadow-sm">
+              <span className="text-5xl mb-3 filter drop-shadow-sm">{currentItem.emoji}</span>
+              <h4 className="text-base font-serif font-bold text-stone-900 mb-1">{currentItem.item}</h4>
+              <p className="text-xs text-stone-600">Where should this item be diverted to protect aquatic life?</p>
             </div>
 
             {/* Category Options */}
@@ -148,10 +148,10 @@ export default function LakeRecyclingModal() {
                   key={cat.id}
                   onClick={() => handleSelectCategory(cat.id)}
                   disabled={feedback !== null}
-                  className={`p-3.5 rounded-2xl border text-left flex items-center gap-3 transition-all active:scale-95 disabled:cursor-not-allowed ${cat.color} hover:bg-zinc-800/80`}
+                  className={`p-3.5 rounded-2xl border-2 text-left flex items-center gap-3 transition-all active:scale-95 disabled:cursor-not-allowed ${cat.color} hover:brightness-95 shadow-sm`}
                 >
                   <span className="text-2xl">{cat.icon}</span>
-                  <span className="text-xs font-semibold text-zinc-200">{cat.label}</span>
+                  <span className="text-xs font-bold">{cat.label}</span>
                 </button>
               ))}
             </div>
@@ -159,21 +159,21 @@ export default function LakeRecyclingModal() {
             {/* Feedback alert */}
             {feedback && (
               <div
-                className={`p-4 rounded-2xl border text-xs mb-4 animate-in fade-in ${
+                className={`p-4 rounded-2xl border-2 text-xs mb-4 animate-in fade-in ${
                   isCorrect
-                    ? 'bg-emerald-950/60 border-emerald-500/80 text-emerald-200'
-                    : 'bg-amber-950/60 border-amber-500/80 text-amber-200'
+                    ? 'bg-emerald-50 border-emerald-400 text-emerald-900'
+                    : 'bg-amber-50 border-amber-400 text-amber-950'
                 }`}
               >
                 <div className="flex items-center gap-2 font-bold mb-1">
                   {isCorrect ? (
                     <>
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
                       <span>Correct Sorting!</span>
                     </>
                   ) : (
                     <>
-                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
                       <span>Educational Correction:</span>
                     </>
                   )}
@@ -181,7 +181,7 @@ export default function LakeRecyclingModal() {
                 <p className="leading-relaxed">{feedback}</p>
                 <button
                   onClick={handleNext}
-                  className="mt-3 px-4 py-1.5 bg-zinc-100 hover:bg-white text-zinc-900 rounded-xl font-bold transition-all"
+                  className="mt-3 px-4 py-1.5 bg-[#78350f] hover:bg-[#92400e] text-white rounded-xl font-bold transition-all shadow-sm"
                 >
                   {currentIndex < ITEMS_TO_SORT.length - 1 ? 'Next Item →' : 'Complete Quest →'}
                 </button>
@@ -190,19 +190,19 @@ export default function LakeRecyclingModal() {
           </div>
         ) : (
           <div className="text-center py-6">
-            <div className="inline-flex p-4 bg-cyan-950 border border-cyan-500 rounded-full mb-4">
-              <Award className="w-12 h-12 text-cyan-400" />
+            <div className="inline-flex p-4 bg-cyan-100 border-2 border-cyan-400 rounded-full mb-4 shadow-sm">
+              <Award className="w-12 h-12 text-cyan-700" />
             </div>
-            <h4 className="text-xl font-bold text-white mb-2">Watershed Restored!</h4>
-            <p className="text-xs text-zinc-300 max-w-md mx-auto mb-6 leading-relaxed">
+            <h4 className="text-xl font-serif font-bold text-stone-900 mb-2">Watershed Restored!</h4>
+            <p className="text-xs text-stone-600 max-w-md mx-auto mb-6 leading-relaxed">
               You correctly sorted critical waste items and mitigated dangerous chemical runoff. Mo the Manatee and hundreds of aquatic organisms can now graze in crystal-clear waters!
             </p>
-            <div className="flex items-center justify-center gap-2 text-xs text-emerald-400 font-semibold mb-6">
-              <Sparkles className="w-4 h-4" /> +300 Azure Ripple Coins & 100% Lake Flourish!
+            <div className="flex items-center justify-center gap-2 text-xs text-emerald-700 font-bold mb-6">
+              <Sparkles className="w-4 h-4 text-emerald-600" /> +300 Azure Ripple Coins & 100% Lake Flourish!
             </div>
             <button
               onClick={closeQuestModal}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg"
+              className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl transition-all shadow-md active:scale-95"
             >
               Back to World
             </button>

@@ -58,33 +58,33 @@ An Advocate for Environmental Solutions & Biodiversity`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-3xl p-6 shadow-2xl text-white max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in">
+      <div className="relative w-full max-w-2xl bg-[#fffdfa] border-4 border-amber-950/20 rounded-3xl p-6 shadow-2xl text-stone-900 max-h-[90vh] overflow-y-auto">
+        {/* Vintage Wooden Plaque Header */}
+        <div className="flex items-center justify-between bg-gradient-to-r from-[#78350f] via-[#92400e] to-[#78350f] text-[#fffbeb] p-4 rounded-2xl border-2 border-[#451a03] shadow-md mb-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">🎋</span>
             <div>
-              <h3 className="font-bold text-lg text-white">Forest Fire Prevention & Advocacy Hub</h3>
-              <p className="text-xs text-zinc-400">Old-Growth Canopy • Stand with Paku the Red Panda</p>
+              <h3 className="font-serif font-bold text-lg text-amber-100">Forest Fire Prevention & Advocacy Hub</h3>
+              <p className="text-xs text-amber-200/90 font-sans">Old-Growth Canopy • Stand with Paku the Red Panda</p>
             </div>
           </div>
           <button
             onClick={closeQuestModal}
-            className="p-1.5 rounded-full bg-zinc-800 text-zinc-400 hover:text-white"
+            className="p-1.5 rounded-full bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab switcher */}
-        <div className="flex gap-2 p-1 bg-zinc-950 rounded-2xl border border-zinc-800 mb-5">
+        <div className="flex gap-2 p-1.5 bg-amber-100/70 rounded-2xl border border-amber-200 mb-5">
           <button
             onClick={() => setTab('social')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
               tab === 'social'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#78350f] text-white shadow-sm font-serif'
+                : 'text-stone-700 hover:text-stone-900 hover:bg-white/50'
             }`}
           >
             <Camera className="w-4 h-4" />
@@ -94,8 +94,8 @@ An Advocate for Environmental Solutions & Biodiversity`;
             onClick={() => setTab('email')}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
               tab === 'email'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#78350f] text-white shadow-sm font-serif'
+                : 'text-stone-700 hover:text-stone-900 hover:bg-white/50'
             }`}
           >
             <Mail className="w-4 h-4" />
@@ -106,30 +106,29 @@ An Advocate for Environmental Solutions & Biodiversity`;
         {/* Tab 1: Social Media Generator */}
         {tab === 'social' && (
           <div className="space-y-4">
-            {/* Social Post Visual Preview Card */}
-            <div className="relative rounded-2xl p-6 bg-gradient-to-br from-emerald-950 via-zinc-900 to-amber-950 border border-emerald-500/40 shadow-xl overflow-hidden">
+            <div className="relative rounded-2xl p-6 bg-gradient-to-br from-amber-50 via-[#fefce8] to-emerald-50 border-2 border-amber-200 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl">🦊</span>
                   <div>
-                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                    <h4 className="text-xs font-serif font-bold text-amber-900 uppercase tracking-wider">
                       Canopy Defense Initiative
                     </h4>
-                    <p className="text-[10px] text-zinc-400">Field to Future Eco-Campaign</p>
+                    <p className="text-[10px] text-stone-500">Field to Future Eco-Campaign</p>
                   </div>
                 </div>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-300 font-semibold">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold">
                   #SaveTheCanopy
                 </span>
               </div>
 
-              <div className="p-4 bg-zinc-950/80 rounded-xl border border-zinc-800/80 mb-3">
-                <p className="text-xs text-zinc-200 whitespace-pre-line leading-relaxed font-sans">
+              <div className="p-4 bg-white/90 rounded-xl border border-amber-200/80 mb-3 shadow-inner">
+                <p className="text-xs text-stone-800 whitespace-pre-line leading-relaxed font-sans">
                   {socialCaption}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <div className="flex items-center justify-between text-[11px] text-stone-500 font-medium">
                 <span>Verified Impact: Spreads Wildfire Education to 500+ Peers</span>
                 <span>Target: Forestry Dept & State Senates</span>
               </div>
@@ -137,9 +136,9 @@ An Advocate for Environmental Solutions & Biodiversity`;
 
             <button
               onClick={handleCopyCaption}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-bold text-white transition-all border border-zinc-700"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100/80 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-bold transition-all border border-amber-300"
             >
-              {copiedCaption ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copiedCaption ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
               <span>{copiedCaption ? 'Copied to Clipboard!' : 'Copy Post Caption & Hashtags'}</span>
             </button>
           </div>
@@ -148,13 +147,13 @@ An Advocate for Environmental Solutions & Biodiversity`;
         {/* Tab 2: Representative Email Template */}
         {tab === 'email' && (
           <div className="space-y-4">
-            <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-2">
-              <div className="text-xs text-zinc-400">
-                <span className="text-zinc-500">Subject: </span>
-                <strong className="text-zinc-200">{emailSubject}</strong>
+            <div className="p-4 bg-white rounded-2xl border border-amber-200 shadow-sm space-y-2">
+              <div className="text-xs text-stone-600">
+                <span className="text-stone-400">Subject: </span>
+                <strong className="text-stone-900">{emailSubject}</strong>
               </div>
-              <div className="border-t border-zinc-800/80 pt-2">
-                <p className="text-xs text-zinc-300 whitespace-pre-line leading-relaxed font-mono">
+              <div className="border-t border-amber-100 pt-2">
+                <p className="text-xs text-stone-700 whitespace-pre-line leading-relaxed font-mono">
                   {emailBody}
                 </p>
               </div>
@@ -163,14 +162,14 @@ An Advocate for Environmental Solutions & Biodiversity`;
             <div className="flex gap-2">
               <button
                 onClick={handleCopyEmail}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-bold text-white transition-all border border-zinc-700"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100/80 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-bold transition-all border border-amber-300"
               >
-                {copiedEmail ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                {copiedEmail ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
                 <span>{copiedEmail ? 'Copied Email Draft!' : 'Copy Email Text'}</span>
               </button>
               <a
                 href={`mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`}
-                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 rounded-xl text-xs font-bold text-white transition-all"
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-cyan-700 hover:bg-cyan-800 rounded-xl text-xs font-bold text-white transition-all shadow-sm"
               >
                 <span>Open Mail Client</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -180,16 +179,16 @@ An Advocate for Environmental Solutions & Biodiversity`;
         )}
 
         {/* Publish & Complete Action Button */}
-        <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-            <Sparkles className="w-4 h-4" />
+        <div className="mt-6 pt-4 border-t border-amber-200 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-emerald-700 font-bold">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
             <span>Reward: +350 Amber Bamboo Coins & 100% Forest Flourish</span>
           </div>
 
           {!completed ? (
             <button
               onClick={handlePublish}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-950/60 transition-all active:scale-95"
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
             >
               <Share2 className="w-4 h-4" />
               <span>Launch Campaign & Complete Quest</span>
@@ -197,7 +196,7 @@ An Advocate for Environmental Solutions & Biodiversity`;
           ) : (
             <button
               onClick={closeQuestModal}
-              className="px-5 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl text-xs font-bold transition-all"
+              className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-all"
             >
               Close Hub
             </button>

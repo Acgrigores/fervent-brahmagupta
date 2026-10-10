@@ -13,13 +13,13 @@ interface BiomeDockEntry {
 }
 
 const DOCK_ENTRIES: BiomeDockEntry[] = [
-  { id: 'clearing', label: 'Central Farm', icon: <Home className="w-3.5 h-3.5 text-amber-400" /> },
-  { id: 'lake', label: 'Lake (Corn)', icon: <Droplets className="w-3.5 h-3.5 text-cyan-400" /> },
-  { id: 'forest', label: 'Forest (Apples)', icon: <Trees className="w-3.5 h-3.5 text-emerald-400" /> },
-  { id: 'tundra', label: 'Tundra (Wheat)', icon: <Snowflake className="w-3.5 h-3.5 text-sky-300" /> },
-  { id: 'grasslands', label: 'Grasslands (Sunflowers)', icon: <Sun className="w-3.5 h-3.5 text-amber-300" /> },
-  { id: 'desert', label: 'Desert (Melons)', icon: <Flame className="w-3.5 h-3.5 text-orange-400" /> },
-  { id: 'reefs', label: 'Reefs (Rice)', icon: <Waves className="w-3.5 h-3.5 text-teal-400" /> },
+  { id: 'clearing', label: 'Central Farm', icon: <Home className="w-3.5 h-3.5 text-amber-600" /> },
+  { id: 'lake', label: 'Lake (Corn)', icon: <Droplets className="w-3.5 h-3.5 text-cyan-600" /> },
+  { id: 'forest', label: 'Forest (Apples)', icon: <Trees className="w-3.5 h-3.5 text-emerald-600" /> },
+  { id: 'tundra', label: 'Tundra (Wheat)', icon: <Snowflake className="w-3.5 h-3.5 text-sky-600" /> },
+  { id: 'grasslands', label: 'Prairie (Sunflowers)', icon: <Sun className="w-3.5 h-3.5 text-amber-600" /> },
+  { id: 'desert', label: 'Desert (Melons)', icon: <Flame className="w-3.5 h-3.5 text-orange-600" /> },
+  { id: 'reefs', label: 'Reefs (Rice)', icon: <Waves className="w-3.5 h-3.5 text-teal-600" /> },
 ];
 
 export default function FastTravelDock() {
@@ -31,9 +31,9 @@ export default function FastTravelDock() {
   };
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 p-1.5 bg-zinc-950/90 backdrop-blur-md rounded-2xl border border-zinc-800 shadow-2xl select-none">
-      <div className="flex items-center gap-1 text-[11px] font-bold text-zinc-400 px-2">
-        <Compass className="w-3.5 h-3.5 text-emerald-400" />
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 p-1.5 bg-amber-50/95 backdrop-blur-md rounded-2xl border-2 border-amber-900/40 shadow-xl select-none text-stone-900">
+      <div className="flex items-center gap-1 text-[11px] font-bold font-serif text-amber-950 px-2">
+        <Compass className="w-3.5 h-3.5 text-emerald-700" />
         <span>Room Travel:</span>
       </div>
 
@@ -47,14 +47,14 @@ export default function FastTravelDock() {
             onClick={() => handleWarp(entry)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
               isCurrent
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/60 ring-2 ring-emerald-400'
-                : 'bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800'
+                ? 'bg-amber-900 text-amber-50 shadow-md border-2 border-amber-950 font-serif'
+                : 'bg-white hover:bg-amber-100/70 text-stone-700 hover:text-stone-900 border border-amber-200'
             }`}
           >
             <span>{entry.icon}</span>
             <span className="hidden lg:inline">{entry.label}</span>
             {isFlourished && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
             )}
           </button>
         );

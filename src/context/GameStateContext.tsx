@@ -342,14 +342,20 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   };
 
   const resetGame = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      console.error(e);
+    }
     setRestoration(defaultRestoration);
     setCoins(defaultCoins);
     setQuests(INITIAL_QUESTS);
     setBadges(INITIAL_BADGES);
     setActions([]);
-    setNotification('Game progress reset to beginning.');
-    setTimeout(() => setNotification(null), 3000);
+    setCurrentBiomeState('clearing');
+    sounds.playBloom();
+    setNotification('Game progress successfully reset to beginning! Welcome back to the Farm.');
+    setTimeout(() => setNotification(null), 4000);
   };
 
   return (

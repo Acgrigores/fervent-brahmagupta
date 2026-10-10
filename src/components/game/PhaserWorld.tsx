@@ -5,7 +5,7 @@ import { useGameState } from '@/context/GameStateContext';
 import { BiomeId, AnimalId } from '@/types/game';
 import { ANIMALS } from '@/data/animals';
 import { sounds } from '@/utils/soundEffects';
-import { Footprints, ArrowLeft } from 'lucide-react';
+import { Footprints, ArrowLeft, RotateCcw } from 'lucide-react';
 
 interface Hotspot {
   id: string;
@@ -28,6 +28,7 @@ export default function PhaserWorld() {
     restoration,
     openDialogue,
     openQuestModal,
+    resetGame,
   } = useGameState();
 
   const [activeNearbyHotspot, setActiveNearbyHotspot] = useState<Hotspot | null>(null);
@@ -62,6 +63,16 @@ export default function PhaserWorld() {
     }
   }, [currentBiome]);
 
+  // Sync restoration changes or game resets into active scene
+  useEffect(() => {
+    if (phaserGameRef.current) {
+      const scene = phaserGameRef.current.scene.getScene('GardenscapesWorldScene');
+      if (scene && typeof scene.rebuildCurrentRoom === 'function') {
+        scene.rebuildCurrentRoom();
+      }
+    }
+  }, [restoration]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -93,6 +104,20 @@ export default function PhaserWorld() {
             // Detailed grass backgrounds
             this.load.image('grass_flourish', '/assets/grass_flourish.png');
             this.load.image('grass_dead', '/assets/grass_dead.png');
+
+            // Biome Real Images (Dying/polluted vs Flourishing/clean) - No Polygons!
+            this.load.image('biome_lake_dead', '/assets/biomes/lake_dead.jpg');
+            this.load.image('biome_lake_flourish', '/assets/biomes/lake_flourish.jpg');
+            this.load.image('biome_forest_dead', '/assets/biomes/forest_dead.jpg');
+            this.load.image('biome_forest_flourish', '/assets/biomes/forest_flourish.jpg');
+            this.load.image('biome_tundra_dead', '/assets/biomes/tundra_dead.jpg');
+            this.load.image('biome_tundra_flourish', '/assets/biomes/tundra_flourish.jpg');
+            this.load.image('biome_grasslands_dead', '/assets/biomes/grasslands_dead.jpg');
+            this.load.image('biome_grasslands_flourish', '/assets/biomes/grasslands_flourish.jpg');
+            this.load.image('biome_desert_dead', '/assets/biomes/desert_dead.jpg');
+            this.load.image('biome_desert_flourish', '/assets/biomes/desert_flourish.jpg');
+            this.load.image('biome_reefs_dead', '/assets/biomes/reefs_dead.jpg');
+            this.load.image('biome_reefs_flourish', '/assets/biomes/reefs_flourish.jpg');
 
             // Sprites & generated images
             this.load.image('farmer', '/assets/sprites/farmer.png');
@@ -129,7 +154,7 @@ export default function PhaserWorld() {
 
             this.worldContainer = this.add.container(0, 0);
 
-            // Setup Arrow Keys ONLY for keyboard navigation (strictly NO spacebar capture so chat inputs work!)
+            // Setup Arrow Keys ONLY for keyboard navigation (strictly NO spacebar/letter capture)
             if (this.input.keyboard) {
               this.input.keyboard.clearCaptures();
               this.cursors = {
@@ -140,7 +165,7 @@ export default function PhaserWorld() {
               };
             }
 
-            // Click-to-move strictly on paths (No popups or alerts!)
+            // Click-to-move strictly on paths
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
               if (this.isTransitioning) return;
 
@@ -172,7 +197,7 @@ export default function PhaserWorld() {
             // Soft ground shadow
             const shadow = this.add.ellipse(0, 22, 32, 14, 0x000000, 0.35);
 
-            // Farmer image sprite (No emojis!)
+            // Farmer image sprite
             this.playerSprite = this.add.image(0, 0, 'farmer');
             this.playerSprite.setDisplaySize(54, 54);
             this.playerSprite.setOrigin(0.5, 0.7);
@@ -185,10 +210,23 @@ export default function PhaserWorld() {
             this.playerBody.setCollideWorldBounds(true);
           }
 
-          public changeRoom(biome: BiomeId) {
-            if (biome === this.currentRoomId || this.isTransitioning) return;
+          public rebuildCurrentRoom() {
+            this.buildRoom(this.currentRoomId);
+          }
+
+          /**
+           * Opposite-side room transition handler:
+           * If player exits Right -> enters Left of next room.
+           * If player exits Left -> enters Right of next room.
+           * If player exits Top -> enters Bottom of next room.
+           * If player exits Bottom -> enters Top of next room.
+           */
+          public changeRoom(biome: BiomeId, customSpawn?: { x: number; y: number }) {
+            if ((biome === this.currentRoomId && !customSpawn) || this.isTransitioning) return;
             this.isTransitioning = true;
             sounds.playBloom();
+
+            const previousRoom = this.currentRoomId;
 
             let executed = false;
             const finishTransition = () => {
@@ -198,10 +236,55 @@ export default function PhaserWorld() {
               this.currentRoomId = biome;
               this.buildRoom(biome);
 
-              if (biome === 'clearing') {
-                this.teleportPlayer(500, 420);
+              // Determine opposite-side entry coordinates
+              if (customSpawn) {
+                this.teleportPlayer(customSpawn.x, customSpawn.y);
+              } else if (biome === 'clearing') {
+                // Entering Central Farm from a biome:
+                if (previousRoom === 'lake') {
+                  // Lake is on Left -> entered farm on Left edge (x = 80, y = 420)
+                  this.teleportPlayer(80, 420);
+                } else if (previousRoom === 'grasslands') {
+                  // Grasslands is on Right -> entered farm on Right edge (x = 920, y = 420)
+                  this.teleportPlayer(920, 420);
+                } else if (previousRoom === 'forest') {
+                  // Forest is North-West -> entered farm at North-West lane (x = 120, y = 80)
+                  this.teleportPlayer(120, 80);
+                } else if (previousRoom === 'tundra') {
+                  // Tundra is North-Center -> entered farm at North Avenue (x = 500, y = 80)
+                  this.teleportPlayer(500, 80);
+                } else if (previousRoom === 'reefs') {
+                  // Reefs is South-Center -> entered farm at South Avenue (x = 500, y = 670)
+                  this.teleportPlayer(500, 670);
+                } else if (previousRoom === 'desert') {
+                  // Desert is South-East -> entered farm at South-East lane (x = 880, y = 670)
+                  this.teleportPlayer(880, 670);
+                } else {
+                  this.teleportPlayer(500, 420);
+                }
               } else {
-                this.teleportPlayer(500, 600);
+                // Entering a specific Biome from Central Farm:
+                if (biome === 'lake') {
+                  // Exited Farm on Left -> enter Lake on the RIGHT edge!
+                  this.teleportPlayer(920, 375);
+                } else if (biome === 'grasslands') {
+                  // Exited Farm on Right -> enter Grasslands on the LEFT edge!
+                  this.teleportPlayer(80, 375);
+                } else if (biome === 'forest') {
+                  // Exited Farm on Top -> enter Forest at the BOTTOM edge!
+                  this.teleportPlayer(500, 680);
+                } else if (biome === 'tundra') {
+                  // Exited Farm on Top -> enter Tundra at the BOTTOM edge!
+                  this.teleportPlayer(500, 680);
+                } else if (biome === 'reefs') {
+                  // Exited Farm on Bottom -> enter Reefs at the TOP edge!
+                  this.teleportPlayer(500, 80);
+                } else if (biome === 'desert') {
+                  // Exited Farm on Bottom -> enter Desert at the TOP edge!
+                  this.teleportPlayer(500, 80);
+                } else {
+                  this.teleportPlayer(500, 375);
+                }
               }
 
               this.cameras.main.fadeIn(150, 0, 0, 0);
@@ -212,7 +295,6 @@ export default function PhaserWorld() {
 
             this.cameras.main.fadeOut(150, 0, 0, 0);
             this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, finishTransition);
-            // Safety timeout
             this.time.delayedCall(220, finishTransition);
           }
 
@@ -251,7 +333,87 @@ export default function PhaserWorld() {
           }
 
           // ===============================================================
-          // 🏡 CENTRAL BAYER FARM (DETAILED GRASS, CLEAN PATHS, ZERO INTERSECTIONS)
+          // 🪵 VINTAGE WOODEN POSTED SIGN HELPER (RUSTIC CARVED SIGNS)
+          // ===============================================================
+          private createVintageWoodenSign(
+            x: number,
+            y: number,
+            title: string,
+            subtitle?: string,
+            width: number = 160,
+            height: number = 38,
+            statusColor: string = '#fef3c7',
+            onClick?: () => void,
+            postPos: 'bottom' | 'top' | 'none' = 'bottom'
+          ): Phaser.GameObjects.Container {
+            const container = this.add.container(x, y);
+
+            // 1. Sturdy Wooden Post
+            if (postPos === 'bottom') {
+              const post = this.add.rectangle(0, height / 2 + 10, 14, 26, 0x451a03);
+              const postHighlight = this.add.rectangle(-2, height / 2 + 10, 4, 24, 0x78350f);
+              container.add([post, postHighlight]);
+            } else if (postPos === 'top') {
+              const post = this.add.rectangle(0, -height / 2 - 10, 14, 26, 0x451a03);
+              const postHighlight = this.add.rectangle(-2, -height / 2 - 10, 4, 24, 0x78350f);
+              container.add([post, postHighlight]);
+            }
+
+            // 2. Vintage Wooden Plank Board
+            const shadow = this.add.rectangle(2, 2, width, height, 0x000000, 0.45);
+            // Outer bark / dark wood rim
+            const boardRim = this.add.rectangle(0, 0, width, height, 0x3e1a06);
+            // Warm wood plank face
+            const boardFace = this.add.rectangle(0, 0, width - 4, height - 4, 0x78350f);
+            // Wood grain horizontal lines
+            const grain1 = this.add.rectangle(0, -height / 4 + 2, width - 12, 1, 0x92400e, 0.7);
+            const grain2 = this.add.rectangle(0, height / 4 - 2, width - 12, 1, 0x5c2c16, 0.7);
+
+            // Corner nail rivets (brass/iron nails)
+            const nail1 = this.add.circle(-width / 2 + 7, -height / 2 + 7, 2.5, 0xd97706);
+            const nail2 = this.add.circle(width / 2 - 7, -height / 2 + 7, 2.5, 0xd97706);
+            const nail3 = this.add.circle(-width / 2 + 7, height / 2 - 7, 2.5, 0xd97706);
+            const nail4 = this.add.circle(width / 2 - 7, height / 2 - 7, 2.5, 0xd97706);
+
+            container.add([shadow, boardRim, boardFace, grain1, grain2, nail1, nail2, nail3, nail4]);
+
+            // 3. Carved Serif Text
+            const titleY = subtitle ? -6 : 0;
+            const titleText = this.add.text(0, titleY, title, {
+              fontSize: subtitle ? '10px' : '11.5px',
+              fontStyle: 'bold',
+              fontFamily: 'Georgia, serif',
+              color: '#fffbeb',
+              stroke: '#2e1005',
+              strokeThickness: 2,
+            }).setOrigin(0.5);
+            container.add(titleText);
+
+            if (subtitle) {
+              const subText = this.add.text(0, 8, subtitle, {
+                fontSize: '8px',
+                fontStyle: 'bold',
+                fontFamily: 'Georgia, serif',
+                color: statusColor,
+                stroke: '#2e1005',
+                strokeThickness: 1.5,
+              }).setOrigin(0.5);
+              container.add(subText);
+            }
+
+            if (onClick) {
+              boardFace.setInteractive({ useHandCursor: true });
+              boardFace.on('pointerdown', onClick);
+              titleText.setInteractive({ useHandCursor: true });
+              titleText.on('pointerdown', onClick);
+            }
+
+            this.worldContainer.add(container);
+            return container;
+          }
+
+          // ===============================================================
+          // 🏡 CENTRAL BAYER FARM (DETAILED GRASS, CLEAN PATHS, CROP IMAGES)
           // ===============================================================
           private buildMaximalistFarmRoom() {
             const w = this.canvasW;
@@ -278,7 +440,7 @@ export default function PhaserWorld() {
               new Phaser.Geom.Rectangle(850, 400, 60, 410),
             ];
 
-            // Render Packed Dirt Paths with seamless overlap and ZERO dark border lines!
+            // Render Packed Dirt Paths with seamless overlap
             this.renderBiomePaths('path_farm');
 
             // 3. Buildings & Orchard Grove
@@ -287,7 +449,7 @@ export default function PhaserWorld() {
             house.setDisplaySize(140, 140);
             this.worldContainer.add(house);
 
-            // Single Clumped Orchard Grove (Trees clumped into one grove!)
+            // Clumped Orchard Grove
             const orchardSoil = this.add.ellipse(360, 130, 150, 95, 0x543315, 0.4);
             const trees1 = this.add.image(320, 115, 'trees').setDisplaySize(95, 95);
             const trees2 = this.add.image(390, 110, 'trees').setDisplaySize(95, 95);
@@ -302,21 +464,21 @@ export default function PhaserWorld() {
             // Swimming Pool in Southwest sector
             this.renderSwimmingPool(240, 580);
 
-            // 4. Six Dedicated Crop Fields (All positioned on open lawn with ZERO path intersection!)
-            // Lake Corn: in Northwest sector (y=290 is well above Highway y=390, and right of West lane x=150)
+            // 4. Six Dedicated Crop Fields (Displays One Dead vs Flourishing Image!)
+            // Lake Corn: in Northwest sector
             this.renderFarmCropField(250, 290, 'lake', 'Golden Sweet Corn', 'Lake Water Polluted');
-            // Forest Apples: in Northwest sector (y=290 is well above Highway y=390, and left of Avenue x=470)
+            // Forest Apples: in Northwest sector
             this.renderFarmCropField(380, 290, 'forest', 'Canopy Apple Orchard', 'Wildfire Smoke Blight');
-            // Tundra Wheat: in Northeast sector (y=200 is well above Highway y=390, and right of Avenue x=530)
+            // Tundra Wheat: in Northeast sector
             this.renderFarmCropField(600, 200, 'tundra', 'Glacial Winter Wheat', 'Coal Soot Fallout');
-            // Grasslands Sunflowers: in Northeast sector (y=290 is well above Highway y=390, and left of East lane x=850)
+            // Grasslands Sunflowers: in Northeast sector
             this.renderFarmCropField(740, 290, 'grasslands', 'Giant Sunflowers', 'Pesticide & Topsoil Loss');
-            // Reefs Tidal Rice: in Southwest sector (y=580 is well below Highway y=450, and left of Avenue x=470)
+            // Reefs Tidal Rice: in Southwest sector
             this.renderFarmCropField(370, 580, 'reefs', 'Tidal Rice & Kelp', 'Boat Propellers & Oil');
-            // Desert Melons: in Southeast sector (y=580 is well below Highway y=450, right of Avenue x=530, left of East lane x=850)
+            // Desert Melons: in Southeast sector
             this.renderFarmCropField(720, 580, 'desert', 'Sugar Melons', 'Aquifer Depleted');
 
-            // 5. Directional Navigation Signs leading offscreen
+            // 5. Vintage Wooden Posted Directional Signs leading offscreen
             this.renderPathGateSigns();
 
             // 6. Farm Activity Station (Extinguish Wildfire Flare-ups)
@@ -324,7 +486,6 @@ export default function PhaserWorld() {
           }
 
           private renderBiomePaths(textureKey: string) {
-            // Render tiled path texture with seamless overlap and ZERO border lines!
             this.pathPolygons.forEach((poly) => {
               const tile = this.add.tileSprite(
                 poly.x,
@@ -347,7 +508,7 @@ export default function PhaserWorld() {
             this.worldContainer.add(container);
           }
 
-          // CROP FIELD: Displays One Dead Picture or Flourishing Picture!
+          // CROP FIELD: Displays One Dead Picture or Flourishing Picture with Vintage Wooden Sign
           private renderFarmCropField(
             x: number,
             y: number,
@@ -361,28 +522,13 @@ export default function PhaserWorld() {
             // Soft shadow
             const shadow = this.add.ellipse(0, 32, 95, 20, 0x000000, 0.35);
 
-            // Real Image Sprite (No polygons, No intersection!)
+            // Real Image Sprite (Dead vs Flourishing image)
             const textureKey = isFlourished ? 'crop_flourish' : 'crop_dead';
             const cropImage = this.add.image(0, 0, textureKey);
             cropImage.setDisplaySize(100, 100);
 
-            // Status badge
-            const badgeBg = this.add.rectangle(0, 44, 150, 20, 0x18181b, 0.95);
-            badgeBg.setStrokeStyle(1.5, isFlourished ? 0x22c55e : 0xef4444);
+            container.add([shadow, cropImage]);
 
-            const badgeText = this.add.text(
-              0,
-              44,
-              isFlourished ? `Flourishing: ${cropName}` : `${cropName} • ${crisisNotice}`,
-              {
-                fontSize: '8px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: isFlourished ? '#86efac' : '#fca5a5',
-              }
-            ).setOrigin(0.5);
-
-            container.add([shadow, cropImage, badgeBg, badgeText]);
             cropImage.setInteractive({ useHandCursor: true });
             cropImage.on('pointerdown', () => {
               sounds.playClick();
@@ -390,6 +536,22 @@ export default function PhaserWorld() {
             });
 
             this.worldContainer.add(container);
+
+            // Vintage wooden posted sign right at the crop plot!
+            this.createVintageWoodenSign(
+              x,
+              y + 44,
+              cropName,
+              isFlourished ? '✓ Flourishing Harvest' : `⚠ ${crisisNotice}`,
+              164,
+              32,
+              isFlourished ? '#86efac' : '#fca5a5',
+              () => {
+                sounds.playClick();
+                stateRef.current.setCurrentBiome(biome);
+              },
+              'bottom'
+            );
 
             this.currentHotspots.push({
               id: `crop_${biome}`,
@@ -402,37 +564,38 @@ export default function PhaserWorld() {
             });
           }
 
-          // Path portals positioned near offscreen exits
+          // Path portals positioned near offscreen exits (Vintage wooden directional signs)
           private renderPathGateSigns() {
-            this.createGateSign(45, 420, 'lake', 'LAKE [Golden Corn]');
-            this.createGateSign(120, 30, 'forest', 'FOREST [Apple Orchard]');
-            this.createGateSign(500, 30, 'tundra', 'TUNDRA [Winter Wheat]');
-            this.createGateSign(955, 420, 'grasslands', 'PRAIRIE [Sunflowers]');
-            this.createGateSign(880, 715, 'desert', 'DESERT [Sugar Melons]');
-            this.createGateSign(500, 715, 'reefs', 'REEFS [Tidal Rice]');
+            this.createGateSign(60, 420, 'lake', '← LAKE DOCK', 'Golden Sweet Corn', 'left');
+            this.createGateSign(120, 40, 'forest', '↑ CLOUD FOREST', 'Apple Orchard', 'top');
+            this.createGateSign(500, 40, 'tundra', '↑ ARCTIC TUNDRA', 'Winter Wheat', 'top');
+            this.createGateSign(940, 420, 'grasslands', 'PRAIRIE →', 'Giant Sunflowers', 'right');
+            this.createGateSign(880, 705, 'desert', '↓ DESERT OASIS', 'Sugar Melons', 'bottom');
+            this.createGateSign(500, 705, 'reefs', '↓ CORAL REEFS', 'Tidal Rice', 'bottom');
           }
 
-          private createGateSign(x: number, y: number, targetBiome: BiomeId, label: string) {
-            const container = this.add.container(x, y);
-
-            const bg = this.add.rectangle(0, 0, 142, 30, 0x18181b, 0.95);
-            bg.setStrokeStyle(1.5, 0x10b981);
-
-            const text = this.add.text(0, 0, label, {
-              fontSize: '10px',
-              fontStyle: 'bold',
-              fontFamily: 'system-ui',
-              color: '#34d399',
-            }).setOrigin(0.5);
-
-            container.add([bg, text]);
-            bg.setInteractive({ useHandCursor: true });
-            bg.on('pointerdown', () => {
-              sounds.playClick();
-              stateRef.current.setCurrentBiome(targetBiome);
-            });
-
-            this.worldContainer.add(container);
+          private createGateSign(
+            x: number,
+            y: number,
+            targetBiome: BiomeId,
+            label: string,
+            sublabel: string,
+            _direction: string
+          ) {
+            this.createVintageWoodenSign(
+              x,
+              y,
+              label,
+              sublabel,
+              148,
+              34,
+              '#fde68a',
+              () => {
+                sounds.playClick();
+                stateRef.current.setCurrentBiome(targetBiome);
+              },
+              'none'
+            );
 
             this.currentHotspots.push({
               id: `gate_${targetBiome}`,
@@ -445,282 +608,178 @@ export default function PhaserWorld() {
           }
 
           // ===============================================================
-          // 🗺️ BIOME ROOMS (RICH DECORATIONS: DEAD/POLLUTED -> THRIVING)
+          // 🗺️ BIOME ROOMS (REAL IMAGES: DEAD/POLLUTED -> FLOURISHING/CLEAN)
+          // NO POLYGONS! REPLACED ENTIRELY WITH HIGH-RES BIOME IMAGES!
           // ===============================================================
           private buildMaximalistBiomeRoom(biome: BiomeId, isRestored: boolean) {
             const w = this.canvasW;
             const h = this.canvasH;
 
-            // Walkable corridor connecting entrance/exit (bottom leading completely offscreen)
-            // to sanctuary (center) and station (top)
-            this.pathPolygons = [
-              new Phaser.Geom.Rectangle(440, 140, 120, 670), // Y extends to 810 (leads offscreen!)
-              new Phaser.Geom.Rectangle(160, 330, 680, 85),
-            ];
+            // 1. Biome Real Image (Changes from dying/polluted to flourishing/clean!)
+            const bgKey = `biome_${biome}_${isRestored ? 'flourish' : 'dead'}`;
+            const bgImage = this.add.image(w / 2, h / 2, bgKey);
+            bgImage.setDisplaySize(w, h);
+            this.worldContainer.add(bgImage);
 
-            // 1. Base Terrain
-            const terrain = this.add.graphics();
-            if (biome === 'lake') terrain.fillStyle(isRestored ? 0x0284c7 : 0x1e293b, 1);
-            else if (biome === 'forest') terrain.fillStyle(isRestored ? 0x14532d : 0x1c1917, 1);
-            else if (biome === 'tundra') terrain.fillStyle(isRestored ? 0x1e293b : 0x0f172a, 1);
-            else if (biome === 'grasslands') terrain.fillStyle(isRestored ? 0x65a30d : 0x292524, 1);
-            else if (biome === 'desert') terrain.fillStyle(isRestored ? 0xd97706 : 0x451a03, 1);
-            else if (biome === 'reefs') terrain.fillStyle(isRestored ? 0x0891b2 : 0x134e4a, 1);
-            terrain.fillRect(0, 0, w, h);
-            this.worldContainer.add(terrain);
-
-            // 2. Render Biome Path matching the biome! (dock for lake, etc.)
+            // 2. Walkable paths designed for opposite-side entry/exit
             let pathKey = 'path_farm';
-            if (biome === 'lake') pathKey = 'path_lake';
-            else if (biome === 'forest') pathKey = 'path_forest';
-            else if (biome === 'tundra') pathKey = 'path_tundra';
-            else if (biome === 'grasslands') pathKey = 'path_grasslands';
-            else if (biome === 'desert') pathKey = 'path_desert';
-            else if (biome === 'reefs') pathKey = 'path_reefs';
+            if (biome === 'lake') {
+              pathKey = 'path_lake';
+              // Enters Lake from the Right (x=920, y=375)
+              this.pathPolygons = [
+                new Phaser.Geom.Rectangle(160, 340, 860, 70), // horizontal highway connecting Right entrance (920) to center (500)
+                new Phaser.Geom.Rectangle(460, 140, 80, 480), // vertical path connecting animal (330) and quest station (180)
+              ];
+            } else if (biome === 'grasslands') {
+              pathKey = 'path_grasslands';
+              // Enters Grasslands from the Left (x=80, y=375)
+              this.pathPolygons = [
+                new Phaser.Geom.Rectangle(-40, 340, 860, 70), // horizontal highway connecting Left entrance (80) to center (500)
+                new Phaser.Geom.Rectangle(460, 140, 80, 480), // vertical path connecting animal and station
+              ];
+            } else if (biome === 'forest') {
+              pathKey = 'path_forest';
+              // Enters Forest from the Bottom (x=500, y=680)
+              this.pathPolygons = [
+                new Phaser.Geom.Rectangle(460, 140, 80, 680), // vertical avenue from bottom (y=680) to station (y=180)
+                new Phaser.Geom.Rectangle(180, 340, 640, 70), // horizontal terrace
+              ];
+            } else if (biome === 'tundra') {
+              pathKey = 'path_tundra';
+              // Enters Tundra from the Bottom (x=500, y=680)
+              this.pathPolygons = [
+                new Phaser.Geom.Rectangle(460, 140, 80, 680),
+                new Phaser.Geom.Rectangle(180, 340, 640, 70),
+              ];
+            } else if (biome === 'desert') {
+              pathKey = 'path_desert';
+              // Enters Desert from the Top (x=500, y=80)
+              this.pathPolygons = [
+                new Phaser.Geom.Rectangle(460, -40, 80, 650), // vertical avenue from top (y=80) down
+                new Phaser.Geom.Rectangle(180, 340, 640, 70),
+              ];
+            } else if (biome === 'reefs') {
+              pathKey = 'path_reefs';
+              // Enters Reefs from the Top (x=500, y=80)
+              this.pathPolygons = [
+                new Phaser.Geom.Rectangle(460, -40, 80, 650),
+                new Phaser.Geom.Rectangle(180, 340, 640, 70),
+              ];
+            }
 
+            // Render Biome Walkway matching the environment (dock, snow, sand, etc.)
             this.renderBiomePaths(pathKey);
 
-            // 3. Rich Biome Props: Distinctive Visual Contrast (Dead/Polluted vs Thriving)
-            this.renderBiomeAtmosphere(biome, isRestored);
-
-            // 4. Animal Friend at Center (500, 330)
+            // 3. Animal Friend at Center (500, 330) with Vintage Wooden Nametag
             const animalId = this.getAnimalForBiome(biome);
             if (animalId) {
               this.spawnBiomeAnimal(animalId, 500, 330);
             }
 
-            // 5. Action Plan Quest Station at (500, 180)
+            // 4. Action Plan Quest Station at (500, 180) with Vintage Wooden Notice Sign
             this.spawnBiomeQuestStation(biome, isRestored);
 
-            // 6. Return to Central Farm Gate leading offscreen at bottom (500, 715)
-            const returnSign = this.add.container(500, 715);
-            const returnBg = this.add.rectangle(0, 0, 250, 36, 0x18181b, 0.95).setStrokeStyle(2, 0xf59e0b);
-            const returnText = this.add.text(0, 0, 'RETURN TO CENTRAL FARM', {
-              fontSize: '11px',
-              fontStyle: 'bold',
-              fontFamily: 'system-ui',
-              color: '#fbbf24',
-            }).setOrigin(0.5);
-
-            returnSign.add([returnBg, returnText]);
-            returnBg.setInteractive({ useHandCursor: true });
-            returnBg.on('pointerdown', () => {
-              sounds.playClick();
-              stateRef.current.setCurrentBiome('clearing');
-            });
-            this.worldContainer.add(returnSign);
-
-            this.currentHotspots.push({
-              id: 'gate_clearing',
-              name: 'Return to Central Farm',
-              x: 500,
-              y: 715,
-              type: 'gate',
-              targetBiome: 'clearing',
-            });
-          }
-
-          // Render rich visual decorations that clearly shift between dead/polluted and thriving!
-          private renderBiomeAtmosphere(biome: BiomeId, isRestored: boolean) {
-            const gfx = this.add.graphics();
-
+            // 5. Return to Central Farm Signpost placed at the entry/exit edge!
             if (biome === 'lake') {
-              if (!isRestored) {
-                // Polluted state: Toxic brown/green sludge pools, oily sheen, debris
-                gfx.fillStyle(0x36301d, 0.7);
-                gfx.fillEllipse(230, 200, 180, 90);
-                gfx.fillEllipse(770, 240, 190, 85);
-                gfx.fillEllipse(240, 520, 210, 100);
-                gfx.fillEllipse(780, 530, 180, 95);
-
-                // Rust hazard barrels
-                const drawHazardBarrel = (bx: number, by: number) => {
-                  gfx.fillStyle(0x78350f, 1);
-                  gfx.fillRect(bx - 12, by - 16, 24, 32);
-                  gfx.fillStyle(0xf59e0b, 1);
-                  gfx.fillRect(bx - 12, by - 4, 24, 8);
-                };
-                drawHazardBarrel(210, 210);
-                drawHazardBarrel(790, 250);
-                drawHazardBarrel(260, 530);
-                drawHazardBarrel(750, 540);
-              } else {
-                // Thriving state: Sparkling blue waters, floating blooming water lilies, lotus flowers
-                gfx.fillStyle(0x38bdf8, 0.4);
-                gfx.fillEllipse(230, 200, 190, 100);
-                gfx.fillEllipse(770, 240, 200, 95);
-                gfx.fillEllipse(240, 520, 220, 110);
-                gfx.fillEllipse(780, 530, 190, 105);
-
-                // Blooming water lotus blossoms
-                const drawLotus = (lx: number, ly: number) => {
-                  gfx.fillStyle(0x15803d, 1); // Lily pad
-                  gfx.fillCircle(lx, ly, 16);
-                  gfx.fillStyle(0xf472b6, 1); // Pink lotus petals
-                  gfx.fillCircle(lx - 4, ly - 3, 7);
-                  gfx.fillCircle(lx + 4, ly - 3, 7);
-                  gfx.fillCircle(lx, ly - 7, 7);
-                  gfx.fillStyle(0xfef08a, 1); // Yellow core
-                  gfx.fillCircle(lx, ly - 3, 4);
-                };
-                drawLotus(220, 195);
-                drawLotus(260, 215);
-                drawLotus(760, 235);
-                drawLotus(800, 255);
-                drawLotus(230, 515);
-                drawLotus(770, 525);
-              }
-            } else if (biome === 'forest') {
-              if (!isRestored) {
-                // Dead state: Charred burned tree stumps, smoke wisps, orange ember sparks
-                const drawBurntStump = (sx: number, sy: number) => {
-                  gfx.fillStyle(0x1c1917, 1);
-                  gfx.fillRect(sx - 14, sy - 14, 28, 28);
-                  gfx.fillStyle(0xea580c, 0.9); // Glowing ember core
-                  gfx.fillCircle(sx, sy, 5);
-                };
-                drawBurntStump(220, 210);
-                drawBurntStump(780, 230);
-                drawBurntStump(240, 520);
-                drawBurntStump(760, 540);
-                drawBurntStump(180, 360);
-                drawBurntStump(820, 360);
-              } else {
-                // Thriving state: Lush green tree clusters, blooming flowers
-                const t1 = this.add.image(220, 210, 'trees').setDisplaySize(110, 110);
-                const t2 = this.add.image(780, 230, 'trees').setDisplaySize(110, 110);
-                const t3 = this.add.image(240, 520, 'trees').setDisplaySize(110, 110);
-                const t4 = this.add.image(760, 540, 'trees').setDisplaySize(110, 110);
-                this.worldContainer.add([t1, t2, t3, t4]);
-
-                // Flowering underbrush
-                gfx.fillStyle(0xec4899, 1);
-                gfx.fillCircle(170, 350, 8);
-                gfx.fillCircle(190, 365, 8);
-                gfx.fillCircle(830, 350, 8);
-                gfx.fillCircle(810, 365, 8);
-              }
-            } else if (biome === 'tundra') {
-              if (!isRestored) {
-                // Dead state: Black coal soot drifts, slush melt puddles, distant smoking coal chimney
-                gfx.fillStyle(0x18181b, 0.85); // Soot patches
-                gfx.fillEllipse(230, 210, 180, 75);
-                gfx.fillEllipse(780, 230, 180, 75);
-                gfx.fillEllipse(240, 520, 190, 80);
-                gfx.fillEllipse(770, 530, 180, 80);
-
-                // Distant smoking coal chimney
-                gfx.fillStyle(0x27272a, 1);
-                gfx.fillRect(840, 120, 22, 60);
-                gfx.fillStyle(0x52525b, 0.6); // Smoke plume
-                gfx.fillCircle(851, 105, 14);
-                gfx.fillCircle(856, 85, 20);
-              } else {
-                // Thriving state: Crystalline solid blue icebergs, green northern aurora ribbon
-                gfx.fillStyle(0x7dd3fc, 0.5); // Pristine ice floes
-                gfx.fillEllipse(230, 210, 190, 85);
-                gfx.fillEllipse(780, 230, 190, 85);
-                gfx.fillEllipse(240, 520, 200, 90);
-                gfx.fillEllipse(770, 530, 190, 90);
-
-                // Sparkling ice spires
-                const drawIceSpire = (ix: number, iy: number) => {
-                  gfx.fillStyle(0xe0f2fe, 1);
-                  gfx.fillTriangle(ix - 12, iy + 20, ix + 12, iy + 20, ix, iy - 25);
-                  gfx.fillStyle(0x38bdf8, 0.8);
-                  gfx.fillTriangle(ix, iy + 20, ix + 12, iy + 20, ix, iy - 25);
-                };
-                drawIceSpire(220, 205);
-                drawIceSpire(780, 225);
-                drawIceSpire(240, 515);
-                drawIceSpire(770, 525);
-              }
+              // Exiting Lake on Right returns to Central Farm on Left
+              this.createVintageWoodenSign(
+                920,
+                375,
+                'FARM PORTAL →',
+                'Return to Central Farm',
+                150,
+                34,
+                '#fde68a',
+                () => {
+                  sounds.playClick();
+                  stateRef.current.setCurrentBiome('clearing');
+                },
+                'none'
+              );
+              this.currentHotspots.push({
+                id: 'gate_clearing',
+                name: 'Return to Central Farm',
+                x: 920,
+                y: 375,
+                type: 'gate',
+                targetBiome: 'clearing',
+              });
             } else if (biome === 'grasslands') {
-              if (!isRestored) {
-                // Dead state: Parched cracked soil, pesticide hazard drums, brown dry patches
-                gfx.fillStyle(0x44403c, 0.8);
-                gfx.fillEllipse(230, 210, 180, 75);
-                gfx.fillEllipse(780, 230, 180, 75);
-                gfx.fillEllipse(240, 520, 190, 80);
-                gfx.fillEllipse(770, 530, 180, 80);
-
-                // Chemical drums
-                gfx.fillStyle(0xd97706, 1);
-                gfx.fillRect(215, 200, 20, 26);
-                gfx.fillRect(775, 220, 20, 26);
-              } else {
-                // Thriving state: Lush colorful wildflower pollinator meadow, golden wheat
-                const drawFlowerPatch = (fx: number, fy: number, color: number) => {
-                  gfx.fillStyle(color, 1);
-                  for (let i = 0; i < 6; i++) {
-                    const ox = Math.cos((i * Math.PI) / 3) * 10;
-                    const oy = Math.sin((i * Math.PI) / 3) * 10;
-                    gfx.fillCircle(fx + ox, fy + oy, 5);
-                  }
-                  gfx.fillStyle(0xfef08a, 1);
-                  gfx.fillCircle(fx, fy, 4);
-                };
-                drawFlowerPatch(220, 200, 0xa855f7); // Lavender
-                drawFlowerPatch(260, 225, 0xef4444); // Poppy
-                drawFlowerPatch(760, 220, 0x3b82f6); // Cornflower
-                drawFlowerPatch(800, 245, 0xf59e0b); // Marigold
-                drawFlowerPatch(230, 515, 0xa855f7);
-                drawFlowerPatch(770, 525, 0xef4444);
-              }
-            } else if (biome === 'desert') {
-              if (!isRestored) {
-                // Dead state: Scorched cracked clay, parched empty mud waterhole, bleached bones
-                gfx.fillStyle(0x78350f, 0.85); // Cracked dust
-                gfx.fillEllipse(230, 210, 180, 75);
-                gfx.fillEllipse(780, 230, 180, 75);
-                gfx.fillEllipse(240, 520, 190, 80);
-                gfx.fillEllipse(770, 530, 180, 80);
-              } else {
-                // Thriving state: Cool freshwater oasis lagoon, palm canopy, blooming succulents
-                gfx.fillStyle(0x06b6d4, 0.6); // Oasis water
-                gfx.fillEllipse(230, 210, 180, 80);
-                gfx.fillEllipse(780, 230, 180, 80);
-                gfx.fillEllipse(240, 520, 190, 85);
-                gfx.fillEllipse(770, 530, 180, 85);
-
-                // Solar artesian pump beacon
-                gfx.fillStyle(0x0284c7, 1);
-                gfx.fillRect(225, 195, 12, 28);
-                gfx.fillStyle(0x38bdf8, 1);
-                gfx.fillCircle(231, 190, 8);
-              }
-            } else if (biome === 'reefs') {
-              if (!isRestored) {
-                // Dead state: Bleached white dead coral skeletons, murky boat scars
-                gfx.fillStyle(0xd4d4d8, 0.7); // Bleached chalk skeleton
-                gfx.fillRect(215, 195, 30, 30);
-                gfx.fillRect(765, 215, 30, 30);
-                gfx.fillRect(225, 505, 30, 30);
-                gfx.fillRect(755, 515, 30, 30);
-              } else {
-                // Thriving state: Colorful living corals (magenta, purple, turquoise), swimming fish
-                const drawCoralBranch = (cx: number, cy: number, color: number) => {
-                  gfx.fillStyle(color, 1);
-                  gfx.fillCircle(cx, cy, 14);
-                  gfx.fillCircle(cx - 8, cy - 10, 9);
-                  gfx.fillCircle(cx + 8, cy - 10, 9);
-                  gfx.fillCircle(cx, cy - 16, 8);
-                };
-                drawCoralBranch(220, 200, 0xf43f5e); // Neon coral pink
-                drawCoralBranch(260, 220, 0x8b5cf6); // Purple staghorn
-                drawCoralBranch(760, 220, 0x14b8a6); // Emerald turquoise
-                drawCoralBranch(800, 240, 0xf43f5e);
-                drawCoralBranch(230, 515, 0x8b5cf6);
-                drawCoralBranch(770, 525, 0x14b8a6);
-              }
+              // Exiting Grasslands on Left returns to Central Farm on Right
+              this.createVintageWoodenSign(
+                80,
+                375,
+                '← FARM PORTAL',
+                'Return to Central Farm',
+                150,
+                34,
+                '#fde68a',
+                () => {
+                  sounds.playClick();
+                  stateRef.current.setCurrentBiome('clearing');
+                },
+                'none'
+              );
+              this.currentHotspots.push({
+                id: 'gate_clearing',
+                name: 'Return to Central Farm',
+                x: 80,
+                y: 375,
+                type: 'gate',
+                targetBiome: 'clearing',
+              });
+            } else if (biome === 'forest' || biome === 'tundra') {
+              // Exiting on Bottom returns to Central Farm at Top
+              this.createVintageWoodenSign(
+                500,
+                705,
+                '↓ RETURN TO CENTRAL FARM',
+                'Opposite Portal to Bayer Farm',
+                220,
+                34,
+                '#fde68a',
+                () => {
+                  sounds.playClick();
+                  stateRef.current.setCurrentBiome('clearing');
+                },
+                'top'
+              );
+              this.currentHotspots.push({
+                id: 'gate_clearing',
+                name: 'Return to Central Farm',
+                x: 500,
+                y: 705,
+                type: 'gate',
+                targetBiome: 'clearing',
+              });
+            } else if (biome === 'reefs' || biome === 'desert') {
+              // Exiting on Top returns to Central Farm at Bottom
+              this.createVintageWoodenSign(
+                500,
+                40,
+                '↑ RETURN TO CENTRAL FARM',
+                'Opposite Portal to Bayer Farm',
+                220,
+                34,
+                '#fde68a',
+                () => {
+                  sounds.playClick();
+                  stateRef.current.setCurrentBiome('clearing');
+                },
+                'bottom'
+              );
+              this.currentHotspots.push({
+                id: 'gate_clearing',
+                name: 'Return to Central Farm',
+                x: 500,
+                y: 40,
+                type: 'gate',
+                targetBiome: 'clearing',
+              });
             }
-
-            this.worldContainer.add(gfx);
           }
 
           private spawnBiomeQuestStation(biome: BiomeId, isRestored: boolean) {
-            const container = this.add.container(500, 180);
-
             const questMap: Record<BiomeId, { name: string; action: any }> = {
               lake: { name: 'Circular Waste Recycling Quiz', action: 'lake_recycling' },
               forest: { name: 'Fire Prevention & Email Campaign', action: 'forest_campaign' },
@@ -734,35 +793,23 @@ export default function PhaserWorld() {
             const qInfo = questMap[biome];
             if (!qInfo || !qInfo.action) return;
 
-            const bg = this.add.rectangle(0, 0, 280, 36, 0x18181b, 0.95);
-            bg.setStrokeStyle(2, isRestored ? 0x22c55e : 0xf59e0b);
-
-            const text = this.add.text(
-              0,
-              0,
-              isRestored ? `Completed: ${qInfo.name}` : `Take Action: ${qInfo.name}`,
-              {
-                fontSize: '10.5px',
-                fontStyle: 'bold',
-                fontFamily: 'system-ui',
-                color: isRestored ? '#86efac' : '#fbbf24',
-              }
-            ).setOrigin(0.5);
-
-            container.add([bg, text]);
-
             const triggerAction = () => {
               sounds.playClick();
               stateRef.current.openQuestModal(qInfo.action);
             };
 
-            bg.setInteractive({ useHandCursor: true });
-            bg.on('pointerdown', triggerAction);
-
-            text.setInteractive({ useHandCursor: true });
-            text.on('pointerdown', triggerAction);
-
-            this.worldContainer.add(container);
+            // Vintage wooden notice sign
+            this.createVintageWoodenSign(
+              500,
+              180,
+              isRestored ? `✓ RESTORED: ${qInfo.name}` : `ACTION PLAN: ${qInfo.name}`,
+              isRestored ? 'Habitat Flourishing • Tap to review action' : 'Tap sign to launch environmental action',
+              290,
+              38,
+              isRestored ? '#86efac' : '#fde68a',
+              triggerAction,
+              'bottom'
+            );
 
             this.currentHotspots.push({
               id: `quest_${biome}`,
@@ -809,17 +856,7 @@ export default function PhaserWorld() {
               repeat: -1,
             });
 
-            // Name Tag
-            const tagBg = this.add.rectangle(0, 52, 170, 24, 0x18181b, 0.95);
-            tagBg.setStrokeStyle(1.5, 0x10b981);
-            const tagText = this.add.text(0, 52, `${info.name} • ${info.species}`, {
-              fontSize: '11px',
-              fontStyle: 'bold',
-              fontFamily: 'system-ui',
-              color: '#ffffff',
-            }).setOrigin(0.5);
-
-            container.add([shadow, glow, sprite, tagBg, tagText]);
+            container.add([shadow, glow, sprite]);
 
             const triggerChat = () => {
               sounds.playClick();
@@ -829,10 +866,20 @@ export default function PhaserWorld() {
             sprite.setInteractive({ useHandCursor: true });
             sprite.on('pointerdown', triggerChat);
 
-            tagBg.setInteractive({ useHandCursor: true });
-            tagBg.on('pointerdown', triggerChat);
-
             this.worldContainer.add(container);
+
+            // Vintage Wooden Posted Nametag underneath animal
+            this.createVintageWoodenSign(
+              x,
+              y + 54,
+              info.name,
+              `${info.species} • Tap to Chat`,
+              170,
+              32,
+              '#fde68a',
+              triggerChat,
+              'none'
+            );
 
             this.currentHotspots.push({
               id: `animal_${animalId}`,
@@ -899,6 +946,65 @@ export default function PhaserWorld() {
               }
             }
 
+            // ===============================================================
+            // OPPOSITE-SIDE SCREEN EDGE TRANSITIONS
+            // "If a user exits a page, make them enter the new page on the opposite side"
+            // ===============================================================
+            if (this.currentRoomId === 'clearing') {
+              // Left edge -> Lake (enters Lake on Right)
+              if (this.player.x <= 20) {
+                stateRef.current.setCurrentBiome('lake');
+                return;
+              }
+              // Right edge -> Grasslands (enters Grasslands on Left)
+              if (this.player.x >= 980) {
+                stateRef.current.setCurrentBiome('grasslands');
+                return;
+              }
+              // Top edge West -> Forest (enters Forest at Bottom)
+              if (this.player.y <= 20 && this.player.x < 300) {
+                stateRef.current.setCurrentBiome('forest');
+                return;
+              }
+              // Top edge North Avenue -> Tundra (enters Tundra at Bottom)
+              if (this.player.y <= 20 && this.player.x >= 300) {
+                stateRef.current.setCurrentBiome('tundra');
+                return;
+              }
+              // Bottom edge South Avenue -> Reefs (enters Reefs at Top)
+              if (this.player.y >= 730 && this.player.x < 650) {
+                stateRef.current.setCurrentBiome('reefs');
+                return;
+              }
+              // Bottom edge East Lane -> Desert (enters Desert at Top)
+              if (this.player.y >= 730 && this.player.x >= 650) {
+                stateRef.current.setCurrentBiome('desert');
+                return;
+              }
+            } else {
+              // In Biomes, exiting through the corresponding edge returns to Central Farm on opposite side
+              if (this.currentRoomId === 'lake' && this.player.x >= 960) {
+                // Exit Right from Lake -> enter Farm on Left
+                stateRef.current.setCurrentBiome('clearing');
+                return;
+              }
+              if (this.currentRoomId === 'grasslands' && this.player.x <= 40) {
+                // Exit Left from Grasslands -> enter Farm on Right
+                stateRef.current.setCurrentBiome('clearing');
+                return;
+              }
+              if ((this.currentRoomId === 'forest' || this.currentRoomId === 'tundra') && this.player.y >= 720) {
+                // Exit Bottom from Forest/Tundra -> enter Farm at Top
+                stateRef.current.setCurrentBiome('clearing');
+                return;
+              }
+              if ((this.currentRoomId === 'reefs' || this.currentRoomId === 'desert') && this.player.y <= 30) {
+                // Exit Top from Reefs/Desert -> enter Farm at Bottom
+                stateRef.current.setCurrentBiome('clearing');
+                return;
+              }
+            }
+
             // Proximity to hotspots
             let nearest: Hotspot | null = null;
             let minDistance = 75;
@@ -910,7 +1016,7 @@ export default function PhaserWorld() {
                 nearest = hs;
               }
 
-              // Automatic walk-through transition for gates leading offscreen!
+              // Automatic walk-through transition for gates
               if (hs.type === 'gate' && hs.targetBiome && dist < 48) {
                 this.triggerHotspotAction(hs);
                 return;
@@ -945,7 +1051,7 @@ export default function PhaserWorld() {
           parent: containerRef.current,
           width: 1000,
           height: 750,
-          backgroundColor: '#09090b',
+          backgroundColor: '#fef3c7',
           physics: {
             default: 'arcade',
             arcade: { gravity: { x: 0, y: 0 }, debug: false },
@@ -975,27 +1081,27 @@ export default function PhaserWorld() {
   }, []);
 
   return (
-    <div className="relative w-full h-full flex-1 overflow-hidden select-none bg-zinc-950 flex items-center justify-center">
-      {/* HTML5 Canvas with Clean, Crisp Rendering (No CSS Fader or Ash Filter!) */}
+    <div className="relative w-full h-full flex-1 overflow-hidden select-none bg-amber-50/40 flex items-center justify-center p-2">
+      {/* HTML5 Canvas with Clean, Crisp Rendering and Vintage Wooden Border Frame */}
       <div
         ref={containerRef}
-        className="w-full h-full cursor-crosshair flex items-center justify-center max-w-[1000px] max-h-[750px] shadow-2xl rounded-2xl overflow-hidden border border-zinc-800"
+        className="w-full h-full cursor-crosshair flex items-center justify-center max-w-[1000px] max-h-[750px] shadow-2xl rounded-2xl overflow-hidden border-4 border-amber-950/30 ring-4 ring-amber-700/10 bg-[#fef3c7]"
       />
 
-      {/* Quick Return to Central Farm Button */}
+      {/* Quick Return to Central Farm Button (Vintage Wooden Sign Style) */}
       {currentBiome !== 'clearing' && (
         <div className="absolute top-20 left-4 z-30 animate-in fade-in">
           <button
             onClick={() => { sounds.playClick(); setCurrentBiome('clearing'); }}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-900/90 hover:bg-zinc-800 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/50 shadow-xl backdrop-blur-md active:scale-95 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#78350f] hover:bg-[#92400e] text-[#fffbeb] font-serif font-bold text-xs rounded-xl border-2 border-[#451a03] shadow-xl backdrop-blur-md active:scale-95 transition-all"
           >
-            <ArrowLeft className="w-4 h-4 text-amber-400" />
+            <ArrowLeft className="w-4 h-4 text-amber-300" />
             <span>Return to Central Farm</span>
           </button>
         </div>
       )}
 
-      {/* Proximity Interaction Prompt (No emojis!) */}
+      {/* Proximity Interaction Prompt (Warm Vintage Plaque Style) */}
       {activeNearbyHotspot && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 animate-bounce">
           <button
@@ -1011,20 +1117,20 @@ export default function PhaserWorld() {
                 openQuestModal(activeNearbyHotspot.questAction);
               }
             }}
-            className="flex items-center gap-3 px-6 py-3 bg-zinc-900/95 hover:bg-zinc-850 text-white rounded-full border-2 border-emerald-500 shadow-2xl backdrop-blur-lg transition-transform active:scale-95"
+            className="flex items-center gap-3 px-6 py-3 bg-[#fefce8] hover:bg-[#fef9c3] text-stone-900 rounded-full border-2 border-amber-800 shadow-2xl backdrop-blur-lg transition-transform active:scale-95 ring-2 ring-amber-400/30"
           >
             {activeNearbyHotspot.animalId && (
               <img
                 src={`/assets/sprites/${activeNearbyHotspot.animalId}.png`}
                 alt={activeNearbyHotspot.name}
-                className="w-8 h-8 rounded-full object-cover border border-emerald-400"
+                className="w-8 h-8 rounded-full object-cover border border-amber-700 shadow-sm"
               />
             )}
-            <div className="text-left">
-              <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+            <div className="text-left font-serif">
+              <div className="text-xs font-bold text-amber-950 uppercase tracking-wider">
                 {activeNearbyHotspot.name}
               </div>
-              <div className="text-[11px] text-zinc-300">
+              <div className="text-[11px] text-stone-600 font-sans">
                 {activeNearbyHotspot.type === 'animal' && 'Tap to chat with animal & learn crisis solution'}
                 {activeNearbyHotspot.type === 'crop' && 'Tap to inspect crop & travel to its biome'}
                 {activeNearbyHotspot.type === 'gate' && 'Tap to enter this area'}
@@ -1035,10 +1141,24 @@ export default function PhaserWorld() {
         </div>
       )}
 
-      {/* Controls Hint */}
-      <div className="absolute bottom-20 left-4 z-20 hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-900/80 backdrop-blur-md rounded-xl border border-zinc-800 text-zinc-400 text-[11px]">
-        <Footprints className="w-3.5 h-3.5 text-emerald-400" />
-        <span>Arrow Keys or Click on paths to move • Walk up to animals, crops, and quest stations or tap them</span>
+      {/* Bottom Controls Bar with Reset Progress & Hint */}
+      <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+        <div className="pointer-events-auto hidden md:flex items-center gap-2 px-3.5 py-1.5 bg-[#fef3c7]/90 backdrop-blur-md rounded-xl border border-amber-300 text-amber-900 text-[11px] shadow-sm font-medium">
+          <Footprints className="w-3.5 h-3.5 text-amber-700" />
+          <span>Arrow Keys or Click on paths to move • Approach signs, animals, and crops to interact</span>
+        </div>
+
+        <button
+          onClick={() => {
+            if (window.confirm('Reset all progress, coins, badges, and restoration back to day 1?')) {
+              resetGame();
+            }
+          }}
+          className="pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 border border-red-300 text-[11px] font-bold rounded-xl shadow-sm transition-all active:scale-95 ml-auto"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Reset Progress</span>
+        </button>
       </div>
     </div>
   );

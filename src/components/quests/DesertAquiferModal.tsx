@@ -47,22 +47,22 @@ export default function DesertAquiferModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-700 rounded-3xl p-6 shadow-2xl text-white">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in">
+      <div className="relative w-full max-w-xl bg-[#fffdfa] border-4 border-amber-950/20 rounded-3xl p-6 shadow-2xl text-stone-900">
+        {/* Vintage Wooden Plaque Header */}
+        <div className="flex items-center justify-between bg-gradient-to-r from-[#78350f] via-[#92400e] to-[#78350f] text-[#fffbeb] p-4 rounded-2xl border-2 border-[#451a03] shadow-md mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-600/60 flex items-center justify-center">
-              <Sun className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-amber-900/60 border border-amber-600/60 flex items-center justify-center shadow-inner">
+              <Sun className="w-5 h-5 text-amber-200" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-white">Solar Artesian Well & Aquifer Restoration</h3>
-              <p className="text-xs text-zinc-400">Sunfire Savanna Oasis • Drought Recovery for Zuri the Cheetah</p>
+              <h3 className="font-serif font-bold text-lg text-amber-100">Solar Artesian Well & Aquifer Restoration</h3>
+              <p className="text-xs text-amber-200/90 font-sans">Sunfire Savanna Oasis • Drought Recovery for Zuri the Cheetah</p>
             </div>
           </div>
           <button
             onClick={closeQuestModal}
-            className="p-1.5 rounded-full bg-zinc-800 text-zinc-400 hover:text-white"
+            className="p-1.5 rounded-full bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -71,28 +71,28 @@ export default function DesertAquiferModal() {
         {/* Phase Progress Bar */}
         <div className="grid grid-cols-3 gap-2 mb-4 text-center">
           <div
-            className={`p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+            className={`p-2 rounded-xl border text-[11px] font-bold transition-all shadow-sm ${
               solarPanels.length === totalPanels
-                ? 'bg-amber-950/40 border-amber-500 text-amber-300'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+                ? 'bg-amber-100 border-amber-400 text-amber-950'
+                : 'bg-stone-50 border-stone-200 text-stone-500'
             }`}
           >
             1. Solar Tracking ({solarPanels.length}/{totalPanels})
           </div>
           <div
-            className={`p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+            className={`p-2 rounded-xl border text-[11px] font-bold transition-all shadow-sm ${
               aquiferPumped
-                ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+                ? 'bg-cyan-100 border-cyan-400 text-cyan-950'
+                : 'bg-stone-50 border-stone-200 text-stone-500'
             }`}
           >
             2. Artesian Well ({aquiferPumped ? 'Active' : 'Standby'})
           </div>
           <div
-            className={`p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+            className={`p-2 rounded-xl border text-[11px] font-bold transition-all shadow-sm ${
               greenBelts.length === totalBelts
-                ? 'bg-emerald-950/40 border-emerald-500 text-emerald-300'
-                : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+                ? 'bg-emerald-100 border-emerald-400 text-emerald-950'
+                : 'bg-stone-50 border-stone-200 text-stone-500'
             }`}
           >
             3. Acacia Barrier ({greenBelts.length}/{totalBelts})
@@ -100,37 +100,37 @@ export default function DesertAquiferModal() {
         </div>
 
         {/* Instructions */}
-        <div className="mb-4 bg-zinc-950 p-3.5 rounded-2xl border border-zinc-800">
+        <div className="mb-4 bg-[#fefce8] p-3.5 rounded-2xl border border-amber-200 shadow-sm">
           {solarPanels.length < totalPanels && (
-            <p className="text-xs text-amber-300">
+            <p className="text-xs text-amber-900 font-medium">
               Align 4 photovoltaic solar trackers with the savanna sun to power the deep-well submersible turbine.
             </p>
           )}
           {solarPanels.length === totalPanels && !aquiferPumped && (
-            <p className="text-xs text-cyan-300">
+            <p className="text-xs text-cyan-900 font-medium">
               Solar power established! Tap the central pressure valve to draw subterranean aquifer water into the dry basin.
             </p>
           )}
           {aquiferPumped && greenBelts.length < totalBelts && (
-            <p className="text-xs text-emerald-300">
+            <p className="text-xs text-emerald-900 font-medium">
               Freshwater is surging! Plant 4 deep-rooted acacia and succulent buffer belts to shield the oasis from encroaching sand dunes.
             </p>
           )}
           {isCompleted && (
-            <div className="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-              <CheckCircle className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-xs text-emerald-800 font-bold">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
               <span>Oasis restored! 25,000 gal/day freshwater recharge online. Arid Sugar Melons revived!</span>
             </div>
           )}
         </div>
 
         {/* Interactive Workspace */}
-        <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800/80 mb-5 space-y-4">
+        <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 mb-5 space-y-4 shadow-sm">
           {/* Phase 1: Solar Trackers */}
           <div>
-            <div className="text-[11px] text-zinc-400 font-bold mb-2 flex items-center justify-between">
+            <div className="text-[11px] text-amber-950 font-serif font-bold mb-2 flex items-center justify-between">
               <span>PHOTOVOLTAIC SOLAR TRACKERS</span>
-              <span className="text-amber-400 font-mono">{solarPanels.length * 25}% POWER</span>
+              <span className="text-amber-800 font-mono font-bold">{solarPanels.length * 25}% POWER</span>
             </div>
             <div className="grid grid-cols-4 gap-2">
               {Array.from({ length: totalPanels }).map((_, idx) => {
@@ -140,13 +140,13 @@ export default function DesertAquiferModal() {
                     key={idx}
                     onClick={() => handleTogglePanel(idx)}
                     disabled={isOnline}
-                    className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                    className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all shadow-sm ${
                       isOnline
-                        ? 'bg-amber-950/60 border-amber-500 text-amber-300'
-                        : 'bg-zinc-900 border-zinc-800 hover:border-amber-600/60 text-zinc-400 hover:text-white'
+                        ? 'bg-amber-100 border-amber-500 text-amber-950'
+                        : 'bg-white border-amber-200 hover:border-amber-400 text-stone-600'
                     }`}
                   >
-                    <Sun className={`w-5 h-5 ${isOnline ? 'text-amber-400 animate-pulse' : 'text-zinc-600'}`} />
+                    <Sun className={`w-5 h-5 ${isOnline ? 'text-amber-600 animate-pulse' : 'text-stone-400'}`} />
                     <span className="text-[10px] font-bold">Panel #{idx + 1}</span>
                     <span className="text-[9px] font-mono">{isOnline ? 'Tracking' : 'Offline'}</span>
                   </button>
@@ -157,22 +157,22 @@ export default function DesertAquiferModal() {
 
           {/* Phase 2: Artesian Pump Valve */}
           {solarPanels.length === totalPanels && (
-            <div className="pt-2 border-t border-zinc-800">
+            <div className="pt-2 border-t border-amber-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Droplets className="w-4 h-4 text-cyan-400" />
+                  <h4 className="text-xs font-serif font-bold text-stone-900 flex items-center gap-1.5">
+                    <Droplets className="w-4 h-4 text-cyan-700" />
                     <span>Subterranean Artesian Borehole Valve</span>
                   </h4>
-                  <p className="text-[11px] text-zinc-400">Depleted aquifer depth: 140m • Pressure: 8.4 Bar</p>
+                  <p className="text-[11px] text-stone-600">Depleted aquifer depth: 140m • Pressure: 8.4 Bar</p>
                 </div>
                 <button
                   onClick={handlePumpAquifer}
                   disabled={aquiferPumped}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95 ${
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 ${
                     aquiferPumped
-                      ? 'bg-cyan-950/60 border border-cyan-500 text-cyan-300'
-                      : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+                      ? 'bg-cyan-100 border-2 border-cyan-500 text-cyan-900'
+                      : 'bg-cyan-700 hover:bg-cyan-800 text-white'
                   }`}
                 >
                   {aquiferPumped ? 'Aquifer Flowing' : 'Open Water Valve'}
@@ -183,10 +183,10 @@ export default function DesertAquiferModal() {
 
           {/* Phase 3: Acacia Green Belts */}
           {aquiferPumped && (
-            <div className="pt-2 border-t border-zinc-800">
-              <div className="text-[11px] text-zinc-400 font-bold mb-2 flex items-center justify-between">
+            <div className="pt-2 border-t border-amber-200">
+              <div className="text-[11px] text-amber-950 font-serif font-bold mb-2 flex items-center justify-between">
                 <span>DROUGHT-RESILIENT ACACIA BUFFER BELTS</span>
-                <span className="text-emerald-400 font-mono">{greenBelts.length * 25}% COVER</span>
+                <span className="text-emerald-800 font-mono font-bold">{greenBelts.length * 25}% COVER</span>
               </div>
               <div className="grid grid-cols-4 gap-2">
                 {Array.from({ length: totalBelts }).map((_, idx) => {
@@ -196,13 +196,13 @@ export default function DesertAquiferModal() {
                       key={idx}
                       onClick={() => handlePlantBelt(idx)}
                       disabled={isPlanted}
-                      className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                      className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-all shadow-sm ${
                         isPlanted
-                          ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300'
-                          : 'bg-zinc-900 border-zinc-800 hover:border-emerald-600/60 text-zinc-400 hover:text-white'
+                          ? 'bg-emerald-100 border-emerald-500 text-emerald-950'
+                          : 'bg-white border-amber-200 hover:border-emerald-400 text-stone-600'
                       }`}
                     >
-                      <Sprout className={`w-5 h-5 ${isPlanted ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                      <Sprout className={`w-5 h-5 ${isPlanted ? 'text-emerald-700' : 'text-stone-400'}`} />
                       <span className="text-[10px] font-bold">Zone #{idx + 1}</span>
                       <span className="text-[9px] font-mono">{isPlanted ? 'Rooted' : 'Parched'}</span>
                     </button>
@@ -214,23 +214,23 @@ export default function DesertAquiferModal() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <Sparkles className="w-4 h-4 text-amber-400" />
+        <div className="flex items-center justify-between pt-2 border-t border-amber-200">
+          <div className="flex items-center gap-2 text-xs text-amber-900 font-bold">
+            <Sparkles className="w-4 h-4 text-amber-600" />
             <span>Reward: +420 Desert Sunfire Coins • 100% Oasis Flourish</span>
           </div>
 
           {isCompleted ? (
             <button
               onClick={closeQuestModal}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95"
+              className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
             >
               Continue Journey
             </button>
           ) : (
             <button
               onClick={closeQuestModal}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-xs font-medium transition-all"
+              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold"
             >
               Close
             </button>

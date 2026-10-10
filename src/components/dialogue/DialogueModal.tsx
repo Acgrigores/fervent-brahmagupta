@@ -99,7 +99,7 @@ export default function DialogueModal() {
         {
           id: `animal_${Date.now()}`,
           sender: 'animal',
-          text: data.reply || "Thank you for listening to nature's call. Every step matters!",
+          text: data.reply || data.error || 'Thank you for caring for our habitat!',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -110,7 +110,7 @@ export default function DialogueModal() {
         {
           id: `animal_${Date.now()}`,
           sender: 'animal',
-          text: "Together, we can clean up this habitat and protect our fellow creatures!",
+          text: 'Together, we can clean up this habitat and protect our fellow creatures!',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -120,54 +120,54 @@ export default function DialogueModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-950/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-white border-2 border-amber-900/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-stone-900">
+        {/* Header - Vintage Wooden Plaque */}
+        <div className="flex items-center justify-between p-5 border-b-2 border-amber-950 bg-amber-900 text-amber-50">
           <div className="flex items-center gap-3.5">
             <div className="relative">
               <img
                 src={animal.avatar}
                 alt={animal.name}
-                className="w-14 h-14 rounded-full object-cover border-2 border-emerald-500 shadow-lg bg-zinc-900"
+                className="w-14 h-14 rounded-full object-cover border-2 border-amber-300 shadow-md bg-amber-950"
               />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white tracking-wide">{animal.name}</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                <h3 className="text-lg font-bold font-serif text-amber-100 tracking-wide">{animal.name}</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-950 text-amber-200 border border-amber-700">
                   {animal.species}
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 font-medium">{animal.tagline}</p>
+              <p className="text-xs text-amber-200/90 font-medium">{animal.tagline}</p>
             </div>
           </div>
 
           <button
             onClick={closeDialogue}
-            className="p-2 text-zinc-400 hover:text-white rounded-full bg-zinc-800/60 hover:bg-zinc-800 transition-colors"
+            className="p-2 text-amber-200 hover:text-white rounded-full bg-amber-950/60 hover:bg-amber-950 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Biome Status Strip */}
-        <div className="flex items-center justify-between px-5 py-2.5 bg-zinc-850/80 border-b border-zinc-800 text-xs">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Biome: <strong className="text-white">{animal.biomeName}</strong></span>
+        <div className="flex items-center justify-between px-5 py-2.5 bg-amber-50/90 border-b border-amber-200 text-xs">
+          <div className="flex items-center gap-2 text-stone-700">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Biome: <strong className="text-stone-900 font-serif">{animal.biomeName}</strong></span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
-              <Coins className="w-3.5 h-3.5" /> +15 {animal.coinName} per dialogue
+            <span className="text-amber-900 font-semibold flex items-center gap-1">
+              <Coins className="w-3.5 h-3.5 text-amber-600" /> +15 {animal.coinName} per dialogue
             </span>
-            <span className="text-zinc-500">•</span>
-            <span className="text-zinc-300">{currentRestoration}% Flourished</span>
+            <span className="text-stone-400">•</span>
+            <span className="text-stone-700 font-medium">{currentRestoration}% Flourished</span>
           </div>
         </div>
 
         {/* Chat History */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-stone-50/40">
           {messages.map((m) => (
             <div
               key={m.id}
@@ -176,21 +176,21 @@ export default function DialogueModal() {
               }`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-md ${
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                   m.sender === 'user'
-                    ? 'bg-emerald-600 text-white rounded-br-none'
-                    : 'bg-zinc-800 border border-zinc-700/60 text-zinc-100 rounded-bl-none'
+                    ? 'bg-emerald-700 text-white rounded-br-none'
+                    : 'bg-white border border-amber-200/80 text-stone-800 rounded-bl-none shadow-sm'
                 }`}
               >
                 {m.text}
               </div>
-              <span className="text-[10px] text-zinc-500 mt-1 px-1">{m.timestamp}</span>
+              <span className="text-[10px] text-stone-500 mt-1 px-1">{m.timestamp}</span>
             </div>
           ))}
 
           {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-zinc-400 italic">
-              <span className="animate-spin text-emerald-400">🌀</span>
+            <div className="flex items-center gap-2 text-xs text-stone-500 italic">
+              <span className="animate-spin text-emerald-600">🌀</span>
               <span>{animal.name} is formulating an answer with Gemini AI...</span>
             </div>
           )}
@@ -198,9 +198,9 @@ export default function DialogueModal() {
         </div>
 
         {/* Suggested Quick Prompts */}
-        <div className="p-3 bg-zinc-950/70 border-t border-zinc-800/80">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-400 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="p-3 bg-amber-50/80 border-t border-amber-200">
+          <div className="flex items-center gap-1.5 text-xs text-stone-700 mb-2 font-medium">
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
             <span>Ask {animal.name} about conservation:</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -209,7 +209,7 @@ export default function DialogueModal() {
                 key={idx}
                 onClick={() => handleSendMessage(q)}
                 disabled={isLoading}
-                className="text-xs px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-200 rounded-xl border border-zinc-700/50 transition-all text-left disabled:opacity-50 active:scale-95"
+                className="text-xs px-3 py-1.5 bg-white hover:bg-amber-100/70 text-stone-800 rounded-xl border border-amber-200 transition-all text-left disabled:opacity-50 active:scale-95 shadow-sm"
               >
                 {q}
               </button>
@@ -219,9 +219,9 @@ export default function DialogueModal() {
 
         {/* Biome Quest Shortcut */}
         {biomeQuest && !biomeQuest.completed && (
-          <div className="px-5 py-2.5 bg-emerald-950/40 border-t border-emerald-900/50 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-emerald-200">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
+          <div className="px-5 py-2.5 bg-emerald-50 border-t border-emerald-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-emerald-900">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
               <span>
                 Ready to take action? <strong>{biomeQuest.title}</strong>
               </span>
@@ -231,16 +231,16 @@ export default function DialogueModal() {
                 closeDialogue();
                 openQuestModal(biomeQuest.actionType);
               }}
-              className="flex items-center gap-1 text-xs px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition-all"
+              className="flex items-center gap-1 text-xs px-3 py-1 bg-amber-900 hover:bg-amber-800 text-amber-50 border border-amber-950 rounded-lg font-serif font-bold transition-all shadow-sm"
             >
               <span>Start Quest</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3 text-amber-300" />
             </button>
           </div>
         )}
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-zinc-800 bg-zinc-950 flex items-center gap-2">
+        <div className="p-4 border-t border-amber-200 bg-white flex items-center gap-2">
           <input
             type="text"
             value={inputText}
@@ -254,12 +254,12 @@ export default function DialogueModal() {
             }}
             placeholder={`Ask ${animal.name} about ${animal.species}, climate, or habitat solutions...`}
             disabled={isLoading}
-            className="flex-1 bg-zinc-900 border border-zinc-700/80 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+            className="flex-1 bg-amber-50/50 border border-stone-300 rounded-2xl px-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-emerald-600 focus:bg-white"
           />
           <button
             onClick={() => handleSendMessage()}
             disabled={isLoading || !inputText.trim()}
-            className="p-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 text-white disabled:text-zinc-500 rounded-2xl transition-all shadow-lg active:scale-95"
+            className="p-2.5 bg-emerald-700 hover:bg-emerald-600 disabled:bg-stone-200 text-white disabled:text-stone-400 rounded-2xl transition-all shadow-md active:scale-95"
           >
             <Send className="w-4 h-4" />
           </button>

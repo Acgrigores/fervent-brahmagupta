@@ -25,7 +25,7 @@ import DesertAquiferModal from '@/components/quests/DesertAquiferModal';
 export default function Home() {
   return (
     <GameStateProvider>
-      <main className="relative flex flex-col h-screen w-screen overflow-hidden bg-zinc-950 text-white font-sans">
+      <main className="relative flex flex-col h-screen w-screen overflow-hidden bg-amber-50/50 text-stone-900 font-sans">
         {/* Top Navigation HUD with World Flourish Meter & Treasury */}
         <TopNavHUD />
 
