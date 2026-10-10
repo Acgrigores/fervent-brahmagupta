@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useGameState } from '@/context/GameStateContext';
-import { FARM_CROPS, BIOMES_INFO } from '@/data/animals';
+import { FARM_CROPS } from '@/data/animals';
 import { BiomeId } from '@/types/game';
 import { sounds } from '@/utils/soundEffects';
-import { Sprout, Sparkles, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function FarmStatusWidget() {
-  const { restoration, openQuestModal, quests, setCurrentBiome } = useGameState();
+  const { restoration, setCurrentBiome } = useGameState();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const cropKeys = Object.keys(FARM_CROPS) as (keyof typeof FARM_CROPS)[];
@@ -48,7 +48,6 @@ export default function FarmStatusWidget() {
             {cropKeys.map((biomeKey) => {
               const crop = FARM_CROPS[biomeKey];
               const isFlourished = (restoration[biomeKey] || 0) >= 80;
-              const quest = quests.find((q) => q.biome === biomeKey);
 
               return (
                 <div
@@ -86,12 +85,11 @@ export default function FarmStatusWidget() {
                       <button
                         onClick={() => {
                           sounds.playClick();
-                          if (quest) openQuestModal(quest.actionType);
                           setCurrentBiome(biomeKey as BiomeId);
                         }}
                         className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white transition-all shadow active:scale-95"
                       >
-                        <span>Save Crop</span>
+                        <span>Enter Biome</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
                     )}
