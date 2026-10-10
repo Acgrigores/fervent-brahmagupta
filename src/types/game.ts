@@ -94,3 +94,13 @@ export interface GameSettings {
   geminiApiKey: string;
   reducedMotion: boolean;
 }
+
+export interface CharityOrg {
+  id: string;
+  biome: BiomeId;
+  name: string;
+  mission: string;
+  cause: string;
+  icon: string;
+  matchSponsor: string;
+}

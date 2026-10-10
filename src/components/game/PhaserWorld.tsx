@@ -263,6 +263,7 @@ export default function PhaserWorld() {
           private tundraIcePatch: Phaser.Geom.Rectangle | null = null;
           private isSlidingOnIce: boolean = false;
           private lastIceSlideSoundTime: number = 0;
+          private nextFarmerBreathTime: number = 0;
           private grasslandsGrassPatch: {
             x: number;
             y: number;
@@ -584,6 +585,10 @@ export default function PhaserWorld() {
                 } else {
                   this.teleportPlayer(w / 2, 375);
                 }
+              }
+
+              if (biome === 'tundra') {
+                this.nextFarmerBreathTime = this.time.now + 350;
               }
 
               // Center camera immediately over player at new spawn and follow
@@ -2592,8 +2597,8 @@ export default function PhaserWorld() {
 
             this.makeClickableAndGlow(sprite, triggerChat, { parentContainer: container, glowRadius: 110 });
 
-            // Floating name label above the animal (sits above the rain cloud while sad)
-            const nameLabel = this.add.text(0, isRestored ? -58 : -100, info.name, {
+            // Floating name label below the animal
+            const nameLabel = this.add.text(0, 54, info.name, {
               fontSize: '12px',
               fontStyle: 'bold',
               fontFamily: "'Silkscreen', monospace",
@@ -2606,7 +2611,7 @@ export default function PhaserWorld() {
             container.add(nameLabel);
             this.tweens.add({
               targets: nameLabel,
-              y: nameLabel.y - 4,
+              y: 58,
               duration: 1600,
               yoyo: true,
               repeat: -1,
@@ -2932,6 +2937,46 @@ export default function PhaserWorld() {
                 scale: 0.2,
                 duration: 250,
                 onComplete: () => spark.destroy(),
+              });
+            }
+          }
+
+          // ❄️ Visible farmer's breath in the freezing Arctic Tundra
+          private spawnFarmerBreath() {
+            if (!this.player || !this.playerSprite || this.currentRoomId !== 'tundra') return;
+
+            const facingRight = this.playerSprite.flipX;
+            const mouthX = this.player.x + (facingRight ? 11 : -11);
+            const mouthY = this.player.y - 42;
+
+            // Emit soft drifting puffs of frosty condensed breath
+            for (let i = 0; i < 3; i++) {
+              this.time.delayedCall(i * 85, () => {
+                if (!this.player || this.currentRoomId !== 'tundra') return;
+
+                const size = 2.5 + i * 1.2;
+                const breath = this.add.circle(
+                  mouthX + (facingRight ? i * 2 : -i * 2),
+                  mouthY + (i === 1 ? -1 : 1),
+                  size,
+                  0xf0f9ff,
+                  0.75
+                );
+                breath.setDepth(55);
+
+                const driftX = facingRight ? (12 + i * 6) : (-12 - i * 6);
+                const driftY = -(8 + i * 4);
+
+                this.tweens.add({
+                  targets: breath,
+                  x: breath.x + driftX,
+                  y: breath.y + driftY,
+                  scale: 1.8,
+                  alpha: 0,
+                  duration: 750 + i * 100,
+                  ease: 'Sine.easeOut',
+                  onComplete: () => breath.destroy(),
+                });
               });
             }
           }
@@ -3627,6 +3672,16 @@ export default function PhaserWorld() {
             } else {
               // Reset so footsteps trigger promptly when walking starts again
               this.nextStepTime = Math.min(this.nextStepTime, time + 40);
+            }
+
+            // ===============================================================
+            // ❄️ TUNDRA COLD BREATH: Farmer exhales visible frosty breath in the freezing arctic
+            // ===============================================================
+            if (this.currentRoomId === 'tundra' && this.player && this.playerSprite) {
+              if (time >= this.nextFarmerBreathTime) {
+                this.spawnFarmerBreath();
+                this.nextFarmerBreathTime = time + Phaser.Math.Between(1800, 2400);
+              }
             }
 
             // ===============================================================

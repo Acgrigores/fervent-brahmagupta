@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useGameState } from '@/context/GameStateContext';
-import { sounds } from '@/utils/soundEffects';
+import { CHARITIES, BIOMES_INFO } from '@/data/animals';
 import {
   X,
   Coins,
@@ -11,67 +11,24 @@ import {
   FileCheck,
   CheckCircle,
   Globe,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 
-interface CharityOrg {
-  id: string;
-  name: string;
-  mission: string;
-  cause: string;
-  icon: string;
-  matchSponsor: string;
+function formatBiomeTime(totalSeconds: number): string {
+  const secs = Math.max(0, Math.floor(totalSeconds || 0));
+  if (secs < 60) {
+    return `${secs}s`;
+  }
+  const mins = Math.floor(secs / 60);
+  const remSecs = secs % 60;
+  if (mins < 60) {
+    return `${mins}m ${remSecs}s`;
+  }
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return `${hours}h ${remMins}m`;
 }
-
-const CHARITIES: CharityOrg[] = [
-  {
-    id: 'bayer_farming',
-    name: 'Bayer ForwardFarming & Soil Health Initiative',
-    mission: 'Empowering smallholder and family farmers with precision regenerative agriculture, cover crops, and pollinator corridors.',
-    cause: 'Sustainable Food Security & Soil Conservation',
-    icon: '/assets/sprites/butterfly.png',
-    matchSponsor: 'Bayer Crop Science Grant Pool',
-  },
-  {
-    id: 'wwf_canopy',
-    name: 'World Wildlife Fund (WWF) - Red Panda Canopy Defense',
-    mission: 'Guarding cloud forest bamboo habitats from climate-driven wildfires and establishing community firebreaks.',
-    cause: 'Forest Fire Resilience & Endangered Species',
-    icon: '/assets/sprites/red_panda.png',
-    matchSponsor: '1% for the Planet Match',
-  },
-  {
-    id: 'ocean_cleanup',
-    name: 'The Ocean Cleanup & Freshwater Interceptor Project',
-    mission: 'Deploying solar river interceptors to block plastic waste before it pollutes manatee lagoons and oceanic reefs.',
-    cause: 'Marine & Wetland Debris Diversion',
-    icon: '/assets/sprites/manatee.png',
-    matchSponsor: 'EcoAd Ad Revenue Pool',
-  },
-  {
-    id: 'polar_bears_intl',
-    name: 'Polar Bears International - Arctic Sea Ice Action',
-    mission: 'Advocating to retire coal and industrial emissions, funding real-time radar tracking on sea ice floes.',
-    cause: 'Cryosphere Climate Tech & Clean Energy',
-    icon: '/assets/sprites/polar_bear.png',
-    matchSponsor: 'Clean Energy Foundation',
-  },
-  {
-    id: 'xerces_pollinator',
-    name: 'Xerces Society for Invertebrate Conservation',
-    mission: 'Restoring native milkweed nectar pathways for migrating Monarch butterflies across agricultural corridors.',
-    cause: 'Pollinator Sanctuaries & Biodiversity',
-    icon: '/assets/sprites/butterfly.png',
-    matchSponsor: 'Bayer Pollinator Pledge',
-  },
-  {
-    id: 'coral_restoration',
-    name: 'Coral Restoration Foundation',
-    mission: 'Outplanting heat-resilient micro-fragment corals onto barrier reefs and educating maritime vessel corridors.',
-    cause: 'Oceanic Coral Nurseries & Marine Preserves',
-    icon: '/assets/sprites/sea_turtle.png',
-    matchSponsor: 'Global Reef Initiative',
-  },
-];
 
 export default function ProfileModal() {
   const {
@@ -79,25 +36,17 @@ export default function ProfileModal() {
     setIsProfileOpen,
     coins,
     totalCoins,
-    donationPoolDollars,
+    biomeTimeSpent,
+    getBiomeMoneyRaised,
+    totalMoneyRaised,
     badges,
     actions,
     globalFlourish,
-    setNotification,
   } = useGameState();
 
   const [activeTab, setActiveTab] = useState<'coins' | 'badges' | 'donations' | 'actions'>('coins');
-  const [allocatedCharity, setAllocatedCharity] = useState<string | null>(null);
 
   if (!isProfileOpen) return null;
-
-  const handleAllocateDonation = (charity: CharityOrg) => {
-    sounds.playCoin();
-    sounds.playBloom();
-    setAllocatedCharity(charity.name);
-    setNotification(`Allocated $${donationPoolDollars.toFixed(2)} USD in sponsored funding to ${charity.name}!`);
-    setTimeout(() => setNotification(null), 5000);
-  };
 
   const coinEntries = [
     { key: 'forest', name: 'Amber Bamboo Coin', sprite: '/assets/sprites/red_panda.png', balance: coins.forest, animal: 'Paku the Red Panda', bg: 'bg-[#fffbf2]' },
@@ -122,7 +71,7 @@ export default function ProfileModal() {
                 FARM TREASURY & IMPACT
               </h3>
               <p className="text-[8.5px] text-[#78350f]">
-                Coins • Sponsored Donations • Badges
+                Coins • Auto-Allocated Donations • Badges
               </p>
             </div>
           </div>
@@ -145,12 +94,12 @@ export default function ProfileModal() {
           </div>
 
           <div className="text-center border-r-2 border-[#5c2c16] px-2">
-            <span className="text-[8.5px] text-[#78350f] uppercase">DONATION POOL</span>
-            <div className="text-sm font-bold text-[#b45309] flex items-center justify-center gap-1 mt-0.5">
+            <span className="text-[8.5px] text-[#78350f] uppercase">MONEY RAISED</span>
+            <div className="text-sm font-bold text-[#15803d] flex items-center justify-center gap-1 mt-0.5">
               <Heart className="w-3 h-3 text-[#b91c1c] fill-[#b91c1c]" />
-              <span>${donationPoolDollars.toFixed(2)}</span>
+              <span>${totalMoneyRaised.toFixed(2)}</span>
             </div>
-            <span className="text-[7.5px] text-[#78350f]/80">Bayer Sponsored</span>
+            <span className="text-[7.5px] text-[#15803d] font-bold">Auto-Allocated</span>
           </div>
 
           <div className="text-center pl-2">
@@ -269,43 +218,69 @@ export default function ProfileModal() {
             </div>
           )}
 
-          {/* TAB 3: DONATION ALLOCATION */}
+          {/* TAB 3: AUTO-ALLOCATED DONATIONS */}
           {activeTab === 'donations' && (
-            <div className="space-y-2.5">
-              <div className="p-2.5 pixel-card bg-[#fefce8] text-[8.5px] text-[#5c2c16] leading-normal">
-                <strong>Free-to-Play Funds Real Conservation:</strong> Coins earned through gameplay translate into real corporate match funding from <strong>Bayer Crop Science & Partners</strong>.
+            <div className="space-y-3">
+              <div className="p-2.5 pixel-card bg-[#f0fdf4] border-2 border-[#15803d] text-[8.5px] text-[#14532d] leading-normal flex items-start gap-2">
+                <Sparkles className="w-4 h-4 text-[#15803d] flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Auto-Allocated Conservation Impact:</strong> Donations are automatically allocated to different partner organizations based on <strong>time spent in that specific biome</strong> and ecological restorations. Sponsored by <strong>Bayer Crop Science & Global Corporate Partners</strong>.
+                </div>
               </div>
 
-              {CHARITIES.map((c) => (
-                <div
-                  key={c.id}
-                  className="p-3 pixel-card flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <img src={c.icon} alt={c.name} className="w-8 h-8 object-cover border-2 border-[#5c2c16]" />
-                    <div>
-                      <h4 className="text-[9px] font-bold text-[#2e1005]">{c.name}</h4>
-                      <p className="text-[8px] text-[#78350f] mt-0.5 leading-tight">{c.mission}</p>
-                      <div className="text-[7.5px] text-[#15803d] font-bold mt-0.5">
-                        Sponsor: {c.matchSponsor}
+              <div className="grid gap-2.5">
+                {CHARITIES.map((c) => {
+                  const timeSecs = biomeTimeSpent[c.biome] || 0;
+                  const raised = getBiomeMoneyRaised(c.biome);
+                  const percent = totalMoneyRaised > 0 ? Math.round((raised / totalMoneyRaised) * 100) : 0;
+                  const biomeName = BIOMES_INFO[c.biome]?.name || c.biome;
+
+                  return (
+                    <div
+                      key={c.id}
+                      className="p-3 pixel-card bg-[#fffdfa] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-2 border-[#5c2c16]"
+                    >
+                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                        <img
+                          src={c.icon}
+                          alt={c.name}
+                          className="w-10 h-10 object-contain p-1 bg-[#fefce8] border-2 border-[#5c2c16] flex-shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-[9.5px] font-bold text-[#2e1005] leading-snug">{c.name}</h4>
+                            <span className="text-[7.5px] px-1.5 py-0.2 bg-[#fef08a] border border-[#ca8a04] text-[#854d0e] font-bold uppercase">
+                              {biomeName}
+                            </span>
+                          </div>
+                          <p className="text-[8px] text-[#78350f] mt-0.5 leading-tight">{c.mission}</p>
+                          <div className="text-[7.5px] text-[#15803d] font-bold mt-1 flex items-center gap-1.5">
+                            <span>Sponsor: {c.matchSponsor}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Money Raised Display (Replaces pledge button) */}
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center bg-[#f0fdf4] border-2 border-[#15803d] px-3 py-2 min-w-[145px] shadow-sm flex-shrink-0">
+                        <span className="text-[7.5px] uppercase font-bold text-[#15803d] tracking-wider">
+                          MONEY RAISED
+                        </span>
+                        <div className="text-base font-bold text-[#15803d] font-pixel-heading">
+                          ${raised.toFixed(2)}
+                        </div>
+                        <div className="text-[8px] text-[#78350f] font-mono mt-0.5 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5 text-[#b45309]" />
+                          <span>{formatBiomeTime(timeSecs)} in biome</span>
+                        </div>
+                        <div className="text-[7.5px] text-[#15803d] font-bold mt-0.5 flex items-center gap-1">
+                          <CheckCircle className="w-2.5 h-2.5 text-[#16a34a]" />
+                          <span>Auto-Allocated ({percent}%)</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleAllocateDonation(c)}
-                    className="pixel-btn-green px-3 py-1.5 text-[8.5px] font-bold flex-shrink-0"
-                  >
-                    Pledge ${donationPoolDollars.toFixed(2)}
-                  </button>
-                </div>
-              ))}
-
-              {allocatedCharity && (
-                <div className="p-2.5 bg-[#dcfce7] border-2 border-[#16a34a] text-center text-[9px] text-[#15803d] font-bold">
-                  ✓ Pledged ${donationPoolDollars.toFixed(2)} to {allocatedCharity}!
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
           )}
 

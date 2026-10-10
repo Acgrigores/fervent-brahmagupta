@@ -1,4 +1,4 @@
-import { AnimalId, AnimalInfo, BiomeId, Badge, Quest, CropInfo } from '@/types/game';
+import { AnimalId, AnimalInfo, BiomeId, Badge, Quest, CropInfo, CharityOrg } from '@/types/game';
 
 export const BIOMES_INFO: Record<BiomeId, {
   name: string;
@@ -491,5 +491,71 @@ export const INITIAL_BADGES: Badge[] = [
     biome: 'global',
     unlocked: false,
     rarity: 'Legendary',
+  },
+];
+
+export const CHARITIES: CharityOrg[] = [
+  {
+    id: 'bayer_farming',
+    biome: 'clearing',
+    name: 'Bayer ForwardFarming & Soil Health Initiative',
+    mission: 'Empowering smallholder and family farmers with precision regenerative agriculture, cover crops, and pollinator corridors.',
+    cause: 'Sustainable Food Security & Soil Conservation',
+    icon: '/assets/crops/crop_flourish.png',
+    matchSponsor: 'Bayer Crop Science Grant Pool',
+  },
+  {
+    id: 'wwf_canopy',
+    biome: 'forest',
+    name: 'World Wildlife Fund (WWF) - Red Panda Canopy Defense',
+    mission: 'Guarding cloud forest bamboo habitats from climate-driven wildfires and establishing community firebreaks.',
+    cause: 'Forest Fire Resilience & Endangered Species',
+    icon: '/assets/sprites/red_panda.png',
+    matchSponsor: '1% for the Planet Match',
+  },
+  {
+    id: 'ocean_cleanup',
+    biome: 'lake',
+    name: 'The Ocean Cleanup & Freshwater Interceptor Project',
+    mission: 'Deploying solar river interceptors to block plastic waste before it pollutes manatee lagoons and oceanic reefs.',
+    cause: 'Marine & Wetland Debris Diversion',
+    icon: '/assets/sprites/manatee.png',
+    matchSponsor: 'EcoAd Ad Revenue Pool',
+  },
+  {
+    id: 'polar_bears_intl',
+    biome: 'tundra',
+    name: 'Polar Bears International - Arctic Sea Ice Action',
+    mission: 'Advocating to retire coal and industrial emissions, funding real-time radar tracking on sea ice floes.',
+    cause: 'Cryosphere Climate Tech & Clean Energy',
+    icon: '/assets/sprites/polar_bear.png',
+    matchSponsor: 'Clean Energy Foundation',
+  },
+  {
+    id: 'xerces_pollinator',
+    biome: 'grasslands',
+    name: 'Xerces Society for Invertebrate Conservation',
+    mission: 'Restoring native milkweed nectar pathways for migrating Monarch butterflies across agricultural corridors.',
+    cause: 'Pollinator Sanctuaries & Native Biodiversity',
+    icon: '/assets/sprites/butterfly.png',
+    matchSponsor: 'Bayer Pollinator Pledge',
+  },
+  {
+    id: 'cheetah_conservation',
+    biome: 'desert',
+    name: 'Cheetah Conservation Fund & Desert Wellspring Project',
+    mission: 'Constructing solar-powered artesian watering points and community green corridors to prevent desertification.',
+    cause: 'Arid Ecosystem Resilience & Water Security',
+    icon: '/assets/sprites/cheetah.png',
+    matchSponsor: 'Solar Water Alliance & Global Arid Relief',
+  },
+  {
+    id: 'coral_restoration',
+    biome: 'reefs',
+    name: 'Coral Restoration Foundation',
+    mission: 'Outplanting heat-resilient micro-fragment corals onto barrier reefs and educating maritime vessel corridors.',
+    cause: 'Oceanic Coral Nurseries & Marine Preserves',
+    icon: '/assets/sprites/sea_turtle.png',
+    matchSponsor: 'Global Reef Initiative',
   },
 ];

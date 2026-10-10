@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { BiomeId, AnimalId, CoinLedger, Quest, Badge, ActionRecord, GameSettings, CropPlotState } from '@/types/game';
-import { ANIMALS, INITIAL_BADGES, INITIAL_QUESTS, FARM_CROPS } from '@/data/animals';
+import { ANIMALS, INITIAL_BADGES, INITIAL_QUESTS, FARM_CROPS, CHARITIES } from '@/data/animals';
 import { sounds } from '@/utils/soundEffects';
 
 interface GameStateContextType {
@@ -12,6 +12,9 @@ interface GameStateContextType {
   globalFlourish: number;
   coins: CoinLedger;
   totalCoins: number;
+  biomeTimeSpent: Record<BiomeId, number>;
+  getBiomeMoneyRaised: (biome: BiomeId) => number;
+  totalMoneyRaised: number;
   donationPoolDollars: number;
   quests: Quest[];
   badges: Badge[];
@@ -91,6 +94,16 @@ const defaultCropPlots: Record<Exclude<BiomeId, 'clearing'>, CropPlotState> = {
   reefs: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
 };
 
+const defaultBiomeTimeSpent: Record<BiomeId, number> = {
+  clearing: 0,
+  forest: 0,
+  lake: 0,
+  tundra: 0,
+  grasslands: 0,
+  desert: 0,
+  reefs: 0,
+};
+
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'field_to_future_state_v1';
@@ -99,6 +112,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const [currentBiome, setCurrentBiomeState] = useState<BiomeId>('clearing');
   const [restoration, setRestoration] = useState<Record<BiomeId, number>>(defaultRestoration);
   const [coins, setCoins] = useState<CoinLedger>(defaultCoins);
+  const [biomeTimeSpent, setBiomeTimeSpent] = useState<Record<BiomeId, number>>(defaultBiomeTimeSpent);
   const [quests, setQuests] = useState<Quest[]>(INITIAL_QUESTS);
   const [badges, setBadges] = useState<Badge[]>(INITIAL_BADGES);
   const [actions, setActions] = useState<ActionRecord[]>([]);
@@ -261,6 +275,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         if (parsed.badges) setBadges(parsed.badges);
         if (parsed.actions) setActions(parsed.actions);
         if (parsed.cropPlots) setCropPlots(parsed.cropPlots);
+        if (parsed.biomeTimeSpent) setBiomeTimeSpent(parsed.biomeTimeSpent);
         if (parsed.settings) {
           setSettings(parsed.settings);
           sounds.setEnabled(parsed.settings.soundEnabled ?? true);
@@ -279,6 +294,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         JSON.stringify({
           restoration,
           coins,
+          biomeTimeSpent,
           quests,
           badges,
           actions,
@@ -289,7 +305,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.warn('Could not persist game state:', e);
     }
-  }, [restoration, coins, quests, badges, actions, cropPlots, settings]);
+  }, [restoration, coins, biomeTimeSpent, quests, badges, actions, cropPlots, settings]);
 
   useEffect(() => {
     saveState();
@@ -316,6 +332,20 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
       return updated;
     });
   };
+
+  // Active biome time ticker:
+  // Tracks seconds spent in each biome so corporate sponsor donations are automatically
+  // allocated to the organization associated with that specific biome.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setBiomeTimeSpent((prev) => ({
+        ...prev,
+        [currentBiome]: (prev[currentBiome] || 0) + 1,
+      }));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [currentBiome]);
 
   // Passive coin & time ticker:
   // "The more time you spend in a biome or talking to an animal, the more coins you get for the biome/animal"
@@ -361,8 +391,28 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     coins.desert +
     coins.reefs;
 
-  // Donation pool: 500 coins = $1.00 USD
-  const donationPoolDollars = Number((totalCoins / 500).toFixed(2));
+  // Donations are automatically allocated to different organizations based on time spent in that specific biome:
+  // - Corporate sponsor matching rate based on time spent in that biome ($0.002/sec = $0.12/minute)
+  // - Plus activity bonuses (500 biome coins = $1.00 USD)
+  const getBiomeMoneyRaised = useCallback(
+    (biome: BiomeId): number => {
+      const timeSeconds = biomeTimeSpent[biome] || 0;
+      const timeDollars = timeSeconds * 0.002;
+      const coinDollars =
+        biome === 'clearing'
+          ? (totalCoins / 6) / 500
+          : ((coins[biome as keyof CoinLedger] || 0) / 500);
+      return Number((timeDollars + coinDollars).toFixed(2));
+    },
+    [biomeTimeSpent, coins, totalCoins]
+  );
+
+  const totalMoneyRaised = Number(
+    biomesList.reduce((acc, b) => acc + getBiomeMoneyRaised(b), 0).toFixed(2)
+  );
+
+  // Backward-compatible alias for total money raised
+  const donationPoolDollars = totalMoneyRaised;
 
   // Add coins
   const addCoins = (biome: BiomeId, amount: number) => {
@@ -510,7 +560,9 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     addCoins(currentOrGeneral, 150);
     boostRestoration(currentOrGeneral, 20);
 
-    setNotification(`🌟 Sponsored by ${sponsorName}! +150 Biome Coins & +$0.30 added to the Global Conservation Fund!`);
+    const targetOrg = CHARITIES.find((c) => c.biome === currentOrGeneral);
+    const orgLabel = targetOrg ? targetOrg.name : 'Conservation Partners';
+    setNotification(`🌟 Sponsored by ${sponsorName}! +150 Biome Coins & +$0.30 automatically allocated to ${orgLabel}!`);
     setTimeout(() => setNotification(null), 4500);
   };
 
@@ -653,6 +705,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     }
     setRestoration(defaultRestoration);
     setCoins(defaultCoins);
+    setBiomeTimeSpent(defaultBiomeTimeSpent);
     setQuests(INITIAL_QUESTS);
     setBadges(INITIAL_BADGES);
     setActions([]);
@@ -673,6 +726,9 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         globalFlourish,
         coins,
         totalCoins,
+        biomeTimeSpent,
+        getBiomeMoneyRaised,
+        totalMoneyRaised,
         donationPoolDollars,
         quests,
         badges,
