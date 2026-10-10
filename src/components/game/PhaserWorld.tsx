@@ -26,6 +26,8 @@ export default function PhaserWorld() {
     currentBiome,
     setCurrentBiome,
     restoration,
+    globalFlourish,
+    quests,
     openDialogue,
     openQuestModal,
     openCropModal,
@@ -36,6 +38,8 @@ export default function PhaserWorld() {
   const stateRef = useRef({
     currentBiome,
     restoration,
+    globalFlourish,
+    quests,
     openDialogue,
     setCurrentBiome,
     openQuestModal,
@@ -43,17 +47,15 @@ export default function PhaserWorld() {
     activeHotspotId: null as string | null,
   });
 
-  useEffect(() => {
-    stateRef.current = {
-      ...stateRef.current,
-      currentBiome,
-      restoration,
-      openDialogue,
-      setCurrentBiome,
-      openQuestModal,
-      openCropModal,
-    };
-  }, [currentBiome, restoration, openDialogue, setCurrentBiome, openQuestModal, openCropModal]);
+  // Keep stateRef synchronously up-to-date on EVERY render so Phaser never reads stale state
+  stateRef.current.currentBiome = currentBiome;
+  stateRef.current.restoration = restoration;
+  stateRef.current.globalFlourish = globalFlourish;
+  stateRef.current.quests = quests;
+  stateRef.current.openDialogue = openDialogue;
+  stateRef.current.setCurrentBiome = setCurrentBiome;
+  stateRef.current.openQuestModal = openQuestModal;
+  stateRef.current.openCropModal = openCropModal;
 
   // Sync React room state changes into Phaser scene
   useEffect(() => {
@@ -65,15 +67,15 @@ export default function PhaserWorld() {
     }
   }, [currentBiome]);
 
-  // Sync restoration changes or game resets into active scene
+  // Sync restoration changes, quest completions, or game resets into active scene
   useEffect(() => {
     if (phaserGameRef.current) {
       const scene = phaserGameRef.current.scene.getScene('GardenscapesWorldScene');
       if (scene && typeof scene.rebuildCurrentRoom === 'function') {
-        scene.rebuildCurrentRoom();
+        scene.rebuildCurrentRoom(restoration);
       }
     }
-  }, [restoration]);
+  }, [restoration, quests, globalFlourish]);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,7 +93,9 @@ export default function PhaserWorld() {
           private currentPathWaypoints: { x: number; y: number }[] = [];
           private readonly TILE_SIZE: number = 15;
           public currentRoomId: BiomeId = 'clearing';
+          public restorationData: Record<BiomeId, number> | null = null;
           private worldContainer!: Phaser.GameObjects.Container;
+          private easterEggsContainer!: Phaser.GameObjects.Container;
           private footprintsContainer!: Phaser.GameObjects.Container;
           private signsContainer!: Phaser.GameObjects.Container;
           private lastFootprintPos: { x: number; y: number } = { x: 700, y: 420 };
@@ -130,7 +134,7 @@ export default function PhaserWorld() {
           } | null = null;
           private nextNemoBubbleTime: number = 0;
           private interactiveForestTrees: {
-            container: Phaser.GameObjects.Container;
+            container: Phaser.GameObjects.Container | Phaser.GameObjects.Image;
             sprite: Phaser.GameObjects.Image;
             season: 'summer' | 'autumn';
           }[] = [];
@@ -209,6 +213,9 @@ export default function PhaserWorld() {
 
             this.worldContainer = this.add.container(0, 0);
             this.worldContainer.setDepth(1);
+
+            this.easterEggsContainer = this.add.container(0, 0);
+            this.easterEggsContainer.setDepth(25);
 
             this.footprintsContainer = this.add.container(0, 0);
             this.footprintsContainer.setDepth(15);
@@ -302,7 +309,10 @@ export default function PhaserWorld() {
             }
           }
 
-          public rebuildCurrentRoom() {
+          public rebuildCurrentRoom(newRestoration?: Record<BiomeId, number>) {
+            if (newRestoration) {
+              this.restorationData = newRestoration;
+            }
             this.buildRoom(this.currentRoomId);
           }
 
@@ -676,6 +686,7 @@ export default function PhaserWorld() {
 
           private buildRoom(biome: BiomeId) {
             this.worldContainer.removeAll(true);
+            this.easterEggsContainer.removeAll(true);
             this.footprintsContainer.removeAll(true);
             this.signsContainer.removeAll(true);
             this.pathPolygons = [];
@@ -703,10 +714,12 @@ export default function PhaserWorld() {
               this.playerSprite.angle = 0;
             }
 
-            const isRestored = (stateRef.current.restoration[biome] || 0) >= 80;
+            const currentRestorationVal = (this.restorationData?.[biome] ?? stateRef.current.restoration?.[biome] ?? 0);
+            const isQuestCompleted = Boolean(stateRef.current.quests?.some((q: any) => q.biome === biome && q.completed));
+            const isRestored = currentRestorationVal > 0 || isQuestCompleted;
 
             if (biome === 'clearing') {
-              this.buildMaximalistFarmRoom();
+              this.buildMaximalistFarmRoom(isRestored);
             } else {
               this.buildMaximalistBiomeRoom(biome, isRestored);
             }
@@ -823,10 +836,12 @@ export default function PhaserWorld() {
           // ===============================================================
           // 🏡 FULL-WIDTH HORIZONTAL BAYER FARM (1400x750 SCREEN-WIDE)
           // ===============================================================
-          private buildMaximalistFarmRoom() {
+          private buildMaximalistFarmRoom(isFarmRestoredParam?: boolean) {
             const w = this.canvasW;
             const h = this.canvasH;
-            const isFarmRestored = (stateRef.current.restoration['clearing'] || 0) >= 80;
+            const currentRestorationVal = (this.restorationData?.['clearing'] ?? stateRef.current.restoration?.['clearing'] ?? 0);
+            const isQuestCompleted = Boolean(stateRef.current.quests?.some((q: any) => q.biome === 'clearing' && q.completed));
+            const isFarmRestored = isFarmRestoredParam ?? (currentRestorationVal > 0 || isQuestCompleted);
 
             // 1. Detailed Grass Background spanning full width
             const grassKey = isFarmRestored ? 'grass_flourish' : 'grass_dead';
@@ -885,6 +900,11 @@ export default function PhaserWorld() {
 
             // 6. Farm Activity Station (Extinguish Wildfire Flare-ups)
             this.spawnBiomeQuestStation('clearing', isFarmRestored);
+
+            // 7. Miniature Farm Easter Eggs (Active once farm/clearing is healed)
+            if (isFarmRestored) {
+              this.spawnFarmEasterEggs([trees1, trees2, trees3]);
+            }
           }
 
           private renderBiomePaths(textureKey: string) {
@@ -1085,6 +1105,8 @@ export default function PhaserWorld() {
                 this.spawnDesertEasterEggs();
               } else if (biome === 'reefs') {
                 this.spawnReefEasterEggs();
+              } else if (biome === 'lake') {
+                this.spawnLakeEasterEggs();
               }
             }
 
@@ -1333,6 +1355,157 @@ export default function PhaserWorld() {
           // 🐣 MINIATURE BIOME EASTER EGGS (UNLOCKED AFTER ENVIRONMENT HEALED)
           // ===============================================================
 
+          // 🏡 CENTRAL FARM EASTER EGGS (Bouncy mushroom, season-changing orchard trees, fluttering butterflies)
+          private spawnFarmEasterEggs(orchardTrees: Phaser.GameObjects.Image[]) {
+            const w = this.canvasW;
+
+            // 1. 🍄 Bouncy Mushroom on the northern corner of the central plaza
+            const mx = w / 2 - 110;
+            const my = 365;
+
+            const mContainer = this.add.container(mx, my);
+            mContainer.setDepth(22);
+
+            const mShadow = this.add.ellipse(0, 16, 40, 14, 0x000000, 0.45);
+            const mSprite = this.add.image(0, 0, 'mushroom');
+            mSprite.setDisplaySize(48, 48);
+            mSprite.setName('mushroom_sprite');
+
+            const mGlow = this.add.circle(0, 2, 24, 0xef4444, 0.2);
+            this.tweens.add({
+              targets: mGlow,
+              scale: 1.3,
+              alpha: 0.05,
+              duration: 900,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            mContainer.add([mShadow, mGlow, mSprite]);
+
+            mSprite.setInteractive({ useHandCursor: true });
+            mSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 250;
+              this.walkPlayerTo(mx, my);
+            });
+
+            this.easterEggsContainer.add(mContainer);
+            this.mushroomObj = mContainer;
+
+            this.createVintageWoodenSign(
+              mx,
+              my - 44,
+              '🍄 ORCHARD MUSHROOM',
+              'Step on to bounce!',
+              180,
+              30,
+              '#ef4444',
+              () => {
+                this.walkPlayerTo(mx, my);
+              },
+              'none'
+            );
+
+            // 2. 🌲 Interactive Orchard Trees (Change seasons Summer <-> Autumn on click)
+            orchardTrees.forEach((tSprite) => {
+              const treeData = {
+                container: tSprite,
+                sprite: tSprite,
+                season: 'summer' as 'summer' | 'autumn',
+              };
+              this.interactiveForestTrees.push(treeData);
+
+              tSprite.setInteractive({ useHandCursor: true });
+              tSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event?.stopPropagation?.();
+                this.ignorePathClickUntil = this.time.now + 250;
+                this.toggleForestTreeSeason(treeData);
+              });
+            });
+
+            this.createVintageWoodenSign(
+              w / 2 - 190,
+              68,
+              '🌲 ORCHARD TREES',
+              'Click trees to change seasons!',
+              200,
+              30,
+              '#86efac',
+              () => {
+                if (this.interactiveForestTrees.length > 0) {
+                  this.toggleForestTreeSeason(this.interactiveForestTrees[0]);
+                }
+              },
+              'none'
+            );
+
+            // 3. 🦋 Tall Grass with Resting Butterflies in Farm Meadow
+            const gx = w / 2 + 110;
+            const gy = 365;
+
+            const grassContainer = this.add.container(gx, gy);
+            grassContainer.setDepth(18);
+
+            const grassSprite = this.add.image(0, 0, 'tall_grass');
+            grassSprite.setDisplaySize(64, 64);
+            grassContainer.add(grassSprite);
+
+            const restingButterflies: Phaser.GameObjects.Image[] = [];
+            const restingOffsets = [
+              { x: -14, y: -16, tint: 0xf97316 },
+              { x: 12, y: -20, tint: 0x38bdf8 },
+              { x: 0, y: -26, tint: 0xfacc15 },
+            ];
+
+            restingOffsets.forEach((off) => {
+              const bf = this.add.image(off.x, off.y, 'butterfly');
+              bf.setDisplaySize(20, 20);
+              bf.setTint(off.tint);
+              this.tweens.add({
+                targets: bf,
+                scaleX: 0.6,
+                duration: Phaser.Math.Between(350, 600),
+                yoyo: true,
+                repeat: -1,
+              });
+              grassContainer.add(bf);
+              restingButterflies.push(bf);
+            });
+
+            this.easterEggsContainer.add(grassContainer);
+
+            this.grasslandsGrassPatch = {
+              x: gx,
+              y: gy,
+              container: grassContainer,
+              restingButterflies,
+              triggered: false,
+              readyAt: 0,
+            };
+
+            grassSprite.setInteractive({ useHandCursor: true });
+            grassSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 250;
+              this.walkPlayerTo(gx, gy);
+            });
+
+            this.createVintageWoodenSign(
+              gx,
+              gy - 44,
+              '🦋 FARM BUTTERFLIES',
+              'Walk through tall grass!',
+              190,
+              30,
+              '#fde68a',
+              () => {
+                this.walkPlayerTo(gx, gy);
+              },
+              'none'
+            );
+          }
+
           // 1. 🍄 FOREST EASTER EGGS: Bouncy mushroom in corner of path & season-changing trees
           private spawnForestEasterEggs() {
             const w = this.canvasW;
@@ -1365,11 +1538,26 @@ export default function PhaserWorld() {
             mSprite.setInteractive({ useHandCursor: true });
             mSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(mx, my);
             });
 
-            this.worldContainer.add(mContainer);
+            this.easterEggsContainer.add(mContainer);
             this.mushroomObj = mContainer;
+
+            this.createVintageWoodenSign(
+              mx,
+              my - 48,
+              '🍄 BOUNCY MUSHROOM',
+              'Step on to bounce!',
+              180,
+              32,
+              '#ef4444',
+              () => {
+                this.walkPlayerTo(mx, my);
+              },
+              'none'
+            );
 
             // Interactive season-changing trees around the forest
             this.interactiveForestTrees = [];
@@ -1407,12 +1595,28 @@ export default function PhaserWorld() {
                 this.toggleForestTreeSeason(treeData);
               });
 
-              this.worldContainer.add(tContainer);
+              this.easterEggsContainer.add(tContainer);
             });
+
+            this.createVintageWoodenSign(
+              w / 2 - 300,
+              145,
+              '🌲 CANOPY OAKS',
+              'Click trees to change seasons!',
+              210,
+              32,
+              '#86efac',
+              () => {
+                if (this.interactiveForestTrees.length > 0) {
+                  this.toggleForestTreeSeason(this.interactiveForestTrees[0]);
+                }
+              },
+              'none'
+            );
           }
 
           private toggleForestTreeSeason(treeData: {
-            container: Phaser.GameObjects.Container;
+            container: Phaser.GameObjects.Container | Phaser.GameObjects.Image;
             sprite: Phaser.GameObjects.Image;
             season: 'summer' | 'autumn';
           }) {
@@ -1552,17 +1756,24 @@ export default function PhaserWorld() {
               repeat: -1,
             });
 
+            iceBase.setInteractive({ useHandCursor: true });
+            iceBase.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 250;
+              this.walkPlayerTo(iceX, iceY);
+            });
+
             iceContainer.add([iceBase, shine, crack1, crack2, glint]);
-            this.worldContainer.add(iceContainer);
+            this.easterEggsContainer.add(iceContainer);
 
             // Warning sign beside ice
             this.createVintageWoodenSign(
               iceX,
               iceY - 50,
               '❄️ GLACIAL ICE SHEET',
-              'Caution: Slippery! Slide across',
-              180,
-              30,
+              'Step on to slide across!',
+              190,
+              32,
               '#bae6fd',
               () => {
                 this.walkPlayerTo(iceX, iceY);
@@ -1629,7 +1840,7 @@ export default function PhaserWorld() {
               restingButterflies.push(bf);
             });
 
-            this.worldContainer.add(grassContainer);
+            this.easterEggsContainer.add(grassContainer);
 
             this.grasslandsGrassPatch = {
               x: gx,
@@ -1639,6 +1850,27 @@ export default function PhaserWorld() {
               triggered: false,
               readyAt: 0,
             };
+
+            grassSprite.setInteractive({ useHandCursor: true });
+            grassSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 250;
+              this.walkPlayerTo(gx, gy);
+            });
+
+            this.createVintageWoodenSign(
+              gx,
+              gy - 48,
+              '🦋 PRAIRIE MONARCH GRASS',
+              'Walk through to flutter!',
+              200,
+              32,
+              '#fde68a',
+              () => {
+                this.walkPlayerTo(gx, gy);
+              },
+              'none'
+            );
           }
 
           private triggerButterflySwarm(
@@ -1770,8 +2002,23 @@ export default function PhaserWorld() {
               trunk.on('pointerdown', onCactusClick);
               arm.on('pointerdown', onCactusClick);
 
-              this.worldContainer.add(cContainer);
+              this.easterEggsContainer.add(cContainer);
             });
+
+            this.createVintageWoodenSign(
+              w / 2 - 250,
+              165,
+              '🌵 WAVING SAGUARO',
+              'Two arms • Tap to say Howdy!',
+              210,
+              32,
+              '#fed7aa',
+              () => {
+                this.spawnFloatingBubble(w / 2 - 250, 240 - 48, '🌵 👋 Howdy!');
+                sounds.playClick();
+              },
+              'none'
+            );
           }
 
           // 5. 🐠 REEF EASTER EGG: Nemo swimming around his sea anemone
@@ -1807,7 +2054,7 @@ export default function PhaserWorld() {
               });
               anemoneContainer.add(tentacle);
             }
-            this.worldContainer.add(anemoneContainer);
+            this.easterEggsContainer.add(anemoneContainer);
 
             // Nemo clownfish sprite
             const nemoContainer = this.add.container(nemoX, nemoY);
@@ -1818,7 +2065,7 @@ export default function PhaserWorld() {
             nemoSprite.setOrigin(0.5, 0.5);
 
             nemoContainer.add(nemoSprite);
-            this.worldContainer.add(nemoContainer);
+            this.easterEggsContainer.add(nemoContainer);
 
             const nemoData = {
               container: nemoContainer,
@@ -1835,6 +2082,165 @@ export default function PhaserWorld() {
               this.ignorePathClickUntil = this.time.now + 200;
               this.triggerNemoLoop(nemoData);
             });
+
+            this.createVintageWoodenSign(
+              nemoX,
+              nemoY - 50,
+              "🐠 NEMO'S ANEMONE",
+              'Tap Nemo to do a spin loop!',
+              200,
+              32,
+              '#67e8f9',
+              () => {
+                if (this.nemoObj) {
+                  this.triggerNemoLoop(this.nemoObj);
+                }
+              },
+              'none'
+            );
+          }
+
+          // 6. 🌊 LAKE EASTER EGGS: Nemo swimming in freshwater & lakeside butterflies
+          private spawnLakeEasterEggs() {
+            const w = this.canvasW;
+
+            // 1. 🐠 Nemo swimming in Lake waters
+            const nemoX = w / 2 + 250;
+            const nemoY = 270;
+
+            const anemoneContainer = this.add.container(nemoX, nemoY + 45);
+            anemoneContainer.setDepth(16);
+
+            const shadow = this.add.ellipse(0, 18, 54, 16, 0x000000, 0.35);
+            anemoneContainer.add(shadow);
+
+            const tentacleColors = [0x38bdf8, 0x0284c7, 0x7dd3fc, 0xbae6fd];
+            for (let i = -4; i <= 4; i++) {
+              const tentacle = this.add.ellipse(
+                i * 6,
+                -10 + Math.abs(i) * 2,
+                8,
+                28,
+                tentacleColors[(i + 4) % tentacleColors.length]
+              );
+              this.tweens.add({
+                targets: tentacle,
+                angle: { from: -14, to: 14 },
+                duration: 1100 + i * 100,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+              });
+              anemoneContainer.add(tentacle);
+            }
+            this.easterEggsContainer.add(anemoneContainer);
+
+            const nemoContainer = this.add.container(nemoX, nemoY);
+            nemoContainer.setDepth(25);
+
+            const nemoSprite = this.add.image(0, 0, 'nemo');
+            nemoSprite.setDisplaySize(54, 54);
+            nemoSprite.setOrigin(0.5, 0.5);
+
+            nemoContainer.add(nemoSprite);
+            this.easterEggsContainer.add(nemoContainer);
+
+            const nemoData = {
+              container: nemoContainer,
+              sprite: nemoSprite,
+              baseX: nemoX,
+              baseY: nemoY,
+              isSpinning: false,
+            };
+            this.nemoObj = nemoData;
+
+            nemoSprite.setInteractive({ useHandCursor: true });
+            nemoSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 200;
+              this.triggerNemoLoop(nemoData);
+            });
+
+            this.createVintageWoodenSign(
+              nemoX,
+              nemoY - 50,
+              "🐠 NEMO'S LAGOON",
+              'Tap to do a spin loop!',
+              190,
+              32,
+              '#38bdf8',
+              () => {
+                if (this.nemoObj) {
+                  this.triggerNemoLoop(this.nemoObj);
+                }
+              },
+              'none'
+            );
+
+            // 2. 🦋 Lakeside Grass with Butterflies along the western path (w / 2 - 250, 375)
+            const gx = w / 2 - 250;
+            const gy = 375;
+
+            const grassContainer = this.add.container(gx, gy);
+            grassContainer.setDepth(18);
+
+            const grassSprite = this.add.image(0, 0, 'tall_grass');
+            grassSprite.setDisplaySize(64, 64);
+            grassContainer.add(grassSprite);
+
+            const restingButterflies: Phaser.GameObjects.Image[] = [];
+            const restingOffsets = [
+              { x: -14, y: -16, tint: 0x38bdf8 },
+              { x: 12, y: -20, tint: 0x0284c7 },
+              { x: 0, y: -26, tint: 0xfacc15 },
+            ];
+
+            restingOffsets.forEach((off) => {
+              const bf = this.add.image(off.x, off.y, 'butterfly');
+              bf.setDisplaySize(20, 20);
+              bf.setTint(off.tint);
+              this.tweens.add({
+                targets: bf,
+                scaleX: 0.6,
+                duration: Phaser.Math.Between(350, 600),
+                yoyo: true,
+                repeat: -1,
+              });
+              grassContainer.add(bf);
+              restingButterflies.push(bf);
+            });
+
+            this.easterEggsContainer.add(grassContainer);
+
+            this.grasslandsGrassPatch = {
+              x: gx,
+              y: gy,
+              container: grassContainer,
+              restingButterflies,
+              triggered: false,
+              readyAt: 0,
+            };
+
+            grassSprite.setInteractive({ useHandCursor: true });
+            grassSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              pointer.event?.stopPropagation?.();
+              this.ignorePathClickUntil = this.time.now + 250;
+              this.walkPlayerTo(gx, gy);
+            });
+
+            this.createVintageWoodenSign(
+              gx,
+              gy - 48,
+              '🦋 LAKESIDE BUTTERFLIES',
+              'Walk through tall grass!',
+              200,
+              32,
+              '#bae6fd',
+              () => {
+                this.walkPlayerTo(gx, gy);
+              },
+              'none'
+            );
           }
 
           private triggerNemoLoop(nemoData: {
@@ -2078,10 +2484,10 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // 🍄 FOREST MUSHROOM BOUNCING EASTER EGG
+            // 🍄 FOREST & FARM MUSHROOM BOUNCING EASTER EGG
             // If sprite gets on top of mushroom, start jumping up and down
             // ===============================================================
-            if (this.currentRoomId === 'forest' && this.mushroomObj) {
+            if ((this.currentRoomId === 'forest' || this.currentRoomId === 'clearing') && this.mushroomObj) {
               const distToMushroom = Phaser.Math.Distance.Between(
                 this.player.x,
                 this.player.y,
@@ -2121,10 +2527,10 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // 🦋 GRASSLANDS BUTTERFLY PATCH EASTER EGG
+            // 🦋 GRASSLANDS, FARM & LAKE BUTTERFLY PATCH EASTER EGG
             // When sprite walks through grass, butterflies fly up and away
             // ===============================================================
-            if (this.currentRoomId === 'grasslands' && this.grasslandsGrassPatch) {
+            if ((this.currentRoomId === 'grasslands' || this.currentRoomId === 'clearing' || this.currentRoomId === 'lake') && this.grasslandsGrassPatch) {
               const patch = this.grasslandsGrassPatch;
               const distToPatch = Phaser.Math.Distance.Between(this.player.x, this.player.y, patch.x, patch.y);
 
@@ -2139,9 +2545,9 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // 🐠 REEF NEMO SWIMMING EASTER EGG
+            // 🐠 REEF & LAKE NEMO SWIMMING EASTER EGG
             // ===============================================================
-            if (this.currentRoomId === 'reefs' && this.nemoObj) {
+            if ((this.currentRoomId === 'reefs' || this.currentRoomId === 'lake') && this.nemoObj) {
               const nemo = this.nemoObj;
               if (!nemo.isSpinning) {
                 const t = time * 0.0016;
