@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { BiomeId, AnimalId, CoinLedger, Quest, Badge, ActionRecord, GameSettings, CropPlotState } from '@/types/game';
 import { ANIMALS, INITIAL_BADGES, INITIAL_QUESTS, FARM_CROPS } from '@/data/animals';
 import { sounds } from '@/utils/soundEffects';
@@ -56,6 +56,7 @@ interface GameStateContextType {
   setIsPremiseOpen: (open: boolean) => void;
   openPremiseModal: () => void;
   closePremiseModal: () => void;
+  isAnyPopupOpen: boolean;
   notification: string | null;
   setNotification: (msg: string | null) => void;
   resetGame: () => void;
@@ -114,30 +115,131 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   } | null>(null);
 
   // Modals
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isQuestsOpen, setIsQuestsOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [activeCropModal, setActiveCropModal] = useState<Exclude<BiomeId, 'clearing'> | null>(null);
-  const [isPremiseOpen, setIsPremiseOpen] = useState(true);
+  const [isProfileOpen, setIsProfileOpenState] = useState(false);
+  const [isQuestsOpen, setIsQuestsOpenState] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpenState] = useState(false);
+  const [isHelpOpen, setIsHelpOpenState] = useState(false);
+  const [activeCropModal, setActiveCropModalState] = useState<Exclude<BiomeId, 'clearing'> | null>(null);
+  const [isPremiseOpen, setIsPremiseOpenState] = useState(true);
+
+  // Synchronous refs to prevent multiple modals opening simultaneously or on top of each other
+  const activeDialogueAnimalRef = useRef<AnimalId | null>(null);
+  const activeQuestModalRef = useRef<Quest['actionType'] | null>(null);
+  const activeCropModalRef = useRef<Exclude<BiomeId, 'clearing'> | null>(null);
+  const isProfileOpenRef = useRef(false);
+  const isQuestsOpenRef = useRef(false);
+  const isSettingsOpenRef = useRef(false);
+  const isHelpOpenRef = useRef(false);
+  const isPremiseOpenRef = useRef(true);
+
+  activeDialogueAnimalRef.current = activeDialogueAnimal;
+  activeQuestModalRef.current = activeQuestModal;
+  activeCropModalRef.current = activeCropModal;
+  isProfileOpenRef.current = isProfileOpen;
+  isQuestsOpenRef.current = isQuestsOpen;
+  isSettingsOpenRef.current = isSettingsOpen;
+  isHelpOpenRef.current = isHelpOpen;
+  isPremiseOpenRef.current = isPremiseOpen;
+
+  const checkIsAnyPopupOpen = useCallback(() => {
+    return Boolean(
+      activeDialogueAnimalRef.current ||
+      activeQuestModalRef.current ||
+      activeCropModalRef.current ||
+      isProfileOpenRef.current ||
+      isQuestsOpenRef.current ||
+      isSettingsOpenRef.current ||
+      isHelpOpenRef.current ||
+      isPremiseOpenRef.current
+    );
+  }, []);
+
+  const isAnyPopupOpen = Boolean(
+    activeDialogueAnimal ||
+    activeQuestModal ||
+    activeCropModal ||
+    isProfileOpen ||
+    isQuestsOpen ||
+    isSettingsOpen ||
+    isHelpOpen ||
+    isPremiseOpen
+  );
 
   const openCropModal = useCallback((biome: Exclude<BiomeId, 'clearing'>) => {
+    if (checkIsAnyPopupOpen()) return;
     sounds.playClick();
-    setActiveCropModal(biome);
-  }, []);
+    activeCropModalRef.current = biome;
+    setActiveCropModalState(biome);
+  }, [checkIsAnyPopupOpen]);
 
   const closeCropModal = useCallback(() => {
-    setActiveCropModal(null);
+    activeCropModalRef.current = null;
+    setActiveCropModalState(null);
   }, []);
 
+  const setIsPremiseOpen = useCallback((open: boolean) => {
+    if (open) {
+      if (checkIsAnyPopupOpen()) return;
+      sounds.playClick();
+      isPremiseOpenRef.current = true;
+      setIsPremiseOpenState(true);
+    } else {
+      isPremiseOpenRef.current = false;
+      setIsPremiseOpenState(false);
+    }
+  }, [checkIsAnyPopupOpen]);
+
   const openPremiseModal = useCallback(() => {
-    sounds.playClick();
     setIsPremiseOpen(true);
-  }, []);
+  }, [setIsPremiseOpen]);
 
   const closePremiseModal = useCallback(() => {
     setIsPremiseOpen(false);
-  }, []);
+  }, [setIsPremiseOpen]);
+
+  const setIsProfileOpen = useCallback((open: boolean) => {
+    if (open) {
+      if (checkIsAnyPopupOpen()) return;
+      isProfileOpenRef.current = true;
+      setIsProfileOpenState(true);
+    } else {
+      isProfileOpenRef.current = false;
+      setIsProfileOpenState(false);
+    }
+  }, [checkIsAnyPopupOpen]);
+
+  const setIsQuestsOpen = useCallback((open: boolean) => {
+    if (open) {
+      if (checkIsAnyPopupOpen()) return;
+      isQuestsOpenRef.current = true;
+      setIsQuestsOpenState(true);
+    } else {
+      isQuestsOpenRef.current = false;
+      setIsQuestsOpenState(false);
+    }
+  }, [checkIsAnyPopupOpen]);
+
+  const setIsSettingsOpen = useCallback((open: boolean) => {
+    if (open) {
+      if (checkIsAnyPopupOpen()) return;
+      isSettingsOpenRef.current = true;
+      setIsSettingsOpenState(true);
+    } else {
+      isSettingsOpenRef.current = false;
+      setIsSettingsOpenState(false);
+    }
+  }, [checkIsAnyPopupOpen]);
+
+  const setIsHelpOpen = useCallback((open: boolean) => {
+    if (open) {
+      if (checkIsAnyPopupOpen()) return;
+      isHelpOpenRef.current = true;
+      setIsHelpOpenState(true);
+    } else {
+      isHelpOpenRef.current = false;
+      setIsHelpOpenState(false);
+    }
+  }, [checkIsAnyPopupOpen]);
 
   // Settings
   const [settings, setSettings] = useState<GameSettings>({
@@ -297,26 +399,30 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Open & Close Dialogue
-  const openDialogue = (animalId: AnimalId) => {
+  const openDialogue = useCallback((animalId: AnimalId) => {
+    if (checkIsAnyPopupOpen()) return;
     sounds.playClick();
+    activeDialogueAnimalRef.current = animalId;
     setActiveDialogueAnimal(animalId);
-  };
+  }, [checkIsAnyPopupOpen]);
 
-  const closeDialogue = () => {
-    sounds.playClick();
+  const closeDialogue = useCallback(() => {
+    activeDialogueAnimalRef.current = null;
     setActiveDialogueAnimal(null);
-  };
+  }, []);
 
   // Quest Modals
-  const openQuestModal = (actionType: Quest['actionType']) => {
+  const openQuestModal = useCallback((actionType: Quest['actionType']) => {
+    if (checkIsAnyPopupOpen()) return;
     sounds.playClick();
+    activeQuestModalRef.current = actionType;
     setActiveQuestModal(actionType);
-  };
+  }, [checkIsAnyPopupOpen]);
 
-  const closeQuestModal = () => {
-    sounds.playClick();
+  const closeQuestModal = useCallback(() => {
+    activeQuestModalRef.current = null;
     setActiveQuestModal(null);
-  };
+  }, []);
 
   // Complete Quest
   const completeQuest = (questId: string, impactSummary: string) => {
@@ -578,6 +684,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         setIsPremiseOpen,
         openPremiseModal,
         closePremiseModal,
+        isAnyPopupOpen,
         notification,
         setNotification,
         resetGame,

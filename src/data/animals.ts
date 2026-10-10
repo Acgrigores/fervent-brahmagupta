@@ -336,14 +336,14 @@ export const INITIAL_QUESTS: Quest[] = [
   {
     id: 'quest_clearing',
     biome: 'clearing',
-    title: 'Extinguish Wildfire Flare-ups',
-    subtitle: 'From Ashes to First Sprout',
-    description: 'Quench lingering ember hot-spots in the charred clearing and sow nitrogen-fixing pioneer seeds to spark ecosystem renewal.',
+    title: 'Water Usage Pledge to Prevent Droughts',
+    subtitle: 'Conserve Water & Protect the Farm',
+    description: 'Pledge conscious water conservation habits to safeguard groundwater reserves, prevent agricultural droughts, and protect farm crops.',
     rewardCoins: 250,
     rewardRestoration: 100,
     completed: false,
     actionType: 'wildfire_quench',
-    icon: 'flare',
+    icon: 'droplets',
   },
   {
     id: 'quest_forest',
@@ -422,9 +422,9 @@ export const INITIAL_QUESTS: Quest[] = [
 export const INITIAL_BADGES: Badge[] = [
   {
     id: 'badge_ash_cleared',
-    title: 'Sprout Pioneer',
-    description: 'Extinguished the wildfire embers and awoke the first green shoots in the charred clearing.',
-    icon: 'sprout',
+    title: 'Water Guardian',
+    description: 'Signed the water conservation pledge to prevent droughts and safeguard agricultural watersheds.',
+    icon: 'droplets',
     biome: 'clearing',
     unlocked: false,
     rarity: 'Common',

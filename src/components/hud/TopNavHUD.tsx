@@ -35,6 +35,7 @@ export default function TopNavHUD() {
     setIsHelpOpen,
     openPremiseModal,
     resetGame,
+    isAnyPopupOpen,
   } = useGameState();
 
   const [tempApiKey, setTempApiKey] = useState(settings.geminiApiKey || '');
@@ -101,7 +102,11 @@ export default function TopNavHUD() {
         <div className="flex items-center gap-1.5">
           {/* Coin Treasury Button */}
           <button
-            onClick={() => { sounds.playClick(); setIsProfileOpen(true); }}
+            onClick={() => {
+              if (isAnyPopupOpen) return;
+              sounds.playClick();
+              setIsProfileOpen(true);
+            }}
             className="pixel-btn flex items-center gap-1 px-2.5 py-1 text-[10px]"
             title="Coin Treasury & Causes"
           >
@@ -111,7 +116,11 @@ export default function TopNavHUD() {
 
           {/* Quests Button */}
           <button
-            onClick={() => { sounds.playClick(); setIsQuestsOpen(true); }}
+            onClick={() => {
+              if (isAnyPopupOpen) return;
+              sounds.playClick();
+              setIsQuestsOpen(true);
+            }}
             className="pixel-btn relative p-1.5 text-[10px]"
             title="Quests Board"
           >
@@ -125,7 +134,11 @@ export default function TopNavHUD() {
 
           {/* Profile / Portfolio Button */}
           <button
-            onClick={() => { sounds.playClick(); setIsProfileOpen(true); }}
+            onClick={() => {
+              if (isAnyPopupOpen) return;
+              sounds.playClick();
+              setIsProfileOpen(true);
+            }}
             className="pixel-btn p-1.5 text-[10px]"
             title="Farm Portfolio & Treasury"
           >
@@ -146,7 +159,11 @@ export default function TopNavHUD() {
 
           {/* Game Premise & Story Button */}
           <button
-            onClick={() => { sounds.playClick(); openPremiseModal(); }}
+            onClick={() => {
+              if (isAnyPopupOpen) return;
+              sounds.playClick();
+              openPremiseModal();
+            }}
             className="pixel-btn flex items-center gap-1 px-2 py-1 text-[10px] text-[#fde68a]"
             title="Game Premise & Story"
           >
@@ -156,7 +173,11 @@ export default function TopNavHUD() {
 
           {/* Settings Button */}
           <button
-            onClick={() => { sounds.playClick(); setIsSettingsOpen(true); }}
+            onClick={() => {
+              if (isAnyPopupOpen) return;
+              sounds.playClick();
+              setIsSettingsOpen(true);
+            }}
             className="pixel-btn p-1.5 text-[10px]"
             title="Game & AI Settings"
           >
@@ -165,7 +186,11 @@ export default function TopNavHUD() {
 
           {/* Help & Guide Button */}
           <button
-            onClick={() => { sounds.playClick(); setIsHelpOpen(true); }}
+            onClick={() => {
+              if (isAnyPopupOpen) return;
+              sounds.playClick();
+              setIsHelpOpen(true);
+            }}
             className="pixel-btn p-1.5 text-[10px]"
             title="Farm Guide & Map"
           >

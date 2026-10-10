@@ -44,6 +44,7 @@ export default function PhaserWorld() {
     isQuestsOpen,
     isSettingsOpen,
     isHelpOpen,
+    isAnyPopupOpen,
   } = useGameState();
 
   const [zoomLevel, setZoomLevel] = useState(1.38);
@@ -100,6 +101,7 @@ export default function PhaserWorld() {
     isQuestsOpen,
     isSettingsOpen,
     isHelpOpen,
+    isAnyPopupOpen,
     activeHotspotId: null as string | null,
     nearbyHotspot: null as Hotspot | null,
   });
@@ -126,6 +128,7 @@ export default function PhaserWorld() {
   stateRef.current.isQuestsOpen = isQuestsOpen;
   stateRef.current.isSettingsOpen = isSettingsOpen;
   stateRef.current.isHelpOpen = isHelpOpen;
+  stateRef.current.isAnyPopupOpen = isAnyPopupOpen;
 
   // Handle Enter key for interacting with nearby world objects; revert to normal for mini-games/modals
   useEffect(() => {
@@ -947,6 +950,7 @@ export default function PhaserWorld() {
             let activeTween: Phaser.Tweens.Tween | null = null;
 
             target.on('pointerover', () => {
+              if (stateRef.current.isAnyPopupOpen) return;
               // 1. Highlight tint on sprite
               if (typeof target.setTint === 'function') {
                 target.setTint(0xfff8b0);
@@ -1011,6 +1015,7 @@ export default function PhaserWorld() {
               target.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
                 pointer.event?.stopPropagation?.();
                 this.ignorePathClickUntil = this.time.now + 250;
+                if (stateRef.current.isAnyPopupOpen) return;
                 onClick(pointer);
               });
             }
@@ -1163,6 +1168,8 @@ export default function PhaserWorld() {
               new Phaser.Geom.Rectangle(160, -60, 60, 500),
               // East Access Lane leading down to Desert exit
               new Phaser.Geom.Rectangle(w - 200, 390, 60, 420),
+              // Path leading down to Water Conservation Pledge sign where the pool was
+              new Phaser.Geom.Rectangle(w / 2 - 390, 450, 60, 160),
             ];
 
             // Render Packed Dirt Paths
@@ -1747,16 +1754,16 @@ export default function PhaserWorld() {
             const stone2 = this.add.ellipse(10, 16, 16, 9, 0x475569).setStrokeStyle(1, 0x166534);
 
             // Two majestic woodland trees flanking the trail exit
-            const leftTree = this.add.image(-36, -6, 'trees');
-            leftTree.setDisplaySize(70, 70);
-            const rightTree = this.add.image(36, -6, 'trees');
-            rightTree.setDisplaySize(70, 70);
+            const leftTree = this.add.image(-44, -14, 'trees');
+            leftTree.setDisplaySize(66, 66);
+            const rightTree = this.add.image(42, -14, 'trees');
+            rightTree.setDisplaySize(66, 66);
 
             // Soft emerald canopy arch connecting treetops overhead
-            const canopyArch = this.add.ellipse(0, -26, 76, 24, 0x14532d, 0.65);
+            const canopyArch = this.add.ellipse(0, -30, 76, 24, 0x14532d, 0.65);
 
-            // Wild woodland mushroom at the tree base
-            const mushroom = this.add.image(-22, 16, 'mushroom');
+            // Wild woodland mushroom in clear foreground beside stepping stones (no trees overhead)
+            const mushroom = this.add.image(-10, 22, 'mushroom');
             mushroom.setDisplaySize(20, 20);
             this.tweens.add({
               targets: mushroom,
@@ -2229,25 +2236,39 @@ export default function PhaserWorld() {
               grasslands: { name: 'Bayer Smart Precision Simulator', action: 'grasslands_farming' },
               desert: { name: 'Solar Artesian Well & Aquifer Restoration', action: 'desert_aquifer' },
               reefs: { name: 'Maritime GPS Radar Redirection', action: 'reef_navigation' },
-              clearing: { name: 'Extinguish Wildfire Flare-ups', action: 'wildfire_quench' },
+              clearing: { name: 'Water Usage Pledge to Prevent Droughts', action: 'wildfire_quench' },
             };
 
             const qInfo = questMap[biome];
             if (!qInfo || !qInfo.action) return;
 
             const triggerAction = () => {
+              if (stateRef.current.isAnyPopupOpen) return;
               sounds.playClick();
               stateRef.current.openQuestModal(qInfo.action);
             };
 
+            // Requirement 3: Move the big sign about putting out the fire on the farm to where the pool was (w / 2 - 360, 580)
+            const signX = biome === 'clearing' ? (this.canvasW / 2 - 360) : (this.canvasW / 2);
+            const signY = biome === 'clearing' ? 580 : 180;
+            const signWidth = biome === 'clearing' ? 245 : 210;
+            const signColor = biome === 'clearing' ? '#38bdf8' : '#fde68a';
+
+            const title = isRestored
+              ? (biome === 'clearing' ? '✓ PLEDGED: Drought Prevention' : `✓ RESTORED: ${qInfo.name}`)
+              : `ACTION PLAN: ${qInfo.name}`;
+            const subtitle = isRestored
+              ? (biome === 'clearing' ? 'Water Conserved • Tap to review pledge' : 'Habitat Flourishing • Tap to review')
+              : (biome === 'clearing' ? 'Pledge water usage to prevent droughts' : 'Tap sign to launch action plan');
+
             this.createVintageWoodenSign(
-              this.canvasW / 2,
-              180,
-              isRestored ? `✓ RESTORED: ${qInfo.name}` : `ACTION PLAN: ${qInfo.name}`,
-              isRestored ? 'Habitat Flourishing • Tap to review' : 'Tap sign to launch action plan',
-              210,
+              signX,
+              signY,
+              title,
+              subtitle,
+              signWidth,
               32,
-              '#fde68a',
+              signColor,
               triggerAction,
               'bottom'
             );
@@ -2255,8 +2276,8 @@ export default function PhaserWorld() {
             this.currentHotspots.push({
               id: `quest_${biome}`,
               name: qInfo.name,
-              x: this.canvasW / 2,
-              y: 180,
+              x: signX,
+              y: signY,
               type: 'quest',
               questAction: qInfo.action,
             });
@@ -2430,11 +2451,11 @@ export default function PhaserWorld() {
           private createDynamicForestEnvironment(isRestored: boolean) {
             const w = this.canvasW;
 
-            // 1. Ambient swaying trees along forest backdrop
+            // 1. Ambient swaying trees along forest backdrop (kept clear of the bouncy mushroom at w/2 - 410, 375)
             const bgTreePositions = [
               { x: w / 2 - 320, y: 160 },
               { x: w / 2 + 320, y: 160 },
-              { x: w / 2 - 420, y: 440 },
+              { x: w / 2 - 420, y: 560 },
               { x: w / 2 + 420, y: 440 },
             ];
 
@@ -3276,16 +3297,22 @@ export default function PhaserWorld() {
               'none'
             );
 
-            // 2. 🦋 Lakeside Grass with Butterflies along the western path (w / 2 - 250, 375)
+            // 2. 🪷 Floating Water Lilies with Butterflies resting on them (w / 2 - 250, 375)
             const gx = w / 2 - 250;
             const gy = 375;
 
-            const grassContainer = this.add.container(gx, gy);
-            grassContainer.setDepth(18);
+            const lilyContainer = this.add.container(gx, gy);
+            lilyContainer.setDepth(18);
 
-            const grassSprite = this.add.image(0, 0, 'tall_grass');
-            grassSprite.setDisplaySize(64, 64);
-            grassContainer.add(grassSprite);
+            const waterGlow = this.add.ellipse(0, 6, 74, 38, 0x0284c7, 0.4);
+            const pad1 = this.add.ellipse(-14, 4, 40, 24, 0x0f766e);
+            const pad2 = this.add.ellipse(14, 6, 36, 22, 0x115e59);
+            const lotus1 = this.add.star(-14, 4, 5, 4, 9, 0xf472b6);
+            const lotusCenter1 = this.add.circle(-14, 4, 3, 0xfef08a);
+            const lotus2 = this.add.star(14, 6, 5, 3, 7, 0xffffff);
+            const lotusCenter2 = this.add.circle(14, 6, 2.5, 0xfde047);
+
+            lilyContainer.add([waterGlow, pad1, pad2, lotus1, lotusCenter1, lotus2, lotusCenter2]);
 
             const restingButterflies: Phaser.GameObjects.Image[] = [];
             const restingOffsets = [
@@ -3305,33 +3332,33 @@ export default function PhaserWorld() {
                 yoyo: true,
                 repeat: -1,
               });
-              grassContainer.add(bf);
+              lilyContainer.add(bf);
               restingButterflies.push(bf);
             });
 
-            this.easterEggsContainer.add(grassContainer);
+            this.easterEggsContainer.add(lilyContainer);
 
             this.grasslandsGrassPatch = {
               x: gx,
               y: gy,
-              container: grassContainer,
+              container: lilyContainer,
               restingButterflies,
               triggered: false,
               readyAt: 0,
             };
 
             // Clickable & glows on hover
-            this.makeClickableAndGlow(grassSprite, (pointer: Phaser.Input.Pointer) => {
+            this.makeClickableAndGlow(pad1, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(gx, gy);
-            }, { parentContainer: grassContainer, glowRadius: 85 });
+            }, { parentContainer: lilyContainer, glowRadius: 85 });
 
             this.createVintageWoodenSign(
               gx,
               gy - 48,
-              '🦋 LAKESIDE BUTTERFLIES',
-              'Walk through tall grass!',
+              '🪷 FLOATING WATER LILIES',
+              'Skim across the lilies!',
               200,
               32,
               '#bae6fd',
