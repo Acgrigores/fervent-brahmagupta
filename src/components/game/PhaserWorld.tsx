@@ -31,9 +31,21 @@ export default function PhaserWorld() {
     openDialogue,
     openQuestModal,
     openCropModal,
+    activeDialogueAnimal,
+    activeQuestModal,
+    activeCropModal,
+    cropPlots,
+    harvestCrop,
+    recentBuyerEvent,
+    clearBuyerEvent,
+    addCoins,
+    isPremiseOpen,
+    isProfileOpen,
+    isQuestsOpen,
+    isSettingsOpen,
+    isHelpOpen,
   } = useGameState();
 
-  const [activeNearbyHotspot, setActiveNearbyHotspot] = useState<Hotspot | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1.38);
   const onZoomChangeRef = useRef<((z: number) => void) | null>(null);
 
@@ -75,7 +87,21 @@ export default function PhaserWorld() {
     setCurrentBiome,
     openQuestModal,
     openCropModal,
+    cropPlots,
+    harvestCrop,
+    recentBuyerEvent,
+    clearBuyerEvent,
+    addCoins,
+    activeDialogueAnimal,
+    activeQuestModal,
+    activeCropModal,
+    isPremiseOpen,
+    isProfileOpen,
+    isQuestsOpen,
+    isSettingsOpen,
+    isHelpOpen,
     activeHotspotId: null as string | null,
+    nearbyHotspot: null as Hotspot | null,
   });
 
   // Keep stateRef synchronously up-to-date on EVERY render so Phaser never reads stale state
@@ -87,6 +113,75 @@ export default function PhaserWorld() {
   stateRef.current.setCurrentBiome = setCurrentBiome;
   stateRef.current.openQuestModal = openQuestModal;
   stateRef.current.openCropModal = openCropModal;
+  stateRef.current.cropPlots = cropPlots;
+  stateRef.current.harvestCrop = harvestCrop;
+  stateRef.current.recentBuyerEvent = recentBuyerEvent;
+  stateRef.current.clearBuyerEvent = clearBuyerEvent;
+  stateRef.current.addCoins = addCoins;
+  stateRef.current.activeDialogueAnimal = activeDialogueAnimal;
+  stateRef.current.activeQuestModal = activeQuestModal;
+  stateRef.current.activeCropModal = activeCropModal;
+  stateRef.current.isPremiseOpen = isPremiseOpen;
+  stateRef.current.isProfileOpen = isProfileOpen;
+  stateRef.current.isQuestsOpen = isQuestsOpen;
+  stateRef.current.isSettingsOpen = isSettingsOpen;
+  stateRef.current.isHelpOpen = isHelpOpen;
+
+  // Handle Enter key for interacting with nearby world objects; revert to normal for mini-games/modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+
+      const activeTag = (document.activeElement?.tagName || '').toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+        return; // normal browser input behavior
+      }
+
+      const s = stateRef.current;
+      const isAnyModalOpen = Boolean(
+        s.activeDialogueAnimal ||
+        s.activeQuestModal ||
+        s.activeCropModal ||
+        s.isPremiseOpen ||
+        s.isProfileOpen ||
+        s.isQuestsOpen ||
+        s.isSettingsOpen ||
+        s.isHelpOpen
+      );
+
+      // In mini-games & modals, revert strictly to normal behavior
+      if (isAnyModalOpen) {
+        return;
+      }
+
+      // In the world: interact with nearby hotspot
+      const scene = phaserGameRef.current?.scene?.getScene('GardenscapesWorldScene') as any;
+      const targetHotspot = scene?.nearbyHotspot || s.nearbyHotspot;
+      if (targetHotspot) {
+        e.preventDefault();
+        sounds.playClick();
+        if (targetHotspot.type === 'animal' && targetHotspot.animalId) {
+          s.openDialogue(targetHotspot.animalId);
+        } else if (targetHotspot.type === 'gate' && targetHotspot.targetBiome) {
+          s.setCurrentBiome(targetHotspot.targetBiome);
+        } else if (targetHotspot.type === 'crop' && targetHotspot.targetBiome && targetHotspot.targetBiome !== 'clearing') {
+          const b = targetHotspot.targetBiome as Exclude<BiomeId, 'clearing'>;
+          const isRestored = (s.restoration[b] || 0) >= 80;
+          const isBaby = s.cropPlots?.[b]?.status === 'growing';
+          if (isRestored && !isBaby) {
+            s.harvestCrop(b);
+          } else {
+            s.openCropModal(b);
+          }
+        } else if (targetHotspot.type === 'quest' && targetHotspot.questAction) {
+          s.openQuestModal(targetHotspot.questAction);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Sync React room state changes into Phaser scene
   useEffect(() => {
@@ -106,7 +201,18 @@ export default function PhaserWorld() {
         scene.rebuildCurrentRoom(restoration);
       }
     }
-  }, [restoration, quests, globalFlourish]);
+  }, [restoration, quests, globalFlourish, cropPlots]);
+
+  // Trigger visiting buyer walking up the path when a crop is purchased
+  useEffect(() => {
+    if (recentBuyerEvent && phaserGameRef.current) {
+      const scene = phaserGameRef.current.scene.getScene('GardenscapesWorldScene') as any;
+      if (scene && typeof scene.spawnCustomerBuyer === 'function') {
+        scene.spawnCustomerBuyer(recentBuyerEvent.biome, recentBuyerEvent.cropName, recentBuyerEvent.produceIcon);
+        clearBuyerEvent();
+      }
+    }
+  }, [recentBuyerEvent, clearBuyerEvent]);
 
   useEffect(() => {
     let isMounted = true;
@@ -171,6 +277,7 @@ export default function PhaserWorld() {
             sprite: Phaser.GameObjects.Image;
             season: 'summer' | 'autumn';
           }[] = [];
+          private roomTimers: Phaser.Time.TimerEvent[] = [];
 
           constructor() {
             super({ key: 'GardenscapesWorldScene' });
@@ -217,7 +324,23 @@ export default function PhaserWorld() {
             this.load.image('barn', '/assets/sprites/barn.png');
             this.load.image('trees', '/assets/sprites/trees.png');
             this.load.image('crop_dead', '/assets/crops/crop_dead.png');
+            this.load.image('crop_lake_dead', '/assets/crops/crop_lake_dead.png');
+            this.load.image('crop_forest_dead', '/assets/crops/crop_forest_dead.png');
+            this.load.image('crop_tundra_dead', '/assets/crops/crop_tundra_dead.png');
+            this.load.image('crop_grasslands_dead', '/assets/crops/crop_grasslands_dead.png');
+            this.load.image('crop_desert_dead', '/assets/crops/crop_desert_dead.png');
             this.load.image('crop_flourish', '/assets/crops/crop_flourish.png');
+            this.load.image('crop_baby', '/assets/crops/crop_baby.png');
+            this.load.image('windmill_tower', '/assets/sprites/windmill_tower.png');
+            this.load.image('windmill_blades', '/assets/sprites/windmill_blades.png');
+            this.load.image('buyer', '/assets/sprites/buyer.png');
+            this.load.image('glow_aura', '/assets/sprites/glow_aura.png');
+            this.load.image('produce_corn', '/assets/crops/produce_corn.png');
+            this.load.image('produce_apple', '/assets/crops/produce_apple.png');
+            this.load.image('produce_wheat', '/assets/crops/produce_wheat.png');
+            this.load.image('produce_sunflower', '/assets/crops/produce_sunflower.png');
+            this.load.image('produce_melon', '/assets/crops/produce_melon.png');
+            this.load.image('produce_rice', '/assets/crops/produce_rice.png');
 
             // Animals
             this.load.image('manatee', '/assets/sprites/manatee.png');
@@ -327,12 +450,12 @@ export default function PhaserWorld() {
             this.player = this.add.container(x, y);
             this.player.setDepth(50);
 
-            // Soft ground shadow anchored precisely at the feet (0, 0)
-            const shadow = this.add.ellipse(0, 0, 32, 12, 0x000000, 0.4);
+            // Soft ground shadow anchored precisely directly under the soles of the boots
+            const shadow = this.add.ellipse(0, 0, 30, 9, 0x000000, 0.45);
 
             // Farmer image sprite with origin at the bottom feet (0.5, 1.0)
             this.playerSprite = this.add.image(0, 0, 'farmer');
-            this.playerSprite.setDisplaySize(54, 54);
+            this.playerSprite.setDisplaySize(42, 56);
             this.playerSprite.setOrigin(0.5, 1.0);
 
             this.player.add([shadow, this.playerSprite]);
@@ -374,7 +497,7 @@ export default function PhaserWorld() {
             }
           }
 
-          public rebuildCurrentRoom(newRestoration?: Record<BiomeId, number>) {
+          public rebuildCurrentRoom(newRestoration?: Record<BiomeId, number> | null) {
             if (newRestoration) {
               this.restorationData = newRestoration;
             }
@@ -406,47 +529,51 @@ export default function PhaserWorld() {
               // Reset zoom so each map starts zoomed in
               this.applyZoom(this.defaultZoom);
 
-              // Determine opposite-side entry coordinates with large safety margin
+              // Determine entry coordinates close to the entrance (safely offset from edge to not trigger back-transition)
               const w = this.canvasW;
               if (customSpawn) {
                 this.teleportPlayer(customSpawn.x, customSpawn.y);
               } else if (biome === 'clearing') {
                 // Entering Central Farm from a biome:
                 if (previousRoom === 'lake') {
-                  // Lake is on Left -> entered farm on Left edge, spawn at x = 260
-                  this.teleportPlayer(260, 420);
+                  // Lake is on Left -> entered farm on Left edge, spawn close to entrance at x = 70
+                  this.teleportPlayer(70, 420);
+                  if (this.playerSprite) this.playerSprite.setFlipX(true);
                 } else if (previousRoom === 'grasslands') {
-                  // Grasslands is on Right -> entered farm on Right edge, spawn at x = w - 260
-                  this.teleportPlayer(w - 260, 420);
+                  // Grasslands is on Right -> entered farm on Right edge, spawn close to entrance at x = w - 70
+                  this.teleportPlayer(w - 70, 420);
+                  if (this.playerSprite) this.playerSprite.setFlipX(false);
                 } else if (previousRoom === 'forest') {
-                  // Forest is North-West -> entered farm at North-West lane, spawn at y = 180
-                  this.teleportPlayer(190, 180);
+                  // Forest is North-West -> entered farm at North-West lane, spawn close to entrance at y = 70
+                  this.teleportPlayer(190, 70);
                 } else if (previousRoom === 'tundra') {
-                  // Tundra is North-Center -> entered farm at North Avenue, spawn at y = 180
-                  this.teleportPlayer(w / 2, 180);
+                  // Tundra is North-Center -> entered farm at North Avenue, spawn close to entrance at y = 70
+                  this.teleportPlayer(w / 2, 70);
                 } else if (previousRoom === 'reefs') {
-                  // Reefs is South-Center -> entered farm at South Avenue, spawn at y = 570
-                  this.teleportPlayer(w / 2, 570);
+                  // Reefs is South-Center -> entered farm at South Avenue, spawn close to entrance at y = 680
+                  this.teleportPlayer(w / 2, 680);
                 } else if (previousRoom === 'desert') {
-                  // Desert is South-East -> entered farm at South-East lane, spawn at y = 570
-                  this.teleportPlayer(w - 170, 570);
+                  // Desert is South-East -> entered farm at South-East lane, spawn close to entrance at y = 680
+                  this.teleportPlayer(w - 170, 680);
                 } else {
                   this.teleportPlayer(w / 2, 420);
                 }
               } else {
                 // Entering a specific Biome from Central Farm:
                 if (biome === 'lake') {
-                  // Exited Farm on Left -> enter Lake on the RIGHT edge! (Spawn at x = w - 260)
-                  this.teleportPlayer(w - 260, 375);
+                  // Exited Farm on Left -> enter Lake on RIGHT edge close to entrance at x = w - 70
+                  this.teleportPlayer(w - 70, 375);
+                  if (this.playerSprite) this.playerSprite.setFlipX(false);
                 } else if (biome === 'grasslands') {
-                  // Exited Farm on Right -> enter Grasslands on the LEFT edge! (Spawn at x = 260)
-                  this.teleportPlayer(260, 375);
+                  // Exited Farm on Right -> enter Grasslands on LEFT edge close to entrance at x = 70
+                  this.teleportPlayer(70, 375);
+                  if (this.playerSprite) this.playerSprite.setFlipX(true);
                 } else if (biome === 'forest' || biome === 'tundra') {
-                  // Exited Farm on Top -> enter at the BOTTOM edge! (Spawn at y = 570)
-                  this.teleportPlayer(w / 2, 570);
+                  // Exited Farm on Top -> enter at BOTTOM edge close to entrance at y = 680
+                  this.teleportPlayer(w / 2, 680);
                 } else if (biome === 'reefs' || biome === 'desert') {
-                  // Exited Farm on Bottom -> enter at the TOP edge! (Spawn at y = 180)
-                  this.teleportPlayer(w / 2, 180);
+                  // Exited Farm on Bottom -> enter at TOP edge close to entrance at y = 70
+                  this.teleportPlayer(w / 2, 70);
                 } else {
                   this.teleportPlayer(w / 2, 375);
                 }
@@ -763,11 +890,12 @@ export default function PhaserWorld() {
             this.easterEggsContainer.removeAll(true);
             this.footprintsContainer.removeAll(true);
             this.signsContainer.removeAll(true);
+            this.roomTimers.forEach((t) => t.destroy());
+            this.roomTimers = [];
             this.pathPolygons = [];
             this.currentHotspots = [];
             this.nearbyHotspot = null;
             stateRef.current.activeHotspotId = null;
-            setActiveNearbyHotspot(null);
             if (this.player) {
               this.lastFootprintPos = { x: this.player.x, y: this.player.y };
             }
@@ -800,6 +928,95 @@ export default function PhaserWorld() {
           }
 
           // ===============================================================
+          // ✨ INTERACTIVE OBJECT HOVER GLOW HELPER
+          // Makes clickable objects glow radiant golden amber on hover
+          // ===============================================================
+          private makeClickableAndGlow(
+            target: any,
+            onClick?: (pointer: Phaser.Input.Pointer) => void,
+            options?: {
+              glowRadius?: number;
+              glowColor?: number;
+              parentContainer?: Phaser.GameObjects.Container;
+              glowOffset?: { x: number; y: number };
+            }
+          ) {
+            target.setInteractive({ useHandCursor: true });
+
+            let activeGlow: Phaser.GameObjects.Image | null = null;
+            let activeTween: Phaser.Tweens.Tween | null = null;
+
+            target.on('pointerover', () => {
+              // 1. Highlight tint on sprite
+              if (typeof target.setTint === 'function') {
+                target.setTint(0xfff8b0);
+              }
+
+              // 2. Additive luminous glow halo aura
+              if (!activeGlow && this.textures.exists('glow_aura')) {
+                const ox = options?.glowOffset?.x ?? 0;
+                const oy = options?.glowOffset?.y ?? 0;
+                const gx = target.x !== undefined ? target.x + ox : ox;
+                const gy = target.y !== undefined ? target.y + oy : oy;
+                const container = options?.parentContainer || target.parentContainer;
+
+                if (container && typeof container.add === 'function') {
+                  activeGlow = this.add.image(gx, gy, 'glow_aura');
+                  const radius = options?.glowRadius || Math.max(target.displayWidth || 60, target.displayHeight || 60) * 1.35;
+                  activeGlow.setDisplaySize(radius, radius);
+                  activeGlow.setBlendMode(Phaser.BlendModes.ADD);
+                  activeGlow.setTint(options?.glowColor || 0xffea00);
+                  activeGlow.setAlpha(0.7);
+                  container.add(activeGlow);
+                  container.sendToBack(activeGlow);
+                  activeTween = this.tweens.add({
+                    targets: activeGlow,
+                    alpha: { from: 0.5, to: 0.95 },
+                    duration: 650,
+                    yoyo: true,
+                    repeat: -1,
+                  });
+                }
+              }
+
+              // 3. WebGL postFX glow if supported
+              try {
+                if (target.postFX?.addGlow) {
+                  target._hoverGlowFX = target.postFX.addGlow(0xfde047, 4, 0, false, 0.1, 8);
+                }
+              } catch {}
+            });
+
+            target.on('pointerout', () => {
+              if (typeof target.clearTint === 'function') {
+                target.clearTint();
+              }
+              if (activeTween) {
+                activeTween.stop();
+                activeTween = null;
+              }
+              if (activeGlow) {
+                activeGlow.destroy();
+                activeGlow = null;
+              }
+              try {
+                if (target._hoverGlowFX && target.postFX?.remove) {
+                  target.postFX.remove(target._hoverGlowFX);
+                  target._hoverGlowFX = null;
+                }
+              } catch {}
+            });
+
+            if (onClick) {
+              target.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event?.stopPropagation?.();
+                this.ignorePathClickUntil = this.time.now + 250;
+                onClick(pointer);
+              });
+            }
+          }
+
+          // ===============================================================
           // 🪵 VINTAGE WOODEN POSTED SIGN HELPER (COMPACT RUSTIC SIGNS)
           // Crisp, high-resolution (3x) text with balanced, slim wooden posts
           // ===============================================================
@@ -816,18 +1033,18 @@ export default function PhaserWorld() {
           ): Phaser.GameObjects.Container {
             const container = this.add.container(x, y);
 
-            // Crisp, readable system font with native subpixel antialiasing
-            const crispFont = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+            // Legible pixel art font: Silkscreen at 3x resolution for tack-sharp camera zoom
+            const pixelFont = "'Silkscreen', monospace";
 
-            // Title Text: Pure white, clean 1.2px stroke outline, resolution: 3 for tack-sharp camera zoom
+            // Title Text: Pure white, clean 1.0px outline, resolution: 3 to stay crisp and readable
             const titleFontSize = subtitle ? '11px' : '11.5px';
             const titleText = this.add.text(0, 0, title, {
               fontSize: titleFontSize,
               fontStyle: 'bold',
-              fontFamily: crispFont,
+              fontFamily: pixelFont,
               color: '#ffffff',
               stroke: '#140702',
-              strokeThickness: 1.2,
+              strokeThickness: 1.0,
               shadow: { offsetX: 0.5, offsetY: 0.8, color: '#140702', blur: 0, fill: true },
               wordWrap: { width: width - 12, useAdvancedWrap: true },
               align: 'center',
@@ -838,8 +1055,8 @@ export default function PhaserWorld() {
             if (subtitle) {
               subText = this.add.text(0, 0, subtitle, {
                 fontSize: '9.5px',
-                fontStyle: '600',
-                fontFamily: crispFont,
+                fontStyle: 'normal',
+                fontFamily: pixelFont,
                 color: statusColor || '#fde68a',
                 stroke: '#140702',
                 strokeThickness: 1.0,
@@ -897,13 +1114,20 @@ export default function PhaserWorld() {
             }
 
             if (onClick) {
-              boardFace.setInteractive({ useHandCursor: true });
-              boardFace.on('pointerdown', onClick);
+              this.makeClickableAndGlow(boardFace, onClick, { parentContainer: container, glowRadius: width * 1.15 });
               titleText.setInteractive({ useHandCursor: true });
-              titleText.on('pointerdown', onClick);
+              titleText.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                pointer.event?.stopPropagation?.();
+                this.ignorePathClickUntil = this.time.now + 250;
+                onClick();
+              });
               if (subText) {
                 subText.setInteractive({ useHandCursor: true });
-                subText.on('pointerdown', onClick);
+                subText.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+                  pointer.event?.stopPropagation?.();
+                  this.ignorePathClickUntil = this.time.now + 250;
+                  onClick();
+                });
               }
             }
 
@@ -945,27 +1169,71 @@ export default function PhaserWorld() {
             this.renderBiomePaths('path_farm');
 
             // 3. Buildings & Orchard Grove
-            // Farmhouse Cottage
+            // Farmhouse Cottage (clickable with hover glow)
             const house = this.add.image(w / 2 - 360, 120, 'house');
             house.setDisplaySize(140, 140);
+            this.makeClickableAndGlow(house, () => {
+              sounds.playClick();
+              this.spawnFloatingBubble(w / 2 - 360, 45, '🏡 Farmhouse: Cozy cottage overlooking the regenerative crops!');
+            });
             this.worldContainer.add(house);
 
             // Clumped Orchard Grove
             const orchardSoil = this.add.ellipse(w / 2 - 190, 130, 150, 95, 0x543315, 0.4);
-            const trees1 = this.add.image(w / 2 - 230, 115, 'trees').setDisplaySize(95, 95);
-            const trees2 = this.add.image(w / 2 - 150, 110, 'trees').setDisplaySize(95, 95);
-            const trees3 = this.add.image(w / 2 - 190, 145, 'trees').setDisplaySize(100, 100);
+            const trees1 = this.add.image(w / 2 - 230, 115, 'trees').setDisplaySize(95, 95).setOrigin(0.5, 0.85);
+            const trees2 = this.add.image(w / 2 - 150, 110, 'trees').setDisplaySize(95, 95).setOrigin(0.5, 0.85);
+            const trees3 = this.add.image(w / 2 - 190, 145, 'trees').setDisplaySize(100, 100).setOrigin(0.5, 0.85);
             this.worldContainer.add([orchardSoil, trees1, trees2, trees3]);
 
-            // Barn & Silo
+            // Dynamic tree wind swaying tweens
+            [trees1, trees2, trees3].forEach((t, i) => {
+              this.tweens.add({
+                targets: t,
+                angle: { from: -2.2, to: 2.2 },
+                duration: 2400 + i * 400,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                delay: i * 300,
+              });
+            });
+
+            // Ambient gentle leaves drifting from the orchard
+            const orchardLeafTimer = this.time.addEvent({
+              delay: 1100,
+              loop: true,
+              callback: () => {
+                const lx = Phaser.Math.Between(w / 2 - 260, w / 2 - 130);
+                const ly = Phaser.Math.Between(90, 150);
+                const leaf = this.add.ellipse(lx, ly, 5, 2.5, isFarmRestored ? 0x22c55e : 0x78716c, 0.8);
+                this.worldContainer.add(leaf);
+                this.tweens.add({
+                  targets: leaf,
+                  x: lx + Phaser.Math.Between(40, 110),
+                  y: ly + Phaser.Math.Between(70, 160),
+                  angle: 180,
+                  alpha: 0,
+                  duration: 2600,
+                  ease: 'Quad.easeOut',
+                  onComplete: () => leaf.destroy(),
+                });
+              },
+            });
+            this.roomTimers.push(orchardLeafTimer);
+
+            // Barn & Silo (clickable with hover glow)
             const barn = this.add.image(w / 2 + 350, 120, 'barn');
             barn.setDisplaySize(150, 150);
+            this.makeClickableAndGlow(barn, () => {
+              sounds.playClick();
+              this.spawnFloatingBubble(w / 2 + 350, 45, '🌾 Red Barn: Storage for organic seeds and bio-fertilizer.');
+            });
             this.worldContainer.add(barn);
 
-            // Swimming Pool in Southwest sector
-            this.renderSwimmingPool(w / 2 - 360, 580);
+            // Moving Windmill (Clean energy for the farm, uses images, NOT polygons!)
+            this.renderFarmWindmill(w / 2 + 185, 110);
 
-            // 4. Six Dedicated Crop Fields (Displays One Dead vs Flourishing Image!)
+            // 4. Six Dedicated Crop Fields (Displays Specific Dead, Baby, or Flourishing Image!)
             this.renderFarmCropField(w / 2 - 360, 290, 'lake', 'Golden Sweet Corn', 'Lake Water Polluted');
             this.renderFarmCropField(w / 2 - 170, 290, 'forest', 'Canopy Apple Orchard', 'Wildfire Smoke Blight');
             this.renderFarmCropField(w / 2 + 170, 200, 'tundra', 'Glacial Winter Wheat', 'Coal Soot Fallout');
@@ -979,10 +1247,7 @@ export default function PhaserWorld() {
             // 6. Farm Activity Station (Extinguish Wildfire Flare-ups)
             this.spawnBiomeQuestStation('clearing', isFarmRestored);
 
-            // 7. Miniature Farm Easter Eggs (Active once farm/clearing is healed)
-            if (isFarmRestored) {
-              this.spawnFarmEasterEggs([trees1, trees2, trees3]);
-            }
+            // NOTE: Per specification, no easter eggs are on the farm!
           }
 
           private renderBiomePaths(textureKey: string) {
@@ -998,17 +1263,241 @@ export default function PhaserWorld() {
             });
           }
 
-          private renderSwimmingPool(x: number, y: number) {
+          // ===============================================================
+          // 💨 RENEWABLE ENERGY MOVING WINDMILL (IMAGES, NOT POLYGONS!)
+          // ===============================================================
+          private renderFarmWindmill(x: number, y: number) {
             const container = this.add.container(x, y);
-            const patio = this.add.rectangle(0, 0, 110, 80, 0xd97706).setStrokeStyle(3, 0xb45309);
-            const water = this.add.rectangle(0, 0, 94, 64, 0x06b6d4).setStrokeStyle(2, 0x38bdf8);
-            const board = this.add.rectangle(35, 0, 24, 8, 0xffffff);
+            container.setDepth(14);
 
-            container.add([patio, water, board]);
+            // Soft shadow
+            const shadow = this.add.ellipse(0, 68, 90, 26, 0x000000, 0.35);
+
+            // Windmill Tower image (real PNG image, NO polygons!)
+            const tower = this.add.image(0, 0, 'windmill_tower');
+            tower.setDisplaySize(115, 150);
+
+            // Windmill Blades image (centered rotor, real PNG image, NO polygons!)
+            // Placed at rotor axle hub near the top of the tower
+            const blades = this.add.image(0, -38, 'windmill_blades');
+            blades.setDisplaySize(135, 135);
+            blades.setOrigin(0.5, 0.5);
+
+            container.add([shadow, tower, blades]);
             this.worldContainer.add(container);
+
+            // Continuous rotating blades tween (windmill that moves!)
+            const spinTween = this.tweens.add({
+              targets: blades,
+              angle: 360,
+              duration: 4600,
+              repeat: -1,
+              ease: 'Linear',
+            });
+
+            // Clickable and glows on hover!
+            this.makeClickableAndGlow(tower, () => {
+              sounds.playRustle();
+              spinTween.setTimeScale(2.6);
+              this.time.delayedCall(2200, () => spinTween.setTimeScale(1.0));
+              this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: 100% clean wind power running the farm drip irrigation!');
+            }, { parentContainer: container, glowRadius: 130 });
+
+            this.makeClickableAndGlow(blades, () => {
+              sounds.playRustle();
+              spinTween.setTimeScale(2.6);
+              this.time.delayedCall(2200, () => spinTween.setTimeScale(1.0));
+              this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: 100% clean wind power running the farm drip irrigation!');
+            }, { parentContainer: container, glowRadius: 140 });
+
+            // Vintage wooden sign beside the windmill
+            this.createVintageWoodenSign(
+              x,
+              y + 80,
+              '💨 ECO-WINDMILL',
+              'Clean Energy • Tap to spin!',
+              155,
+              28,
+              '#93c5fd',
+              () => {
+                sounds.playRustle();
+                spinTween.setTimeScale(2.6);
+                this.time.delayedCall(2200, () => spinTween.setTimeScale(1.0));
+                this.spawnFloatingBubble(x, y - 75, '💨 Eco-Windmill: 100% clean wind energy powering sustainable irrigation!');
+              },
+              'bottom'
+            );
           }
 
-          // CROP FIELD: Displays One Dead Picture or Flourishing Picture with Vintage Wooden Sign
+          // ===============================================================
+          // 🛒 VISITING CUSTOMER BUYER SPRITE
+          // Walks up the dirt path to your farm and purchases the crop!
+          // ===============================================================
+          public spawnCustomerBuyer(
+            biome: Exclude<BiomeId, 'clearing'>,
+            cropName: string,
+            produceIconKey?: string
+          ) {
+            if (this.currentRoomId !== 'clearing') return;
+
+            const w = this.canvasW;
+            const startX = w / 2;
+            const startY = 740;
+            const targetY = 440; // Central farm plaza
+
+            const buyerContainer = this.add.container(startX, startY);
+            buyerContainer.setDepth(34);
+
+            const shadow = this.add.ellipse(0, 10, 52, 18, 0x000000, 0.4);
+            const buyerSprite = this.add.image(0, 0, 'buyer');
+            buyerSprite.setDisplaySize(70, 92);
+            buyerSprite.setOrigin(0.5, 0.9);
+
+            buyerContainer.add([shadow, buyerSprite]);
+
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(buyerSprite, () => {
+              sounds.playClick();
+              this.spawnFloatingBubble(buyerContainer.x, buyerContainer.y - 85, '😊 "I love buying fresh local crops!"');
+            }, { parentContainer: buyerContainer, glowRadius: 95 });
+
+            this.worldContainer.add(buyerContainer);
+
+            // Walking sway tween
+            const walkSway = this.tweens.add({
+              targets: buyerSprite,
+              angle: { from: -4, to: 4 },
+              duration: 170,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            // Step sounds
+            const stepTimer = this.time.addEvent({
+              delay: 380,
+              repeat: 5,
+              callback: () => sounds.playStep(),
+            });
+            this.roomTimers.push(stepTimer);
+
+            // Speech sign while walking up the path
+            const walkSign = this.createVintageWoodenSign(
+              startX,
+              startY - 90,
+              '🚶 VISITING BUYER',
+              `Smelling fresh ${cropName}!`,
+              175,
+              26,
+              '#fde68a',
+              undefined,
+              'none'
+            );
+
+            // Move container up the path towards farm plaza
+            this.tweens.add({
+              targets: [buyerContainer, walkSign],
+              y: '-= 300',
+              duration: 2500,
+              ease: 'Linear',
+              onComplete: () => {
+                walkSway.stop();
+                buyerSprite.angle = 0;
+                walkSign.destroy();
+
+                // Arrived at farm!
+                sounds.playCoin();
+
+                // Produce icon flying from farm to buyer
+                const defaultKey = `produce_${biome === 'lake' ? 'corn' : biome === 'forest' ? 'apple' : biome === 'tundra' ? 'wheat' : biome === 'grasslands' ? 'sunflower' : biome === 'desert' ? 'melon' : 'rice'}`;
+                const pKey = produceIconKey && this.textures.exists(produceIconKey) ? produceIconKey : defaultKey;
+                const textureToUse = this.textures.exists(pKey) ? pKey : 'crop_flourish';
+                const produceToken = this.add.image(startX, targetY - 40, textureToUse);
+                produceToken.setDisplaySize(42, 42).setDepth(36);
+                this.tweens.add({
+                  targets: produceToken,
+                  y: targetY - 75,
+                  alpha: { from: 1, to: 0 },
+                  scale: { from: 0.6, to: 1.1 },
+                  duration: 950,
+                  onComplete: () => produceToken.destroy(),
+                });
+
+                // Sparkling golden coin particles burst around the buyer
+                for (let i = 0; i < 12; i++) {
+                  const coin = this.add.circle(
+                    startX + Phaser.Math.Between(-28, 28),
+                    targetY - 45 + Phaser.Math.Between(-15, 15),
+                    4.5,
+                    0xfacc15
+                  ).setStrokeStyle(1.5, 0x854d0e);
+                  coin.setDepth(37);
+                  this.tweens.add({
+                    targets: coin,
+                    x: coin.x + Phaser.Math.Between(-40, 40),
+                    y: coin.y - Phaser.Math.Between(30, 70),
+                    alpha: 0,
+                    duration: 1000,
+                    onComplete: () => coin.destroy(),
+                  });
+                }
+
+                // Add coins to player ledger
+                stateRef.current.addCoins('clearing', 50);
+
+                // Cheerful purchase speech sign
+                const purchaseSign = this.createVintageWoodenSign(
+                  startX,
+                  targetY - 95,
+                  '🪙 PURCHASE COMPLETE!',
+                  `Bought ${cropName} (+50 Coins)`,
+                  215,
+                  28,
+                  '#86efac',
+                  undefined,
+                  'none'
+                );
+
+                // After 2.5s, buyer happily waves and walks back down the path!
+                this.time.delayedCall(2400, () => {
+                  purchaseSign.destroy();
+
+                  const departSign = this.createVintageWoodenSign(
+                    startX,
+                    targetY - 90,
+                    '👋 THANK YOU!',
+                    'Heading to town market',
+                    170,
+                    26,
+                    '#fde68a',
+                    undefined,
+                    'none'
+                  );
+
+                  const returnSway = this.tweens.add({
+                    targets: buyerSprite,
+                    angle: { from: -4, to: 4 },
+                    duration: 170,
+                    yoyo: true,
+                    repeat: -1,
+                  });
+
+                  this.tweens.add({
+                    targets: [buyerContainer, departSign],
+                    y: '+= 320',
+                    duration: 2500,
+                    ease: 'Linear',
+                    onComplete: () => {
+                      returnSway.stop();
+                      departSign.destroy();
+                      buyerContainer.destroy();
+                    },
+                  });
+                });
+              },
+            });
+          }
+
+          // CROP FIELD: Displays Dead Picture, Baby Sprouts, or Flourishing Picture with Vintage Wooden Sign
           private renderFarmCropField(
             x: number,
             y: number,
@@ -1016,46 +1505,110 @@ export default function PhaserWorld() {
             cropName: string,
             crisisNotice: string
           ) {
-            const isFlourished = (stateRef.current.restoration[biome] || 0) >= 80;
+            const isRestored = (this.restorationData?.[biome] ?? stateRef.current.restoration?.[biome] ?? 0) >= 80;
+            const currentPlot = stateRef.current.cropPlots?.[biome];
+            const isBaby = currentPlot?.status === 'growing';
+            const isReadyToHarvest = isRestored && !isBaby;
+
             const container = this.add.container(x, y);
 
             // Soft shadow
             const shadow = this.add.ellipse(0, 32, 95, 20, 0x000000, 0.35);
 
-            // Real Image Sprite (Dead vs Flourishing image)
-            const textureKey = isFlourished ? 'crop_flourish' : 'crop_dead';
+            // Real Image Sprite (Biome-specific Dead vs Baby Sprout vs Flourishing image)
+            const deadTextureKey = this.textures.exists(`crop_${biome}_dead`) ? `crop_${biome}_dead` : 'crop_dead';
+            let textureKey = deadTextureKey;
+            if (isBaby) {
+              textureKey = 'crop_baby';
+            } else if (isReadyToHarvest) {
+              textureKey = 'crop_flourish';
+            }
+
             const cropImage = this.add.image(0, 0, textureKey);
             cropImage.setDisplaySize(100, 100);
 
             container.add([shadow, cropImage]);
 
-            cropImage.setInteractive({ useHandCursor: true });
-            cropImage.on('pointerdown', () => {
-              sounds.playClick();
-              stateRef.current.openCropModal(biome);
-            });
+            // Clickable & glows on hover!
+            this.makeClickableAndGlow(cropImage, () => {
+              if (isReadyToHarvest) {
+                // Harvest crop!
+                sounds.playBloom();
+                const success = stateRef.current.harvestCrop(biome);
+                if (success) {
+                  // Floating produce animation
+                  const produceKey = `produce_${biome === 'lake' ? 'corn' : biome === 'forest' ? 'apple' : biome === 'tundra' ? 'wheat' : biome === 'grasslands' ? 'sunflower' : biome === 'desert' ? 'melon' : 'rice'}`;
+                  if (this.textures.exists(produceKey)) {
+                    const token = this.add.image(x, y, produceKey).setDisplaySize(50, 50).setDepth(45);
+                    this.tweens.add({
+                      targets: token,
+                      y: y - 60,
+                      scale: { from: 0.6, to: 1.1 },
+                      alpha: { from: 1, to: 0 },
+                      duration: 1200,
+                      onComplete: () => token.destroy(),
+                    });
+                  }
+                  // Sprout particles
+                  for (let i = 0; i < 8; i++) {
+                    const sp = this.add.circle(x + Phaser.Math.Between(-25, 25), y + Phaser.Math.Between(-15, 15), 3, 0x86efac).setDepth(46);
+                    this.tweens.add({
+                      targets: sp,
+                      y: sp.y - Phaser.Math.Between(20, 50),
+                      alpha: 0,
+                      duration: 800,
+                      onComplete: () => sp.destroy(),
+                    });
+                  }
+                  this.rebuildCurrentRoom(this.restorationData);
+                }
+              } else if (isBaby) {
+                sounds.playClick();
+                stateRef.current.openCropModal(biome);
+              } else {
+                sounds.playClick();
+                stateRef.current.openCropModal(biome);
+              }
+            }, { parentContainer: container, glowRadius: 130 });
 
             this.worldContainer.add(container);
 
             // Vintage wooden posted sign right at the crop plot
+            let subLabel = `⚠ ${crisisNotice}`;
+            let subColor = '#fca5a5';
+            if (isBaby) {
+              const now = Date.now();
+              const timeRemainingMs = currentPlot?.plantedAt ? Math.max(0, currentPlot.growDurationMs - (now - currentPlot.plantedAt)) : 0;
+              const mins = Math.ceil(timeRemainingMs / 60000);
+              subLabel = `🌱 Baby Sprouts (${mins}m left)`;
+              subColor = '#fef08a';
+            } else if (isReadyToHarvest) {
+              subLabel = '🌾 Click to Harvest!';
+              subColor = '#86efac';
+            }
+
             this.createVintageWoodenSign(
               x,
               y + 40,
               cropName,
-              isFlourished ? '✓ Flourishing Harvest' : `⚠ ${crisisNotice}`,
-              135,
+              subLabel,
+              145,
               28,
-              isFlourished ? '#86efac' : '#fca5a5',
+              subColor,
               () => {
-                sounds.playClick();
-                stateRef.current.openCropModal(biome);
+                if (isReadyToHarvest) {
+                  cropImage.emit('pointerdown');
+                } else {
+                  sounds.playClick();
+                  stateRef.current.openCropModal(biome);
+                }
               },
               'bottom'
             );
 
             this.currentHotspots.push({
               id: `crop_${biome}`,
-              name: `${cropName} (${isFlourished ? 'Flourishing' : 'Crisis'})`,
+              name: `${cropName} (${isBaby ? 'Growing' : (isReadyToHarvest ? 'Flourishing' : 'Crisis')})`,
               x,
               y,
               iconSprite: textureKey,
@@ -1067,12 +1620,12 @@ export default function PhaserWorld() {
           // Path portals positioned near offscreen exits
           private renderPathGateSigns() {
             const w = this.canvasW;
-            this.createGateSign(80, 420, 'lake', '← LAKE DOCK', 'Golden Sweet Corn');
-            this.createGateSign(190, 40, 'forest', '↑ CLOUD FOREST', 'Apple Orchard');
-            this.createGateSign(w / 2, 40, 'tundra', '↑ ARCTIC TUNDRA', 'Winter Wheat');
-            this.createGateSign(w - 80, 420, 'grasslands', 'PRAIRIE →', 'Giant Sunflowers');
-            this.createGateSign(w - 170, 710, 'desert', '↓ DESERT OASIS', 'Sugar Melons');
-            this.createGateSign(w / 2, 710, 'reefs', '↓ CORAL REEFS', 'Tidal Rice');
+            this.createGateSign(80, 340, 'lake', '← LAKE DOCK', 'Golden Sweet Corn');
+            this.createGateSign(260, 50, 'forest', '↑ CLOUD FOREST', 'Apple Orchard');
+            this.createGateSign(w / 2 + 75, 50, 'tundra', '↑ ARCTIC TUNDRA', 'Winter Wheat');
+            this.createGateSign(w - 80, 340, 'grasslands', 'PRAIRIE →', 'Giant Sunflowers');
+            this.createGateSign(w - 100, 700, 'desert', '↓ DESERT OASIS', 'Sugar Melons');
+            this.createGateSign(w / 2 + 75, 700, 'reefs', '↓ CORAL REEFS', 'Tidal Rice');
           }
 
           private createGateSign(
@@ -1170,6 +1723,15 @@ export default function PhaserWorld() {
 
             // 4. Action Plan Quest Station at (w / 2, 180)
             this.spawnBiomeQuestStation(biome, isRestored);
+
+            // Dynamic Environmental Effects (Dynamic water ripples/caustics/sparkles and swaying trees/leaves)
+            if (biome === 'lake') {
+              this.createDynamicLakeWater(isRestored);
+            } else if (biome === 'reefs') {
+              this.createDynamicReefWater(isRestored);
+            } else if (biome === 'forest') {
+              this.createDynamicForestEnvironment(isRestored);
+            }
 
             // 5. Miniature Biome Easter Eggs (Only unlocked after environment has been healed!)
             if (isRestored) {
@@ -1325,6 +1887,231 @@ export default function PhaserWorld() {
             });
           }
 
+          // ===============================================================
+          // 🌊 DYNAMIC WATER & FOREST ENVIRONMENTAL EFFECTS
+          // ===============================================================
+          private createDynamicLakeWater(isRestored: boolean) {
+            // 1. Glistening horizontal surface water ripples
+            const rippleStreaks = [
+              { x: 260, y: 220, width: 110 },
+              { x: 420, y: 270, width: 140 },
+              { x: 220, y: 460, width: 95 },
+              { x: 360, y: 520, width: 130 },
+              { x: 170, y: 320, width: 85 },
+              { x: 490, y: 450, width: 105 },
+            ];
+
+            rippleStreaks.forEach((pt, i) => {
+              const streak = this.add.ellipse(
+                pt.x,
+                pt.y,
+                pt.width,
+                5,
+                isRestored ? 0xbae6fd : 0x0284c7,
+                isRestored ? 0.45 : 0.35
+              );
+              this.worldContainer.add(streak);
+              this.tweens.add({
+                targets: streak,
+                scaleX: { from: 0.85, to: 1.25 },
+                alpha: { from: 0.25, to: 0.65 },
+                x: pt.x + (i % 2 === 0 ? 10 : -10),
+                duration: 1800 + i * 250,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+              });
+            });
+
+            // 2. Periodic expanding water ripple rings
+            const rippleTimer = this.time.addEvent({
+              delay: 1300,
+              loop: true,
+              callback: () => {
+                const rx = Phaser.Math.Between(160, 520);
+                const ry = Phaser.Math.Between(190, 540);
+                const ring = this.add.ellipse(rx, ry, 18, 9, 0x000000, 0);
+                ring.setStrokeStyle(1.5, isRestored ? 0xa5f3fc : 0x38bdf8, 0.75);
+                this.worldContainer.add(ring);
+                this.tweens.add({
+                  targets: ring,
+                  scaleX: 3.2,
+                  scaleY: 2.5,
+                  alpha: 0,
+                  duration: 2100,
+                  ease: 'Quad.easeOut',
+                  onComplete: () => ring.destroy(),
+                });
+              },
+            });
+            this.roomTimers.push(rippleTimer);
+
+            // 3. Sunlight water sparkles / glints
+            const glintTimer = this.time.addEvent({
+              delay: 600,
+              loop: true,
+              callback: () => {
+                const gx = Phaser.Math.Between(150, 540);
+                const gy = Phaser.Math.Between(180, 550);
+                const star = this.add.star(gx, gy, 4, 2, 5, isRestored ? 0xffffff : 0x7dd3fc, 0);
+                this.worldContainer.add(star);
+                this.tweens.add({
+                  targets: star,
+                  scale: { from: 0.2, to: 1.15 },
+                  alpha: { from: 0, to: 0.9 },
+                  duration: 450,
+                  yoyo: true,
+                  ease: 'Sine.easeInOut',
+                  onComplete: () => star.destroy(),
+                });
+              },
+            });
+            this.roomTimers.push(glintTimer);
+          }
+
+          private createDynamicReefWater(isRestored: boolean) {
+            const w = this.canvasW;
+
+            // 1. Dynamic undersea caustics ribbons
+            const caustics = [
+              { x: 260, y: 220, w: 120, h: 5 },
+              { x: 440, y: 270, w: 150, h: 6 },
+              { x: 290, y: 490, w: 130, h: 5 },
+              { x: 520, y: 530, w: 110, h: 5 },
+              { x: w - 280, y: 230, w: 140, h: 6 },
+              { x: w - 220, y: 470, w: 115, h: 5 },
+            ];
+
+            caustics.forEach((cp, i) => {
+              const band = this.add.ellipse(
+                cp.x,
+                cp.y,
+                cp.w,
+                cp.h,
+                isRestored ? 0x67e8f9 : 0x0284c7,
+                0.4
+              );
+              this.worldContainer.add(band);
+              this.tweens.add({
+                targets: band,
+                scaleX: { from: 0.85, to: 1.25 },
+                scaleY: { from: 0.7, to: 1.4 },
+                alpha: { from: 0.2, to: 0.65 },
+                x: cp.x + (i % 2 === 0 ? 14 : -14),
+                duration: 2200 + i * 300,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+              });
+            });
+
+            // 2. Translucent bubbles rising from reef seabed
+            const bubbleTimer = this.time.addEvent({
+              delay: 480,
+              loop: true,
+              callback: () => {
+                const bx = Phaser.Math.Between(180, w - 180);
+                const by = Phaser.Math.Between(440, 680);
+                const radius = Phaser.Math.Between(2, 5);
+                const bubble = this.add.circle(bx, by, radius, isRestored ? 0xe0f2fe : 0x7dd3fc, 0.75);
+                bubble.setStrokeStyle(1, 0xffffff, 0.6);
+                this.worldContainer.add(bubble);
+                this.tweens.add({
+                  targets: bubble,
+                  y: by - Phaser.Math.Between(130, 250),
+                  x: bx + Phaser.Math.Between(-25, 25),
+                  alpha: 0,
+                  duration: Phaser.Math.Between(2200, 3500),
+                  ease: 'Quad.easeOut',
+                  onComplete: () => bubble.destroy(),
+                });
+              },
+            });
+            this.roomTimers.push(bubbleTimer);
+
+            // 3. Aqua ocean surface sparkles
+            const reefGlintTimer = this.time.addEvent({
+              delay: 650,
+              loop: true,
+              callback: () => {
+                const gx = Phaser.Math.Between(180, w - 180);
+                const gy = Phaser.Math.Between(140, 600);
+                const glint = this.add.star(gx, gy, 4, 2, 5, isRestored ? 0x67e8f9 : 0x38bdf8, 0);
+                this.worldContainer.add(glint);
+                this.tweens.add({
+                  targets: glint,
+                  scale: { from: 0.2, to: 1.1 },
+                  alpha: { from: 0, to: 0.85 },
+                  duration: 500,
+                  yoyo: true,
+                  ease: 'Sine.easeInOut',
+                  onComplete: () => glint.destroy(),
+                });
+              },
+            });
+            this.roomTimers.push(reefGlintTimer);
+          }
+
+          private createDynamicForestEnvironment(isRestored: boolean) {
+            const w = this.canvasW;
+
+            // 1. Ambient swaying trees along forest backdrop
+            const bgTreePositions = [
+              { x: w / 2 - 320, y: 160 },
+              { x: w / 2 + 320, y: 160 },
+              { x: w / 2 - 420, y: 440 },
+              { x: w / 2 + 420, y: 440 },
+            ];
+
+            bgTreePositions.forEach((pos, i) => {
+              const shadow = this.add.ellipse(pos.x, pos.y + 40, 80, 24, 0x000000, 0.35);
+              const tree = this.add.image(pos.x, pos.y, 'trees');
+              tree.setDisplaySize(110, 110);
+              tree.setOrigin(0.5, 0.85);
+              if (!isRestored) {
+                tree.setTint(0x78716c);
+              }
+              this.worldContainer.add([shadow, tree]);
+              this.tweens.add({
+                targets: tree,
+                angle: { from: -2.2, to: 2.2 },
+                duration: 2500 + i * 400,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                delay: i * 250,
+              });
+            });
+
+            // 2. Drifting leaves / embers across the breeze
+            const leafColors = isRestored
+              ? [0x16a34a, 0x22c55e, 0x4ade80, 0xca8a04]
+              : [0x78716c, 0xa8a29e, 0x57534e, 0xef4444];
+
+            const leafTimer = this.time.addEvent({
+              delay: 650,
+              loop: true,
+              callback: () => {
+                const lx = Phaser.Math.Between(100, w - 100);
+                const ly = Phaser.Math.Between(20, 280);
+                const color = Phaser.Utils.Array.GetRandom(leafColors);
+                const leaf = this.add.ellipse(lx, ly, 6, 3, color, 0.85);
+                this.worldContainer.add(leaf);
+                this.tweens.add({
+                  targets: leaf,
+                  x: lx + Phaser.Math.Between(60, 160),
+                  y: ly + Phaser.Math.Between(120, 260),
+                  angle: 360,
+                  alpha: 0,
+                  duration: Phaser.Math.Between(2600, 4200),
+                  ease: 'Quad.easeOut',
+                  onComplete: () => leaf.destroy(),
+                });
+              },
+            });
+            this.roomTimers.push(leafTimer);
+          }
+
           private getAnimalForBiome(biome: BiomeId): AnimalId | null {
             if (biome === 'forest') return 'red_panda';
             if (biome === 'lake') return 'manatee';
@@ -1402,8 +2189,7 @@ export default function PhaserWorld() {
               stateRef.current.openDialogue(animalId);
             };
 
-            sprite.setInteractive({ useHandCursor: true });
-            sprite.on('pointerdown', triggerChat);
+            this.makeClickableAndGlow(sprite, triggerChat, { parentContainer: container, glowRadius: 110 });
 
             this.worldContainer.add(container);
 
@@ -1434,157 +2220,6 @@ export default function PhaserWorld() {
           // 🐣 MINIATURE BIOME EASTER EGGS (UNLOCKED AFTER ENVIRONMENT HEALED)
           // ===============================================================
 
-          // 🏡 CENTRAL FARM EASTER EGGS (Bouncy mushroom, season-changing orchard trees, fluttering butterflies)
-          private spawnFarmEasterEggs(orchardTrees: Phaser.GameObjects.Image[]) {
-            const w = this.canvasW;
-
-            // 1. 🍄 Bouncy Mushroom on the northern corner of the central plaza
-            const mx = w / 2 - 110;
-            const my = 365;
-
-            const mContainer = this.add.container(mx, my);
-            mContainer.setDepth(22);
-
-            const mShadow = this.add.ellipse(0, 16, 40, 14, 0x000000, 0.45);
-            const mSprite = this.add.image(0, 0, 'mushroom');
-            mSprite.setDisplaySize(48, 48);
-            mSprite.setName('mushroom_sprite');
-
-            const mGlow = this.add.circle(0, 2, 24, 0xef4444, 0.2);
-            this.tweens.add({
-              targets: mGlow,
-              scale: 1.3,
-              alpha: 0.05,
-              duration: 900,
-              yoyo: true,
-              repeat: -1,
-            });
-
-            mContainer.add([mShadow, mGlow, mSprite]);
-
-            mSprite.setInteractive({ useHandCursor: true });
-            mSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-              pointer.event?.stopPropagation?.();
-              this.ignorePathClickUntil = this.time.now + 250;
-              this.walkPlayerTo(mx, my);
-            });
-
-            this.easterEggsContainer.add(mContainer);
-            this.mushroomObj = mContainer;
-
-            this.createVintageWoodenSign(
-              mx,
-              my - 44,
-              '🍄 ORCHARD MUSHROOM',
-              'Step on to bounce!',
-              180,
-              30,
-              '#ef4444',
-              () => {
-                this.walkPlayerTo(mx, my);
-              },
-              'none'
-            );
-
-            // 2. 🌲 Interactive Orchard Trees (Change seasons Summer <-> Autumn on click)
-            orchardTrees.forEach((tSprite) => {
-              const treeData = {
-                container: tSprite,
-                sprite: tSprite,
-                season: 'summer' as 'summer' | 'autumn',
-              };
-              this.interactiveForestTrees.push(treeData);
-
-              tSprite.setInteractive({ useHandCursor: true });
-              tSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-                pointer.event?.stopPropagation?.();
-                this.ignorePathClickUntil = this.time.now + 250;
-                this.toggleForestTreeSeason(treeData);
-              });
-            });
-
-            this.createVintageWoodenSign(
-              w / 2 - 190,
-              68,
-              '🌲 ORCHARD TREES',
-              'Click trees to change seasons!',
-              200,
-              30,
-              '#86efac',
-              () => {
-                if (this.interactiveForestTrees.length > 0) {
-                  this.toggleForestTreeSeason(this.interactiveForestTrees[0]);
-                }
-              },
-              'none'
-            );
-
-            // 3. 🦋 Tall Grass with Resting Butterflies in Farm Meadow
-            const gx = w / 2 + 110;
-            const gy = 365;
-
-            const grassContainer = this.add.container(gx, gy);
-            grassContainer.setDepth(18);
-
-            const grassSprite = this.add.image(0, 0, 'tall_grass');
-            grassSprite.setDisplaySize(64, 64);
-            grassContainer.add(grassSprite);
-
-            const restingButterflies: Phaser.GameObjects.Image[] = [];
-            const restingOffsets = [
-              { x: -14, y: -16, tint: 0xf97316 },
-              { x: 12, y: -20, tint: 0x38bdf8 },
-              { x: 0, y: -26, tint: 0xfacc15 },
-            ];
-
-            restingOffsets.forEach((off) => {
-              const bf = this.add.image(off.x, off.y, 'butterfly');
-              bf.setDisplaySize(20, 20);
-              bf.setTint(off.tint);
-              this.tweens.add({
-                targets: bf,
-                scaleX: 0.6,
-                duration: Phaser.Math.Between(350, 600),
-                yoyo: true,
-                repeat: -1,
-              });
-              grassContainer.add(bf);
-              restingButterflies.push(bf);
-            });
-
-            this.easterEggsContainer.add(grassContainer);
-
-            this.grasslandsGrassPatch = {
-              x: gx,
-              y: gy,
-              container: grassContainer,
-              restingButterflies,
-              triggered: false,
-              readyAt: 0,
-            };
-
-            grassSprite.setInteractive({ useHandCursor: true });
-            grassSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-              pointer.event?.stopPropagation?.();
-              this.ignorePathClickUntil = this.time.now + 250;
-              this.walkPlayerTo(gx, gy);
-            });
-
-            this.createVintageWoodenSign(
-              gx,
-              gy - 44,
-              '🦋 FARM BUTTERFLIES',
-              'Walk through tall grass!',
-              190,
-              30,
-              '#fde68a',
-              () => {
-                this.walkPlayerTo(gx, gy);
-              },
-              'none'
-            );
-          }
-
           // 1. 🍄 FOREST EASTER EGGS: Bouncy mushroom in corner of path & season-changing trees
           private spawnForestEasterEggs() {
             const w = this.canvasW;
@@ -1601,12 +2236,12 @@ export default function PhaserWorld() {
             mSprite.setDisplaySize(48, 48);
             mSprite.setName('mushroom_sprite');
 
-            // Gentle ambient glow inviting the sprite
+            // Ambient gentle pulse (scale never exceeds 1.0)
             const mGlow = this.add.circle(0, 2, 24, 0xef4444, 0.2);
             this.tweens.add({
               targets: mGlow,
-              scale: 1.3,
-              alpha: 0.05,
+              scale: { from: 1.0, to: 0.75 },
+              alpha: { from: 0.25, to: 0.08 },
               duration: 900,
               yoyo: true,
               repeat: -1,
@@ -1614,12 +2249,12 @@ export default function PhaserWorld() {
 
             mContainer.add([mShadow, mGlow, mSprite]);
 
-            mSprite.setInteractive({ useHandCursor: true });
-            mSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(mSprite, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(mx, my);
-            });
+            }, { parentContainer: mContainer, glowRadius: 65 });
 
             this.easterEggsContainer.add(mContainer);
             this.mushroomObj = mContainer;
@@ -1658,6 +2293,17 @@ export default function PhaserWorld() {
               tSprite.setDisplaySize(115, 115);
               tSprite.setOrigin(0.5, 0.85);
 
+              // Gentle ambient swaying in the breeze
+              this.tweens.add({
+                targets: tSprite,
+                angle: { from: -2.2, to: 2.2 },
+                duration: 2500 + Math.random() * 800,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                delay: Math.random() * 500,
+              });
+
               tContainer.add([tShadow, tSprite]);
 
               const treeData = {
@@ -1667,12 +2313,12 @@ export default function PhaserWorld() {
               };
               this.interactiveForestTrees.push(treeData);
 
-              tSprite.setInteractive({ useHandCursor: true });
-              tSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              // Clickable & glows on hover
+              this.makeClickableAndGlow(tSprite, (pointer: Phaser.Input.Pointer) => {
                 pointer.event?.stopPropagation?.();
                 this.ignorePathClickUntil = this.time.now + 250;
                 this.toggleForestTreeSeason(treeData);
-              });
+              }, { parentContainer: tContainer, glowRadius: 130 });
 
               this.easterEggsContainer.add(tContainer);
             });
@@ -1824,23 +2470,23 @@ export default function PhaserWorld() {
             const crack1 = this.add.line(0, 0, -50, 10, -10, -8, 0xffffff, 0.8).setLineWidth(1.5);
             const crack2 = this.add.line(0, 0, 15, -12, 55, 8, 0xffffff, 0.7).setLineWidth(1.5);
 
-            // Sparkling frost glint
+            // Sparkling frost glint (scale never exceeds 1.0)
             const glint = this.add.circle(45, -16, 3, 0xffffff, 0.9);
             this.tweens.add({
               targets: glint,
-              scale: { from: 0.6, to: 1.5 },
+              scale: { from: 0.6, to: 1.0 },
               alpha: { from: 0.3, to: 1.0 },
               duration: 700,
               yoyo: true,
               repeat: -1,
             });
 
-            iceBase.setInteractive({ useHandCursor: true });
-            iceBase.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(iceBase, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(iceX, iceY);
-            });
+            }, { parentContainer: iceContainer, glowRadius: 180 });
 
             iceContainer.add([iceBase, shine, crack1, crack2, glint]);
             this.easterEggsContainer.add(iceContainer);
@@ -1930,12 +2576,12 @@ export default function PhaserWorld() {
               readyAt: 0,
             };
 
-            grassSprite.setInteractive({ useHandCursor: true });
-            grassSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(grassSprite, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(gx, gy);
-            });
+            }, { parentContainer: grassContainer, glowRadius: 85 });
 
             this.createVintageWoodenSign(
               gx,
@@ -1960,11 +2606,12 @@ export default function PhaserWorld() {
           ) {
             sounds.playFlutter();
 
-            // Rustle grass blades
+            // Rustle grass blades (wobble only, scale never exceeds 1.0)
             this.tweens.add({
               targets: grassContainer,
-              scaleX: 1.2,
-              scaleY: 0.8,
+              angle: { from: -4, to: 4 },
+              scaleX: 1.0,
+              scaleY: 0.85,
               duration: 90,
               yoyo: true,
               repeat: 3,
@@ -2064,9 +2711,6 @@ export default function PhaserWorld() {
 
               cContainer.add([shadow, trunk, arm]);
 
-              trunk.setInteractive({ useHandCursor: true });
-              arm.setInteractive({ useHandCursor: true });
-
               const onCactusClick = (pointer: Phaser.Input.Pointer) => {
                 pointer.event?.stopPropagation?.();
                 this.ignorePathClickUntil = this.time.now + 200;
@@ -2078,8 +2722,9 @@ export default function PhaserWorld() {
                 this.spawnFloatingBubble(pos.x, pos.y - 48, '🌵 👋 Howdy!');
               };
 
-              trunk.on('pointerdown', onCactusClick);
-              arm.on('pointerdown', onCactusClick);
+              // Clickable & glows on hover
+              this.makeClickableAndGlow(trunk, onCactusClick, { parentContainer: cContainer, glowRadius: 85 });
+              this.makeClickableAndGlow(arm, onCactusClick, { parentContainer: cContainer, glowRadius: 65 });
 
               this.easterEggsContainer.add(cContainer);
             });
@@ -2155,12 +2800,12 @@ export default function PhaserWorld() {
             };
             this.nemoObj = nemoData;
 
-            nemoSprite.setInteractive({ useHandCursor: true });
-            nemoSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(nemoSprite, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 200;
               this.triggerNemoLoop(nemoData);
-            });
+            }, { parentContainer: nemoContainer, glowRadius: 75 });
 
             this.createVintageWoodenSign(
               nemoX,
@@ -2233,12 +2878,12 @@ export default function PhaserWorld() {
             };
             this.nemoObj = nemoData;
 
-            nemoSprite.setInteractive({ useHandCursor: true });
-            nemoSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(nemoSprite, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 200;
               this.triggerNemoLoop(nemoData);
-            });
+            }, { parentContainer: nemoContainer, glowRadius: 75 });
 
             this.createVintageWoodenSign(
               nemoX,
@@ -2300,12 +2945,12 @@ export default function PhaserWorld() {
               readyAt: 0,
             };
 
-            grassSprite.setInteractive({ useHandCursor: true });
-            grassSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+            // Clickable & glows on hover
+            this.makeClickableAndGlow(grassSprite, (pointer: Phaser.Input.Pointer) => {
               pointer.event?.stopPropagation?.();
               this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(gx, gy);
-            });
+            }, { parentContainer: grassContainer, glowRadius: 85 });
 
             this.createVintageWoodenSign(
               gx,
@@ -2341,12 +2986,12 @@ export default function PhaserWorld() {
               );
             }
 
-            // 360 loop-de-loop spin
+            // 360 loop-de-loop spin (scale never exceeds 1.0)
             this.tweens.add({
               targets: nemoData.sprite,
               angle: 360,
-              scaleX: 1.25,
-              scaleY: 1.25,
+              scaleX: 1.0,
+              scaleY: 1.0,
               duration: 650,
               ease: 'Cubic.easeInOut',
               onComplete: () => {
@@ -2476,6 +3121,13 @@ export default function PhaserWorld() {
 
             // Path constraint check & Anti-stuck recovery
             if (vx !== 0 || vy !== 0) {
+              // Mirror farmer icon so it always faces forward into motion
+              if (vx > 0.05) {
+                if (this.playerSprite) this.playerSprite.setFlipX(true);
+              } else if (vx < -0.05) {
+                if (this.playerSprite) this.playerSprite.setFlipX(false);
+              }
+
               const len = Math.sqrt(vx * vx + vy * vy);
               const nvx = vx / len;
               const nvy = vy / len;
@@ -2563,10 +3215,10 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // 🍄 FOREST & FARM MUSHROOM BOUNCING EASTER EGG
+            // 🍄 FOREST MUSHROOM BOUNCING EASTER EGG (NOT ON FARM)
             // If sprite gets on top of mushroom, start jumping up and down
             // ===============================================================
-            if ((this.currentRoomId === 'forest' || this.currentRoomId === 'clearing') && this.mushroomObj) {
+            if (this.currentRoomId === 'forest' && this.mushroomObj) {
               const distToMushroom = Phaser.Math.Distance.Between(
                 this.player.x,
                 this.player.y,
@@ -2579,10 +3231,11 @@ export default function PhaserWorld() {
                   sounds.playBoing();
                   const mSprite = this.mushroomObj.getByName('mushroom_sprite') as Phaser.GameObjects.Image;
                   if (mSprite) {
+                    // Squash only, scale never exceeds 1.0
                     this.tweens.add({
                       targets: mSprite,
-                      scaleX: 1.35,
-                      scaleY: 0.7,
+                      scaleX: 1.0,
+                      scaleY: 0.8,
                       duration: 110,
                       yoyo: true,
                       ease: 'Sine.easeInOut',
@@ -2606,10 +3259,10 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // 🦋 GRASSLANDS, FARM & LAKE BUTTERFLY PATCH EASTER EGG
+            // 🦋 GRASSLANDS & LAKE BUTTERFLY PATCH EASTER EGG (NOT ON FARM)
             // When sprite walks through grass, butterflies fly up and away
             // ===============================================================
-            if ((this.currentRoomId === 'grasslands' || this.currentRoomId === 'clearing' || this.currentRoomId === 'lake') && this.grasslandsGrassPatch) {
+            if ((this.currentRoomId === 'grasslands' || this.currentRoomId === 'lake') && this.grasslandsGrassPatch) {
               const patch = this.grasslandsGrassPatch;
               const distToPatch = Phaser.Math.Distance.Between(this.player.x, this.player.y, patch.x, patch.y);
 
@@ -2716,7 +3369,6 @@ export default function PhaserWorld() {
 
             if (nearest?.id !== stateRef.current.activeHotspotId) {
               stateRef.current.activeHotspotId = nearest?.id || null;
-              setActiveNearbyHotspot(nearest);
             }
           }
 
@@ -2775,6 +3427,41 @@ export default function PhaserWorld() {
 
             foot.add([sole, heel]);
             this.footprintsContainer.add(foot);
+
+            // Dynamic footstep ripples & splashes in water biomes
+            if (this.currentRoomId === 'lake' || this.currentRoomId === 'reefs') {
+              const waterRipple = this.add.ellipse(fx, fy, 14, 8, 0x38bdf8, 0);
+              waterRipple.setStrokeStyle(1.5, 0x7dd3fc, 0.85);
+              this.footprintsContainer.add(waterRipple);
+              this.tweens.add({
+                targets: waterRipple,
+                scaleX: 2.8,
+                scaleY: 2.2,
+                alpha: 0,
+                duration: 650,
+                ease: 'Sine.easeOut',
+                onComplete: () => waterRipple.destroy(),
+              });
+
+              for (let i = 0; i < 3; i++) {
+                const splashDrop = this.add.circle(
+                  fx + Phaser.Math.Between(-8, 8),
+                  fy + Phaser.Math.Between(-4, 4),
+                  Phaser.Math.Between(1.5, 2.5),
+                  0xe0f2fe,
+                  0.85
+                );
+                this.footprintsContainer.add(splashDrop);
+                this.tweens.add({
+                  targets: splashDrop,
+                  y: splashDrop.y - Phaser.Math.Between(6, 14),
+                  alpha: 0,
+                  duration: 350,
+                  ease: 'Quad.easeOut',
+                  onComplete: () => splashDrop.destroy(),
+                });
+              }
+            }
 
             // Footprint: fully visible for 0.5s, then smoothly fades out over 1.8s
             this.tweens.add({
@@ -2904,46 +3591,6 @@ export default function PhaserWorld() {
           +
         </button>
       </div>
-
-      {/* Proximity Interaction Prompt (Retro Pixel Art Dialog Plaque) */}
-      {activeNearbyHotspot && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 animate-bounce">
-          <button
-            onClick={() => {
-              sounds.playClick();
-              if (activeNearbyHotspot.type === 'animal' && activeNearbyHotspot.animalId) {
-                openDialogue(activeNearbyHotspot.animalId);
-              } else if (activeNearbyHotspot.type === 'gate' && activeNearbyHotspot.targetBiome) {
-                setCurrentBiome(activeNearbyHotspot.targetBiome);
-              } else if (activeNearbyHotspot.type === 'crop' && activeNearbyHotspot.targetBiome && activeNearbyHotspot.targetBiome !== 'clearing') {
-                openCropModal(activeNearbyHotspot.targetBiome as Exclude<BiomeId, 'clearing'>);
-              } else if (activeNearbyHotspot.type === 'quest' && activeNearbyHotspot.questAction) {
-                openQuestModal(activeNearbyHotspot.questAction);
-              }
-            }}
-            className="pixel-panel px-5 py-2.5 flex items-center gap-3 transition-transform active:scale-95 shadow-2xl cursor-pointer bg-[#fffbeb] border-2 border-[#5c2c16]"
-          >
-            {activeNearbyHotspot.animalId && (
-              <img
-                src={`/assets/sprites/${activeNearbyHotspot.animalId}${(restoration[currentBiome] || 0) >= 80 ? '' : '_sad'}.png`}
-                alt={activeNearbyHotspot.name}
-                className="w-9 h-9 object-cover border-2 border-[#5c2c16] rounded-sm bg-[#fef3c7]"
-              />
-            )}
-            <div className="text-left">
-              <div className="text-[11.5px] sm:text-[13px] font-bold text-[#b45309] uppercase tracking-wide">
-                {activeNearbyHotspot.name}
-              </div>
-              <div className="text-[9.5px] sm:text-[11px] text-[#5c2c16] font-medium">
-                {activeNearbyHotspot.type === 'animal' && 'TAP TO CHAT WITH ANIMAL'}
-                {activeNearbyHotspot.type === 'crop' && 'TAP TO INSPECT CROP HARVEST'}
-                {activeNearbyHotspot.type === 'gate' && 'TAP TO ENTER BIOME'}
-                {activeNearbyHotspot.type === 'quest' && 'TAP TO START ACTION PLAN'}
-              </div>
-            </div>
-          </button>
-        </div>
-      )}
     </div>
   );
 }

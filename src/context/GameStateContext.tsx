@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { BiomeId, AnimalId, CoinLedger, Quest, Badge, ActionRecord, GameSettings } from '@/types/game';
-import { ANIMALS, INITIAL_BADGES, INITIAL_QUESTS } from '@/data/animals';
+import { BiomeId, AnimalId, CoinLedger, Quest, Badge, ActionRecord, GameSettings, CropPlotState } from '@/types/game';
+import { ANIMALS, INITIAL_BADGES, INITIAL_QUESTS, FARM_CROPS } from '@/data/animals';
 import { sounds } from '@/utils/soundEffects';
 
 interface GameStateContextType {
@@ -39,6 +39,19 @@ interface GameStateContextType {
   activeCropModal: Exclude<BiomeId, 'clearing'> | null;
   openCropModal: (biome: Exclude<BiomeId, 'clearing'>) => void;
   closeCropModal: () => void;
+  cropPlots: Record<Exclude<BiomeId, 'clearing'>, CropPlotState>;
+  harvestCrop: (biome: Exclude<BiomeId, 'clearing'>) => boolean;
+  fixCrop: (biome: Exclude<BiomeId, 'clearing'>) => void;
+  forceGrowCrop: (biome: Exclude<BiomeId, 'clearing'>) => void;
+  recentBuyerEvent: {
+    id: string;
+    biome: Exclude<BiomeId, 'clearing'>;
+    cropName: string;
+    produceIcon: string;
+    coinsEarned: number;
+    timestamp: number;
+  } | null;
+  clearBuyerEvent: () => void;
   isPremiseOpen: boolean;
   setIsPremiseOpen: (open: boolean) => void;
   openPremiseModal: () => void;
@@ -67,6 +80,15 @@ const defaultRestoration: Record<BiomeId, number> = {
   reefs: 0,
 };
 
+const defaultCropPlots: Record<Exclude<BiomeId, 'clearing'>, CropPlotState> = {
+  lake: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
+  forest: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
+  tundra: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
+  grasslands: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
+  desert: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
+  reefs: { status: 'crisis', growDurationMs: 20 * 60 * 1000, harvestCount: 0 },
+};
+
 const GameStateContext = createContext<GameStateContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'field_to_future_state_v1';
@@ -81,6 +103,15 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const [activeDialogueAnimal, setActiveDialogueAnimal] = useState<AnimalId | null>(null);
   const [activeQuestModal, setActiveQuestModal] = useState<Quest['actionType'] | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [cropPlots, setCropPlots] = useState<Record<Exclude<BiomeId, 'clearing'>, CropPlotState>>(defaultCropPlots);
+  const [recentBuyerEvent, setRecentBuyerEvent] = useState<{
+    id: string;
+    biome: Exclude<BiomeId, 'clearing'>;
+    cropName: string;
+    produceIcon: string;
+    coinsEarned: number;
+    timestamp: number;
+  } | null>(null);
 
   // Modals
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -126,6 +157,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         if (parsed.quests) setQuests(parsed.quests);
         if (parsed.badges) setBadges(parsed.badges);
         if (parsed.actions) setActions(parsed.actions);
+        if (parsed.cropPlots) setCropPlots(parsed.cropPlots);
         if (parsed.settings) {
           setSettings(parsed.settings);
           sounds.setEnabled(parsed.settings.soundEnabled ?? true);
@@ -147,13 +179,14 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
           quests,
           badges,
           actions,
+          cropPlots,
           settings,
         })
       );
     } catch (e) {
       console.warn('Could not persist game state:', e);
     }
-  }, [restoration, coins, quests, badges, actions, settings]);
+  }, [restoration, coins, quests, badges, actions, cropPlots, settings]);
 
   useEffect(() => {
     saveState();
@@ -252,7 +285,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   };
 
   // Boost restoration
-  const boostRestoration = (biome: BiomeId, amount: number) => {
+  const boostRestoration = useCallback((biome: BiomeId, amount: number) => {
     setRestoration((prev) => {
       const current = prev[biome] || 0;
       const next = Math.min(100, current + amount);
@@ -261,7 +294,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         [biome]: next,
       };
     });
-  };
+  }, []);
 
   // Open & Close Dialogue
   const openDialogue = (animalId: AnimalId) => {
@@ -374,6 +407,112 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setNotification(null), 4500);
   };
 
+  // Maturation ticker: monitors crops and matures baby sprouts after 20 minutes (1,200,000 ms)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setCropPlots((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        (Object.keys(next) as Array<Exclude<BiomeId, 'clearing'>>).forEach((b) => {
+          const plot = next[b];
+          const isRestored = (restoration[b] || 0) >= 80;
+          if (isRestored) {
+            if (plot.status === 'growing' && plot.plantedAt) {
+              if (now - plot.plantedAt >= plot.growDurationMs) {
+                next[b] = { ...plot, status: 'grown', plantedAt: undefined };
+                changed = true;
+              }
+            } else if (plot.status === 'crisis') {
+              next[b] = { ...plot, status: 'grown' };
+              changed = true;
+            }
+          } else if (!isRestored && plot.status !== 'growing') {
+            if (plot.status !== 'crisis') {
+              next[b] = { ...plot, status: 'crisis' };
+              changed = true;
+            }
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [restoration]);
+
+  // Harvest fixed crop: produces grown crop and re-plants baby sprout that takes 20 mins to grow
+  const harvestCrop = useCallback((biome: Exclude<BiomeId, 'clearing'>): boolean => {
+    const isRestored = (restoration[biome] || 0) >= 80;
+    const currentPlot = cropPlots[biome];
+    if (!isRestored || currentPlot.status === 'growing') {
+      return false;
+    }
+
+    sounds.playBloom();
+    const crop = FARM_CROPS[biome];
+    const now = Date.now();
+
+    setCropPlots((prev) => ({
+      ...prev,
+      [biome]: {
+        ...prev[biome],
+        status: 'growing',
+        plantedAt: now,
+        harvestCount: (prev[biome]?.harvestCount || 0) + 1,
+      },
+    }));
+
+    setNotification(`🌾 Bountiful Harvest: Collected 1x ${crop.name}! Baby sprouts re-planted (takes 20 mins to grow).`);
+    setTimeout(() => setNotification(null), 4000);
+
+    // Trigger Buyer arrival on the farm!
+    setRecentBuyerEvent({
+      id: Math.random().toString(),
+      biome,
+      cropName: crop.name,
+      produceIcon: crop.produceIcon || '/assets/crops/crop_flourish.png',
+      coinsEarned: 50,
+      timestamp: now,
+    });
+
+    return true;
+  }, [restoration, cropPlots]);
+
+  const fixCrop = useCallback((biome: Exclude<BiomeId, 'clearing'>) => {
+    sounds.playBloom();
+    boostRestoration(biome, 100);
+    setCropPlots((prev) => ({
+      ...prev,
+      [biome]: {
+        ...prev[biome],
+        status: 'grown',
+        plantedAt: undefined,
+      },
+    }));
+    const crop = FARM_CROPS[biome];
+    setNotification(`✨ ${crop.name} has been restored! The crop is flourishing and ready for harvest.`);
+    setTimeout(() => setNotification(null), 4000);
+  }, [boostRestoration]);
+
+  const forceGrowCrop = useCallback((biome: Exclude<BiomeId, 'clearing'>) => {
+    sounds.playBloom();
+    setCropPlots((prev) => ({
+      ...prev,
+      [biome]: {
+        ...prev[biome],
+        status: 'grown',
+        plantedAt: undefined,
+      },
+    }));
+    const crop = FARM_CROPS[biome];
+    setNotification(`🌱 Baby sprouts for ${crop.name} have matured into full harvest!`);
+    setTimeout(() => setNotification(null), 4000);
+  }, []);
+
+  const clearBuyerEvent = useCallback(() => {
+    setRecentBuyerEvent(null);
+  }, []);
+
   const resetGame = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -385,6 +524,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     setQuests(INITIAL_QUESTS);
     setBadges(INITIAL_BADGES);
     setActions([]);
+    setCropPlots(defaultCropPlots);
+    setRecentBuyerEvent(null);
     setCurrentBiomeState('clearing');
     sounds.playBloom();
     setNotification('Game progress successfully reset to beginning! Welcome back to the Farm.');
@@ -427,6 +568,12 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         activeCropModal,
         openCropModal,
         closeCropModal,
+        cropPlots,
+        harvestCrop,
+        fixCrop,
+        forceGrowCrop,
+        recentBuyerEvent,
+        clearBuyerEvent,
         isPremiseOpen,
         setIsPremiseOpen,
         openPremiseModal,

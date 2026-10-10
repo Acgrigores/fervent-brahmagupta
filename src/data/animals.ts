@@ -93,6 +93,8 @@ export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
     restorationSolution: 'Travel to Crystal Lake to clean up plastic debris, sort circular watershed recycling, and unblock the freshwater flow.',
     guardianAnimalId: 'manatee',
     biomeDisplayName: 'Crystal Marsh & Lake',
+    produceIcon: '/assets/crops/produce_corn.png',
+    produceName: 'Golden Sweet Corn',
   },
   forest: {
     biome: 'forest',
@@ -112,6 +114,8 @@ export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
     restorationSolution: 'Travel to the Cloud Forest to organize wildfire prevention brigades, petition for canopy corridors, and quench ember flare-ups.',
     guardianAnimalId: 'red_panda',
     biomeDisplayName: 'Old-Growth Canopy Forest',
+    produceIcon: '/assets/crops/produce_apple.png',
+    produceName: 'Canopy Apples',
   },
   tundra: {
     biome: 'tundra',
@@ -131,6 +135,8 @@ export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
     restorationSolution: 'Travel to the Glacial Tundra to petition for shutting down the coal plant and transition to clean arctic energy.',
     guardianAnimalId: 'polar_bear',
     biomeDisplayName: 'Glacial Tundra & Permafrost',
+    produceIcon: '/assets/crops/produce_wheat.png',
+    produceName: 'Glacial Winter Wheat',
   },
   grasslands: {
     biome: 'grasslands',
@@ -150,6 +156,8 @@ export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
     restorationSolution: 'Travel to the Prairie to deploy Bayer Smart Farming precision drip irrigation, no-till cover crops, and pollinator corridors.',
     guardianAnimalId: 'butterfly',
     biomeDisplayName: 'Smart Farmlands & Prairie',
+    produceIcon: '/assets/crops/produce_sunflower.png',
+    produceName: 'Giant Sunflowers',
   },
   desert: {
     biome: 'desert',
@@ -169,6 +177,8 @@ export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
     restorationSolution: 'Travel to the Sunfire Savanna to construct solar-powered artesian wellsprings and plant agroforestry shelterbelts.',
     guardianAnimalId: 'cheetah',
     biomeDisplayName: 'Sunfire Savanna Oasis',
+    produceIcon: '/assets/crops/produce_melon.png',
+    produceName: 'Arid Sugar Melons',
   },
   reefs: {
     biome: 'reefs',
@@ -188,6 +198,8 @@ export const FARM_CROPS: Record<Exclude<BiomeId, 'clearing'>, CropInfo> = {
     restorationSolution: 'Travel to the Hawksbill Coral Barrier to reroute maritime shipping GPS corridors away from vulnerable nursery reefs.',
     guardianAnimalId: 'sea_turtle',
     biomeDisplayName: 'Hawksbill Coral Barrier',
+    produceIcon: '/assets/crops/produce_rice.png',
+    produceName: 'Coastal Tidal Rice',
   },
 };
 

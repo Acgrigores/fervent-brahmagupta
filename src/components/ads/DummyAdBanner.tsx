@@ -78,8 +78,8 @@ export default function DummyAdBanner() {
 
   return (
     <>
-      {/* Bottom Sticky Ad Banner - Pixel Farm Theme */}
-      <div className="w-full bg-[#5c2c16] border-t-4 border-[#2e1005] px-3 py-2 z-30 flex items-center justify-between gap-3 select-none text-[#fffbeb] font-pixel shadow-md">
+      {/* Bottom Sticky Ad Banner - Pixel Farm Theme (Kept above modals so it never blurs out on focus) */}
+      <div className="relative z-[60] w-full bg-[#5c2c16] border-t-4 border-[#2e1005] px-3 py-2 flex items-center justify-between gap-3 select-none text-[#fffbeb] font-pixel shadow-md">
         {/* Ad Tag & Icon */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -125,7 +125,7 @@ export default function DummyAdBanner() {
 
       {/* Info Modal - Pixel Art Farm Theme */}
       {showInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
           <div className="relative w-full max-w-md pixel-panel p-5 text-[#2e1005] shadow-2xl">
             <div className="flex items-center justify-between border-b-2 border-[#5c2c16] pb-2.5 mb-3">
               <h3 className="font-pixel-heading text-xs text-[#5c2c16] flex items-center gap-2">

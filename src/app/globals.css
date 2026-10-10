@@ -21,6 +21,16 @@ body {
   cursor: url('/assets/sprout_cursor.svg') 2 4, auto;
 }
 
+/* Clickable objects hover glow */
+button:hover, 
+a:hover, 
+[role="button"]:hover,
+.pixel-btn:hover,
+.pixel-btn-green:hover,
+.pixel-btn-red:hover {
+  filter: drop-shadow(0 0 6px rgba(253, 224, 71, 0.9));
+}
+
 /* Retro Pixel Art Farm Utilities */
 .font-pixel {
   font-family: 'Silkscreen', monospace;

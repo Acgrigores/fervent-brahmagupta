@@ -33,7 +33,18 @@ export interface CropInfo {
   threatFactors?: string[];
   restorationSolution?: string;
   guardianAnimalId?: AnimalId;
+  produceIcon?: string;
+  produceName?: string;
   biomeDisplayName?: string;
+}
+
+export type CropHarvestStatus = 'crisis' | 'grown' | 'growing';
+
+export interface CropPlotState {
+  status: CropHarvestStatus;
+  plantedAt?: number;
+  growDurationMs: number;
+  harvestCount: number;
 }
 
 export interface CoinLedger {

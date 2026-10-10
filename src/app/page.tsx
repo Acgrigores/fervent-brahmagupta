@@ -53,7 +53,9 @@ export default function Home() {
         </div>
 
         {/* Bottom Dummy Ad Banner for Eco-Sponsorship */}
-        <DummyAdBanner />
+        <div className="relative z-[60] flex-shrink-0">
+          <DummyAdBanner />
+        </div>
       </main>
     </GameStateProvider>
   );
