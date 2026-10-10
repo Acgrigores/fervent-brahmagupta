@@ -47,110 +47,112 @@ export default function WildfireQuenchModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-xl bg-[#fffdfa] border-4 border-amber-950/20 rounded-3xl p-6 shadow-2xl text-stone-900">
-        {/* Vintage Wooden Plaque Header */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-[#78350f] via-[#92400e] to-[#78350f] text-[#fffbeb] p-4 rounded-2xl border-2 border-[#451a03] shadow-md mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+      <div className="relative w-full max-w-xl pixel-panel overflow-hidden text-[#2e1005] shadow-2xl">
+        {/* Header - Pixel Farm Wood Banner */}
+        <div className="flex items-center justify-between p-3.5 border-b-4 border-[#2e1005] bg-[#5c2c16] text-[#fffbeb]">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🔥</span>
+            <span className="text-2xl">🔥</span>
             <div>
-              <h3 className="font-serif font-bold text-lg text-amber-100">Extinguish Wildfire Flare-ups</h3>
-              <p className="text-xs text-amber-200/90 font-sans">Charred Clearing • Phase 1 Ecosystem Renewal</p>
+              <h3 className="font-pixel-heading text-xs text-[#fde68a] tracking-wider">EXTINGUISH WILDFIRE</h3>
+              <p className="text-[9px] text-[#fde68a]/80 mt-0.5">Charred Clearing • Phase 1 Ecosystem Renewal</p>
             </div>
           </div>
           <button
             onClick={closeQuestModal}
-            className="p-1.5 rounded-full bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 hover:text-white transition-colors"
+            className="p-1 pixel-btn-red"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Instructions */}
-        <div className="mb-5 bg-[#fefce8] p-3.5 rounded-2xl border border-amber-200">
-          {step === 'quench' && (
-            <div className="flex items-center gap-2 text-xs text-amber-900 font-medium">
-              <Droplets className="w-4 h-4 text-cyan-600 flex-shrink-0" />
-              <span>
-                Tap each burning ember hotspot to extinguish the fire flares with mountain spring water! ({quenchedSpots.length}/{totalSpots})
-              </span>
-            </div>
-          )}
-          {step === 'plant' && (
-            <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium">
-              <Sprout className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>
-                The ground has cooled! Tap each cleared spot to sow hardy pioneer seedlings and moss spores! ({plantedSpots.length}/{totalSpots})
-              </span>
-            </div>
-          )}
-          {step === 'done' && (
-            <div className="flex items-center gap-2 text-xs text-emerald-800 font-bold">
-              <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>Wildfire cleared! Pioneer sprouts have taken root. Clearing flourished to 100%!</span>
-            </div>
-          )}
-        </div>
+        <div className="p-5 space-y-4">
+          {/* Instructions */}
+          <div className="pixel-card p-3 bg-[#fefce8]">
+            {step === 'quench' && (
+              <div className="flex items-center gap-2 text-[10px] text-[#78350f]">
+                <Droplets className="w-4 h-4 text-[#0284c7] flex-shrink-0" />
+                <span>
+                  Tap each burning ember hotspot to quench flames! ({quenchedSpots.length}/{totalSpots})
+                </span>
+              </div>
+            )}
+            {step === 'plant' && (
+              <div className="flex items-center gap-2 text-[10px] text-[#15803d]">
+                <Sprout className="w-4 h-4 text-[#16a34a] flex-shrink-0" />
+                <span>
+                  Ground is cool! Tap each cleared spot to sow pioneer seeds! ({plantedSpots.length}/{totalSpots})
+                </span>
+              </div>
+            )}
+            {step === 'done' && (
+              <div className="flex items-center gap-2 text-[10px] text-[#15803d] font-bold">
+                <CheckCircle className="w-4 h-4 text-[#16a34a] flex-shrink-0" />
+                <span>Wildfire cleared! Pioneer sprouts have taken root. Clearing flourished to 100%!</span>
+              </div>
+            )}
+          </div>
 
-        {/* Interactive Ember Hotspot Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6 p-4 bg-amber-50/50 rounded-2xl border border-amber-200/80">
-          {Array.from({ length: totalSpots }).map((_, idx) => {
-            const isQuenched = quenchedSpots.includes(idx);
-            const isPlanted = plantedSpots.includes(idx);
+          {/* Interactive Ember Hotspot Grid */}
+          <div className="grid grid-cols-3 gap-3 p-3 bg-[#e8dfc8] border-2 border-[#5c2c16]">
+            {Array.from({ length: totalSpots }).map((_, idx) => {
+              const isQuenched = quenchedSpots.includes(idx);
+              const isPlanted = plantedSpots.includes(idx);
 
-            return (
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleSpotClick(idx)}
+                  className={`h-24 flex flex-col items-center justify-center p-2 border-2 transition-all transform active:scale-95 ${
+                    isPlanted
+                      ? 'bg-[#dcfce7] border-[#15803d] shadow-[2px_2px_0px_#15803d]'
+                      : isQuenched
+                      ? 'bg-[#e2e8f0] border-[#64748b] shadow-[2px_2px_0px_#475569]'
+                      : 'bg-[#fee2e2] border-[#b91c1c] shadow-[2px_2px_0px_#991b1b] animate-pulse'
+                  }`}
+                >
+                  {isPlanted ? (
+                    <>
+                      <span className="text-2xl">🌱</span>
+                      <span className="text-[9px] text-[#15803d] font-bold mt-1">SPROUTING!</span>
+                    </>
+                  ) : isQuenched ? (
+                    <>
+                      <span className="text-2xl">💨</span>
+                      <span className="text-[9px] text-[#475569] font-bold mt-1">COOLED SOIL</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-2xl">🔥</span>
+                      <span className="text-[9px] text-[#b91c1c] font-bold mt-1">HOTSPOT</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer info */}
+          <div className="flex items-center justify-between text-[10px] pt-3 border-t-2 border-[#5c2c16]">
+            <span className="flex items-center gap-1.5 text-[#15803d] font-bold">
+              <Sparkles className="w-4 h-4 text-[#15803d]" /> REWARD: +250 COINS & 100% FLOURISH
+            </span>
+            {step === 'done' ? (
               <button
-                key={idx}
-                onClick={() => handleSpotClick(idx)}
-                className={`h-24 rounded-2xl flex flex-col items-center justify-center p-2 border-2 transition-all transform active:scale-95 shadow-sm ${
-                  isPlanted
-                    ? 'bg-emerald-50 border-emerald-500 shadow-md'
-                    : isQuenched
-                    ? 'bg-stone-100 border-stone-300'
-                    : 'bg-red-50 border-red-400 hover:bg-red-100 animate-pulse'
-                }`}
+                onClick={closeQuestModal}
+                className="px-4 py-2 pixel-btn-green text-[10px]"
               >
-                {isPlanted ? (
-                  <>
-                    <span className="text-3xl">🌱</span>
-                    <span className="text-[10px] text-emerald-800 font-bold mt-1">Sprouting!</span>
-                  </>
-                ) : isQuenched ? (
-                  <>
-                    <span className="text-3xl">💨</span>
-                    <span className="text-[10px] text-stone-600 font-medium mt-1">Cooled Soil</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-3xl">🔥</span>
-                    <span className="text-[10px] text-red-700 font-bold mt-1">Ember Hotspot</span>
-                  </>
-                )}
+                RETURN TO WORLD
               </button>
-            );
-          })}
-        </div>
-
-        {/* Footer info */}
-        <div className="flex items-center justify-between text-xs text-stone-600 pt-2 border-t border-amber-200">
-          <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-            <Sparkles className="w-4 h-4 text-emerald-600" /> Reward: +250 Coins & 100% Flourish
-          </span>
-          {step === 'done' ? (
-            <button
-              onClick={closeQuestModal}
-              className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold transition-all shadow-md active:scale-95"
-            >
-              Return to World
-            </button>
-          ) : (
-            <button
-              onClick={closeQuestModal}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl font-bold text-xs"
-            >
-              Cancel
-            </button>
-          )}
+            ) : (
+              <button
+                onClick={closeQuestModal}
+                className="px-3 py-1.5 pixel-btn text-[10px]"
+              >
+                CANCEL
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

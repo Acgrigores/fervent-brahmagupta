@@ -5,7 +5,7 @@ import { useGameState } from '@/context/GameStateContext';
 import { BiomeId } from '@/types/game';
 import { FARM_CROPS } from '@/data/animals';
 import { sounds } from '@/utils/soundEffects';
-import { Compass, Sparkles } from 'lucide-react';
+import { Compass } from 'lucide-react';
 
 interface BiomeNode {
   id: BiomeId;
@@ -87,33 +87,25 @@ export default function MiniMap() {
   };
 
   const activeHover = hoveredBiome
-    ? biomeNodes.find((b) => b.id === hoveredBiome) || (hoveredBiome === 'clearing' ? { label: 'Bayer Central Farm', cropName: '6 Connected Crops', id: 'clearing' as BiomeId } : null)
+    ? biomeNodes.find((b) => b.id === hoveredBiome) || (hoveredBiome === 'clearing' ? { label: 'Central Farm', cropName: '6 Crops', id: 'clearing' as BiomeId } : null)
     : null;
 
   return (
-    <div className="absolute top-4 right-4 z-20 hidden lg:block bg-amber-50/95 backdrop-blur-md border-2 border-amber-900/40 rounded-2xl p-3 shadow-xl select-none w-64 text-stone-900">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-bold font-serif text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
-          <Compass className="w-3.5 h-3.5 text-emerald-700" />
-          <span>Biome Map & Travel Paths</span>
+    <div className="absolute top-3 right-3 z-20 hidden lg:block pixel-panel p-2.5 select-none w-60 text-[#2e1005] font-pixel shadow-xl">
+      {/* Pixel Header */}
+      <div className="flex items-center justify-between mb-1.5 border-b-2 border-[#5c2c16] pb-1">
+        <span className="text-[10px] font-bold text-[#5c2c16] flex items-center gap-1.5 uppercase">
+          <Compass className="w-3.5 h-3.5 text-[#b45309]" />
+          <span>FARM MAP</span>
         </span>
-        <span className="text-[9px] font-mono text-stone-500">Click to travel</span>
+        <span className="text-[8.5px] px-1 py-0.5 bg-[#fef08a] border border-[#ca8a04] text-[#854d0e] font-bold">
+          {currentBiome.toUpperCase()}
+        </span>
       </div>
 
-      {/* Interactive Path Map SVG - Warm Parchment Background */}
-      <div className="relative w-full h-44 bg-amber-100/70 rounded-xl border border-amber-300 overflow-hidden flex items-center justify-center shadow-inner">
-        {/* Subtle parchment grid */}
-        <div className="absolute inset-0 bg-[radial-gradient(#b45309_1px,transparent_1px)] [background-size:10px_10px] opacity-20 pointer-events-none" />
-
+      {/* Interactive Path Map SVG - Retro Pixel Parchment */}
+      <div className="relative w-full h-40 bg-[#fde68a]/30 border-2 border-[#5c2c16] overflow-hidden flex items-center justify-center">
         <svg viewBox="0 0 220 170" className="w-full h-full relative z-10">
-          <defs>
-            <filter id="map-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="2.5" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
-
           {/* Color-Coded Branching Paths from Central Farm to Each Biome */}
           {biomeNodes.map((node) => {
             const isHovered = hoveredBiome === node.id;
@@ -127,26 +119,25 @@ export default function MiniMap() {
                 onMouseEnter={() => setHoveredBiome(node.id)}
                 onMouseLeave={() => setHoveredBiome(null)}
               >
-                {/* Wide invisible stroke for easy clicking */}
+                {/* Wide invisible stroke for easy clicking to travel */}
                 <line
                   x1={farmNode.cx}
                   y1={farmNode.cy}
                   x2={node.cx}
                   y2={node.cy}
                   stroke="transparent"
-                  strokeWidth="16"
+                  strokeWidth="20"
                 />
 
-                {/* Outer path glow */}
+                {/* Outer shadow stroke */}
                 <line
                   x1={farmNode.cx}
                   y1={farmNode.cy}
                   x2={node.cx}
                   y2={node.cy}
-                  stroke={node.pathStroke}
-                  strokeWidth={isHovered ? 5.5 : 3.5}
-                  strokeOpacity={isHovered ? 0.6 : 0.25}
-                  strokeLinecap="round"
+                  stroke="#2e1005"
+                  strokeWidth={isHovered ? 5 : 3.5}
+                  strokeLinecap="square"
                 />
 
                 {/* Inner color-coded path stroke */}
@@ -156,46 +147,48 @@ export default function MiniMap() {
                   x2={node.cx}
                   y2={node.cy}
                   stroke={node.pathStroke}
-                  strokeWidth={isHovered ? 2.8 : 2}
-                  strokeDasharray={isRestored ? 'none' : '4 3'}
-                  strokeLinecap="round"
+                  strokeWidth={isHovered ? 3 : 2}
+                  strokeDasharray={isRestored ? 'none' : '3 3'}
+                  strokeLinecap="square"
                 />
               </g>
             );
           })}
 
-          {/* Central Farm Hub Node */}
+          {/* Central Farm Hub Node - Click to travel there */}
           <g
             className="cursor-pointer"
             onClick={() => handleSelectBiome('clearing')}
             onMouseEnter={() => setHoveredBiome('clearing')}
             onMouseLeave={() => setHoveredBiome(null)}
           >
-            <circle
-              cx={farmNode.cx}
-              cy={farmNode.cy}
-              r={hoveredBiome === 'clearing' ? 14 : 12}
-              fill="#fef3c7"
-              stroke="#15803d"
+            <rect
+              x={farmNode.cx - 12}
+              y={farmNode.cy - 12}
+              width="24"
+              height="24"
+              fill={currentBiome === 'clearing' ? '#86efac' : '#fef3c7'}
+              stroke="#2e1005"
               strokeWidth="2.5"
             />
-            <circle
-              cx={farmNode.cx}
-              cy={farmNode.cy}
-              r="6.5"
-              fill={currentBiome === 'clearing' ? '#16a34a' : '#15803d'}
+            <rect
+              x={farmNode.cx - 5}
+              y={farmNode.cy - 5}
+              width="10"
+              height="10"
+              fill="#15803d"
             />
             <text
               x={farmNode.cx}
               y={farmNode.cy + 19}
               textAnchor="middle"
-              className="text-[8px] font-bold fill-amber-950 pointer-events-none font-serif"
+              className="text-[7.5px] font-bold fill-[#2e1005] pointer-events-none font-pixel"
             >
-              Farm Hub
+              FARM
             </text>
           </g>
 
-          {/* Biome Destination Nodes */}
+          {/* Biome Destination Nodes - Click to travel there */}
           {biomeNodes.map((node) => {
             const isCurrent = currentBiome === node.id;
             const isHovered = hoveredBiome === node.id;
@@ -209,94 +202,73 @@ export default function MiniMap() {
                 onMouseEnter={() => setHoveredBiome(node.id)}
                 onMouseLeave={() => setHoveredBiome(null)}
               >
-                {/* Active Player Beacon Ping */}
+                {/* Active Player Beacon Highlight */}
                 {isCurrent && (
-                  <circle
-                    cx={node.cx}
-                    cy={node.cy}
-                    r="15"
+                  <rect
+                    x={node.cx - 13}
+                    y={node.cy - 13}
+                    width="26"
+                    height="26"
                     fill="none"
-                    stroke={node.color}
-                    strokeWidth="1.8"
-                    className="animate-ping opacity-60"
+                    stroke="#b45309"
+                    strokeWidth="2"
+                    strokeDasharray="2 2"
+                    className="animate-spin"
                   />
                 )}
 
-                {/* Outer Node Circle */}
-                <circle
-                  cx={node.cx}
-                  cy={node.cy}
-                  r={isHovered || isCurrent ? 11 : 9}
-                  fill="#ffffff"
-                  stroke={isRestored ? '#15803d' : node.color}
-                  strokeWidth={isCurrent ? 2.5 : 1.8}
-                  filter={isCurrent ? 'url(#map-glow)' : undefined}
+                {/* Outer Node Square (Pixel Art Style) */}
+                <rect
+                  x={node.cx - (isHovered || isCurrent ? 10 : 8)}
+                  y={node.cy - (isHovered || isCurrent ? 10 : 8)}
+                  width={isHovered || isCurrent ? 20 : 16}
+                  height={isHovered || isCurrent ? 20 : 16}
+                  fill={isCurrent ? '#fef08a' : '#ffffff'}
+                  stroke="#2e1005"
+                  strokeWidth="2"
                 />
 
                 {/* Inner Core */}
-                <circle
-                  cx={node.cx}
-                  cy={node.cy}
-                  r="4.5"
+                <rect
+                  x={node.cx - 4}
+                  y={node.cy - 4}
+                  width="8"
+                  height="8"
                   fill={isRestored ? '#16a34a' : node.color}
                 />
 
                 {/* Biome Name Label */}
                 <text
                   x={node.cx}
-                  y={node.cy + (node.cy > 100 ? 16 : -13)}
+                  y={node.cy + (node.cy > 100 ? 17 : -12)}
                   textAnchor="middle"
-                  className={`text-[8px] font-bold font-serif pointer-events-none transition-all ${
-                    isCurrent ? 'fill-stone-900 font-extrabold' : 'fill-stone-700 group-hover:fill-stone-900'
+                  className={`text-[7.5px] font-bold font-pixel pointer-events-none ${
+                    isCurrent ? 'fill-[#b45309] font-extrabold' : 'fill-[#2e1005]'
                   }`}
                 >
-                  {node.label}
+                  {node.label.toUpperCase()}
                 </text>
               </g>
             );
           })}
         </svg>
-
-        {/* Current Location Badge overlay */}
-        <div className="absolute bottom-1.5 left-2 pointer-events-none">
-          <span className="text-[9px] font-mono text-stone-700 bg-white/90 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm">
-            Current: <strong className="text-amber-900 capitalize">{currentBiome}</strong>
-          </span>
-        </div>
       </div>
 
-      {/* Interactive Tooltip Card - Warm Card */}
-      <div className="mt-2 p-2 bg-white rounded-xl border border-amber-200 text-[10px] shadow-sm">
+      {/* Direct Travel Status Info / Tooltip */}
+      <div className="mt-1.5 p-1.5 pixel-card text-[8.5px]">
         {activeHover ? (
           <div className="flex items-center justify-between">
-            <div>
-              <div className="font-bold text-stone-900 flex items-center gap-1 font-serif">
-                <span>{activeHover.label}</span>
-                {activeHover.id !== 'clearing' && (
-                  <span
-                    className={`text-[8.5px] px-1 py-0.2 rounded font-semibold ${
-                      (restoration[activeHover.id] || 0) >= 80
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : 'bg-amber-100 text-amber-900 border border-amber-300'
-                    }`}
-                  >
-                    {(restoration[activeHover.id] || 0) >= 80 ? 'Flourishing' : 'In Crisis'}
-                  </span>
-                )}
-              </div>
-              <div className="text-stone-600 text-[9.5px]">Crop: {activeHover.cropName}</div>
-            </div>
-            <button
-              onClick={() => handleSelectBiome(activeHover.id)}
-              className="px-2.5 py-1 bg-amber-800 hover:bg-amber-700 text-amber-50 rounded-lg font-bold font-serif text-[9px] shadow-sm border border-amber-950"
-            >
-              Enter
-            </button>
+            <span className="font-bold text-[#78350f]">
+              {activeHover.label.toUpperCase()}
+            </span>
+            <span className="text-[#15803d] font-bold">
+              CLICK TO TRAVEL →
+            </span>
           </div>
         ) : (
-          <div className="text-stone-600 flex items-center justify-between">
-            <span>Hover or click paths to traverse biomes</span>
-            <Sparkles className="w-3 h-3 text-emerald-600" />
+          <div className="text-stone-700 flex items-center justify-between">
+            <span className="font-bold text-[#5c2c16]">DESTINATION NODES:</span>
+            <span className="text-[#b45309] font-bold">CLICK TO TRAVEL</span>
           </div>
         )}
       </div>

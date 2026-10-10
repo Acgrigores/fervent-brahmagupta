@@ -37,201 +37,203 @@ export default function GrasslandsFarmingModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-[#fffdfa] border-4 border-amber-950/20 rounded-3xl p-6 shadow-2xl text-stone-900 max-h-[90vh] overflow-y-auto">
-        {/* Vintage Wooden Plaque Header */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-[#78350f] via-[#92400e] to-[#78350f] text-[#fffbeb] p-4 rounded-2xl border-2 border-[#451a03] shadow-md mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+      <div className="relative w-full max-w-2xl pixel-panel overflow-hidden text-[#2e1005] shadow-2xl max-h-[90vh] flex flex-col">
+        {/* Header - Pixel Farm Wood Banner */}
+        <div className="flex items-center justify-between p-3.5 border-b-4 border-[#2e1005] bg-[#5c2c16] text-[#fffbeb]">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🌻</span>
+            <span className="text-2xl">🌻</span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-serif font-bold text-lg text-amber-100">Field to Future: Smart Farming Simulator</h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-200 border border-amber-600">
-                  Powered by Bayer
+                <h3 className="font-pixel-heading text-xs text-[#fde68a] tracking-wider">SMART FARMING SIMULATOR</h3>
+                <span className="text-[7.5px] font-bold px-1.5 py-0.2 bg-[#3e1a06] text-[#fde68a] border border-[#fde68a]">
+                  BAYER AG
                 </span>
               </div>
-              <p className="text-xs text-amber-200/90 font-sans">Regenerative Farmlands • Support Aura the Monarch Butterfly</p>
+              <p className="text-[9px] text-[#fde68a]/80 mt-0.5">Regenerative Farmlands • Support Aura the Monarch</p>
             </div>
           </div>
           <button
             onClick={closeQuestModal}
-            className="p-1.5 rounded-full bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 hover:text-white transition-colors"
+            className="p-1 pixel-btn-red"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Introduction */}
-        <div className="p-4 bg-[#fefce8] border border-amber-200 rounded-2xl mb-5 text-xs text-stone-700 leading-relaxed shadow-sm">
-          <p>
-            Agriculture feeds 8 billion people, but traditional monoculture depletes topsoil and destroys milkweed.
-            <strong> Bayer Smart Farming & Precision Agriculture</strong> empowers farmers to harvest maximum crops while regenerating soil biology and providing native pollinator corridors!
-          </p>
-        </div>
-
-        {/* Interactive Strategy Configuration */}
-        <div className="space-y-3 mb-6">
-          <h4 className="text-xs font-serif font-bold text-amber-950 uppercase tracking-wider flex items-center gap-2">
-            <Sliders className="w-3.5 h-3.5 text-amber-700" />
-            <span>Select Regenerative Smart Farming Innovations:</span>
-          </h4>
-
-          {/* Toggle 1: No-Till & Cover Crops */}
-          <div
-            onClick={() => { sounds.playClick(); setNoTill(!noTill); }}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between shadow-sm ${
-              noTill
-                ? 'bg-emerald-50 border-emerald-500 text-stone-900'
-                : 'bg-white border-amber-200/80 text-stone-600 hover:border-amber-300'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🌾</span>
-              <div>
-                <div className="text-xs font-serif font-bold text-stone-900">Regenerative No-Till & Clover Cover Crops</div>
-                <div className="text-[11px] text-stone-600">Keeps root networks intact, prevents topsoil erosion, stores 220kg CO2/acre</div>
-              </div>
-            </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${noTill ? 'bg-emerald-600 border-emerald-600' : 'border-stone-300'}`}>
-              {noTill && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-            </div>
+        <div className="p-5 overflow-y-auto space-y-4">
+          {/* Introduction */}
+          <div className="pixel-card p-3 bg-[#fefce8] text-[9.5px] text-[#5c2c16] leading-relaxed">
+            <p>
+              Agriculture feeds 8 billion people, but traditional monoculture depletes topsoil.
+              <strong className="text-[#2e1005]"> Bayer Smart Farming & Precision Ag</strong> empowers farmers to harvest maximum crops while regenerating soil biology and providing native pollinator corridors!
+            </p>
           </div>
 
-          {/* Toggle 2: Precision Drip Irrigation */}
-          <div
-            onClick={() => { sounds.playClick(); setPrecisionIrrigation(!precisionIrrigation); }}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between shadow-sm ${
-              precisionIrrigation
-                ? 'bg-emerald-50 border-emerald-500 text-stone-900'
-                : 'bg-white border-amber-200/80 text-stone-600 hover:border-amber-300'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🛰️</span>
-              <div>
-                <div className="text-xs font-serif font-bold text-stone-900">Satellite Soil Moisture & Precision Drip Irrigation</div>
-                <div className="text-[11px] text-stone-600">Saves 65% water using AI moisture maps and stops fertilizer runoff</div>
-              </div>
-            </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${precisionIrrigation ? 'bg-emerald-600 border-emerald-600' : 'border-stone-300'}`}>
-              {precisionIrrigation && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-            </div>
-          </div>
+          {/* Interactive Strategy Configuration */}
+          <div className="space-y-2">
+            <h4 className="text-[9.5px] font-pixel-heading text-[#2e1005] uppercase tracking-wider flex items-center gap-2">
+              <Sliders className="w-3.5 h-3.5 text-[#b45309]" />
+              <span>SELECT REGENERATIVE INNOVATIONS:</span>
+            </h4>
 
-          {/* Toggle 3: Pollinator Buffer Corridors */}
-          <div
-            onClick={() => { sounds.playClick(); setPollinatorCorridor(!pollinatorCorridor); }}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between shadow-sm ${
-              pollinatorCorridor
-                ? 'bg-emerald-50 border-emerald-500 text-stone-900'
-                : 'bg-white border-amber-200/80 text-stone-600 hover:border-amber-300'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🦋</span>
-              <div>
-                <div className="text-xs font-serif font-bold text-stone-900">15% Field Margin Native Milkweed & Wildflower Strips</div>
-                <div className="text-[11px] text-stone-600">Provides critical nectar shelters for migrating Monarch butterflies</div>
-              </div>
-            </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${pollinatorCorridor ? 'bg-emerald-600 border-emerald-600' : 'border-stone-300'}`}>
-              {pollinatorCorridor && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-            </div>
-          </div>
-
-          {/* Toggle 4: Targeted Bio-Protection */}
-          <div
-            onClick={() => { sounds.playClick(); setBiologicalCropProtection(!biologicalCropProtection); }}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between shadow-sm ${
-              biologicalCropProtection
-                ? 'bg-emerald-50 border-emerald-500 text-stone-900'
-                : 'bg-white border-amber-200/80 text-stone-600 hover:border-amber-300'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🧪</span>
-              <div>
-                <div className="text-xs font-serif font-bold text-stone-900">Precision Biological Crop Protection & Drone Scouting</div>
-                <div className="text-[11px] text-stone-600">Protects crops from fungal blight while eliminating indiscriminate chemical drift</div>
-              </div>
-            </div>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${biologicalCropProtection ? 'bg-emerald-600 border-emerald-600' : 'border-stone-300'}`}>
-              {biologicalCropProtection && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-            </div>
-          </div>
-        </div>
-
-        {/* Real-Time Outcome Gauges */}
-        <div className="grid grid-cols-3 gap-3 p-4 bg-amber-50/70 rounded-2xl border border-amber-200 mb-5">
-          <div className="text-center">
-            <div className="text-xs font-medium text-stone-600 mb-1">Crop Yield Index</div>
-            <div className="text-lg font-serif font-bold text-amber-800">{yieldScore}%</div>
-            <div className="text-[10px] text-stone-500">Food Security Guaranteed</div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-xs font-medium text-stone-600 mb-1">Pollinator Biodiversity</div>
-            <div className="text-lg font-serif font-bold text-emerald-700">{biodiversityScore}%</div>
-            <div className="text-[10px] text-stone-500">Monarch Corridors Blooming</div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-xs font-medium text-stone-600 mb-1">Soil Carbon Captured</div>
-            <div className="text-lg font-serif font-bold text-cyan-800">+{carbonStorage} kg/ac</div>
-            <div className="text-[10px] text-stone-500">Climate Tech in Soil</div>
-          </div>
-        </div>
-
-        {/* Farmer Support Advocacy Action */}
-        <div className="p-4 bg-white border border-amber-200 rounded-2xl mb-4 shadow-sm">
-          <h5 className="text-xs font-serif font-bold text-stone-900 mb-1 flex items-center gap-2">
-            <HeartHandshake className="w-4 h-4 text-amber-700" />
-            <span>Community Petition: Subsidize Smart Farming for Local Family Growers</span>
-          </h5>
-          <p className="text-[11px] text-stone-600 leading-relaxed mb-3">
-            Transitioning to precision tools has upfront costs. By signing this resolution, you support granting $2.5M in regional precision ag equipment credits to family farms adopting regenerative pollinator margins!
-          </p>
-
-          {!isPetitionSigned ? (
-            <button
-              onClick={handleApplyStrategy}
-              disabled={!isBalanced}
-              className="w-full py-2.5 bg-[#78350f] hover:bg-[#92400e] disabled:bg-stone-200 text-white disabled:text-stone-400 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+            {/* Toggle 1: No-Till & Cover Crops */}
+            <div
+              onClick={() => { sounds.playClick(); setNoTill(!noTill); }}
+              className={`p-3 border-2 cursor-pointer transition-all flex items-center justify-between shadow-[2px_2px_0px_#2e1005] ${
+                noTill
+                  ? 'bg-[#dcfce7] border-[#15803d] text-[#14532d]'
+                  : 'bg-[#fffbf2] border-[#5c2c16] text-[#5c2c16] hover:bg-[#fde68a]'
+              }`}
             >
-              <Wheat className="w-4 h-4" />
-              <span>
-                {isBalanced
-                  ? 'Sign Resolution & Complete Smart Farming Quest'
-                  : 'Enable all 4 Smart Farming innovations above to balance harvest!'}
-              </span>
-            </button>
-          ) : (
-            <div className="p-3 bg-emerald-100 border border-emerald-400 rounded-xl text-center text-xs text-emerald-800 font-bold">
-              🎉 Resolution signed & Smart Farm online! The grasslands are flourishing with golden wheat and monarchs!
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🌾</span>
+                <div>
+                  <div className="text-[9.5px] font-pixel-heading text-[#2e1005]">NO-TILL & CLOVER COVER CROPS</div>
+                  <div className="text-[8.5px] text-[#5c2c16]">Keeps root networks intact, prevents topsoil erosion, stores 220kg CO2/ac</div>
+                </div>
+              </div>
+              <div className={`w-5 h-5 border-2 flex items-center justify-center ${noTill ? 'bg-[#15803d] border-[#14532d]' : 'border-[#5c2c16] bg-white'}`}>
+                {noTill && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between text-xs pt-3 border-t border-amber-200">
-          <span className="flex items-center gap-1.5 text-amber-800 font-bold">
-            <Sparkles className="w-4 h-4 text-amber-600" /> Reward: +450 Golden Pollen Coins & 100% Farmland Flourish
-          </span>
-          {isPetitionSigned ? (
-            <button
-              onClick={closeQuestModal}
-              className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold transition-all shadow-sm"
+            {/* Toggle 2: Precision Drip Irrigation */}
+            <div
+              onClick={() => { sounds.playClick(); setPrecisionIrrigation(!precisionIrrigation); }}
+              className={`p-3 border-2 cursor-pointer transition-all flex items-center justify-between shadow-[2px_2px_0px_#2e1005] ${
+                precisionIrrigation
+                  ? 'bg-[#dcfce7] border-[#15803d] text-[#14532d]'
+                  : 'bg-[#fffbf2] border-[#5c2c16] text-[#5c2c16] hover:bg-[#fde68a]'
+              }`}
             >
-              Back to World
-            </button>
-          ) : (
-            <button
-              onClick={closeQuestModal}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold"
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🛰️</span>
+                <div>
+                  <div className="text-[9.5px] font-pixel-heading text-[#2e1005]">SATELLITE SOIL MOISTURE & DRIP</div>
+                  <div className="text-[8.5px] text-[#5c2c16]">Saves 65% water with AI moisture maps, stops runoff</div>
+                </div>
+              </div>
+              <div className={`w-5 h-5 border-2 flex items-center justify-center ${precisionIrrigation ? 'bg-[#15803d] border-[#14532d]' : 'border-[#5c2c16] bg-white'}`}>
+                {precisionIrrigation && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+              </div>
+            </div>
+
+            {/* Toggle 3: Pollinator Buffer Corridors */}
+            <div
+              onClick={() => { sounds.playClick(); setPollinatorCorridor(!pollinatorCorridor); }}
+              className={`p-3 border-2 cursor-pointer transition-all flex items-center justify-between shadow-[2px_2px_0px_#2e1005] ${
+                pollinatorCorridor
+                  ? 'bg-[#dcfce7] border-[#15803d] text-[#14532d]'
+                  : 'bg-[#fffbf2] border-[#5c2c16] text-[#5c2c16] hover:bg-[#fde68a]'
+              }`}
             >
-              Cancel
-            </button>
-          )}
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🦋</span>
+                <div>
+                  <div className="text-[9.5px] font-pixel-heading text-[#2e1005]">15% MILKWEED & WILDFLOWER STRIPS</div>
+                  <div className="text-[8.5px] text-[#5c2c16]">Provides critical nectar shelters for migrating Monarch butterflies</div>
+                </div>
+              </div>
+              <div className={`w-5 h-5 border-2 flex items-center justify-center ${pollinatorCorridor ? 'bg-[#15803d] border-[#14532d]' : 'border-[#5c2c16] bg-white'}`}>
+                {pollinatorCorridor && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+              </div>
+            </div>
+
+            {/* Toggle 4: Targeted Bio-Protection */}
+            <div
+              onClick={() => { sounds.playClick(); setBiologicalCropProtection(!biologicalCropProtection); }}
+              className={`p-3 border-2 cursor-pointer transition-all flex items-center justify-between shadow-[2px_2px_0px_#2e1005] ${
+                biologicalCropProtection
+                  ? 'bg-[#dcfce7] border-[#15803d] text-[#14532d]'
+                  : 'bg-[#fffbf2] border-[#5c2c16] text-[#5c2c16] hover:bg-[#fde68a]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🧪</span>
+                <div>
+                  <div className="text-[9.5px] font-pixel-heading text-[#2e1005]">PRECISION BIO-CROP PROTECTION</div>
+                  <div className="text-[8.5px] text-[#5c2c16]">Protects crops from blight while eliminating chemical drift</div>
+                </div>
+              </div>
+              <div className={`w-5 h-5 border-2 flex items-center justify-center ${biologicalCropProtection ? 'bg-[#15803d] border-[#14532d]' : 'border-[#5c2c16] bg-white'}`}>
+                {biologicalCropProtection && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+              </div>
+            </div>
+          </div>
+
+          {/* Real-Time Outcome Gauges */}
+          <div className="grid grid-cols-3 gap-2.5 p-3 pixel-card bg-[#fffbf2]">
+            <div className="text-center">
+              <div className="text-[8.5px] text-[#5c2c16] font-bold">CROP YIELD</div>
+              <div className="text-xs font-pixel-heading text-[#b45309] mt-0.5">{yieldScore}%</div>
+              <div className="text-[7.5px] text-[#78350f]">Food Security</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-[8.5px] text-[#5c2c16] font-bold">BIODIVERSITY</div>
+              <div className="text-xs font-pixel-heading text-[#15803d] mt-0.5">{biodiversityScore}%</div>
+              <div className="text-[7.5px] text-[#78350f]">Monarch Shelters</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-[8.5px] text-[#5c2c16] font-bold">CARBON CAPTURE</div>
+              <div className="text-xs font-pixel-heading text-[#0284c7] mt-0.5">+{carbonStorage} kg</div>
+              <div className="text-[7.5px] text-[#78350f]">Soil Sequestration</div>
+            </div>
+          </div>
+
+          {/* Farmer Support Advocacy Action */}
+          <div className="p-3.5 pixel-card bg-[#fefce8] space-y-2">
+            <h5 className="text-[9.5px] font-pixel-heading text-[#2e1005] flex items-center gap-1.5">
+              <HeartHandshake className="w-4 h-4 text-[#b45309]" />
+              <span>SUBSIDIZE REGENERATIVE FAMILY FARMS</span>
+            </h5>
+            <p className="text-[9px] text-[#5c2c16] leading-relaxed">
+              Transitioning to precision tools has upfront costs. By signing this resolution, you support granting $2.5M in regional precision ag credits to family farms adopting pollinator margins!
+            </p>
+
+            {!isPetitionSigned ? (
+              <button
+                onClick={handleApplyStrategy}
+                disabled={!isBalanced}
+                className="w-full py-2 pixel-btn flex items-center justify-center gap-2 text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Wheat className="w-4 h-4" />
+                <span>
+                  {isBalanced
+                    ? 'SIGN RESOLUTION & COMPLETE QUEST'
+                    : 'ENABLE ALL 4 INNOVATIONS TO BALANCE!'}
+                </span>
+              </button>
+            ) : (
+              <div className="p-2.5 border-2 border-[#15803d] bg-[#dcfce7] text-center text-[9px] text-[#14532d] font-bold">
+                🎉 Resolution signed & Smart Farm online! The grasslands are flourishing with golden wheat and monarchs!
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="pt-3 border-t-2 border-[#5c2c16] flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[9.5px] text-[#15803d] font-bold">
+              <Sparkles className="w-4 h-4 text-[#16a34a]" /> REWARD: +450 COINS & 100% FLOURISH
+            </span>
+            {isPetitionSigned ? (
+              <button
+                onClick={closeQuestModal}
+                className="px-4 py-2 pixel-btn-green text-[10px]"
+              >
+                BACK TO WORLD
+              </button>
+            ) : (
+              <button
+                onClick={closeQuestModal}
+                className="px-3 py-1.5 pixel-btn text-[10px]"
+              >
+                CANCEL
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -58,149 +58,145 @@ An Advocate for Environmental Solutions & Biodiversity`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-[#fffdfa] border-4 border-amber-950/20 rounded-3xl p-6 shadow-2xl text-stone-900 max-h-[90vh] overflow-y-auto">
-        {/* Vintage Wooden Plaque Header */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-[#78350f] via-[#92400e] to-[#78350f] text-[#fffbeb] p-4 rounded-2xl border-2 border-[#451a03] shadow-md mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+      <div className="relative w-full max-w-2xl pixel-panel overflow-hidden text-[#2e1005] shadow-2xl max-h-[90vh] flex flex-col">
+        {/* Header - Pixel Farm Wood Banner */}
+        <div className="flex items-center justify-between p-3.5 border-b-4 border-[#2e1005] bg-[#5c2c16] text-[#fffbeb]">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🎋</span>
+            <span className="text-2xl">🎋</span>
             <div>
-              <h3 className="font-serif font-bold text-lg text-amber-100">Forest Fire Prevention & Advocacy Hub</h3>
-              <p className="text-xs text-amber-200/90 font-sans">Old-Growth Canopy • Stand with Paku the Red Panda</p>
+              <h3 className="font-pixel-heading text-xs text-[#fde68a] tracking-wider">FOREST ADVOCACY HUB</h3>
+              <p className="text-[9px] text-[#fde68a]/80 mt-0.5">Old-Growth Canopy • Stand with Paku the Red Panda</p>
             </div>
           </div>
           <button
             onClick={closeQuestModal}
-            className="p-1.5 rounded-full bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 hover:text-white transition-colors"
+            className="p-1 pixel-btn-red"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex gap-2 p-1.5 bg-amber-100/70 rounded-2xl border border-amber-200 mb-5">
-          <button
-            onClick={() => setTab('social')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === 'social'
-                ? 'bg-[#78350f] text-white shadow-sm font-serif'
-                : 'text-stone-700 hover:text-stone-900 hover:bg-white/50'
-            }`}
-          >
-            <Camera className="w-4 h-4" />
-            <span>Instagram & Social Kit</span>
-          </button>
-          <button
-            onClick={() => setTab('email')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === 'email'
-                ? 'bg-[#78350f] text-white shadow-sm font-serif'
-                : 'text-stone-700 hover:text-stone-900 hover:bg-white/50'
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            <span>Official Representative Email</span>
-          </button>
-        </div>
+        <div className="p-5 overflow-y-auto space-y-4">
+          {/* Tab switcher */}
+          <div className="flex gap-2 p-1.5 bg-[#e8dfc8] border-2 border-[#5c2c16]">
+            <button
+              onClick={() => setTab('social')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold border-2 transition-all ${
+                tab === 'social'
+                  ? 'bg-[#5c2c16] text-[#fde68a] border-[#2e1005]'
+                  : 'bg-[#fffbf2] text-[#5c2c16] border-transparent hover:border-[#5c2c16]'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>SOCIAL CAMPAIGN</span>
+            </button>
+            <button
+              onClick={() => setTab('email')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-[10px] font-bold border-2 transition-all ${
+                tab === 'email'
+                  ? 'bg-[#5c2c16] text-[#fde68a] border-[#2e1005]'
+                  : 'bg-[#fffbf2] text-[#5c2c16] border-transparent hover:border-[#5c2c16]'
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>REPRESENTATIVE PETITION</span>
+            </button>
+          </div>
 
-        {/* Tab 1: Social Media Generator */}
-        {tab === 'social' && (
-          <div className="space-y-4">
-            <div className="relative rounded-2xl p-6 bg-gradient-to-br from-amber-50 via-[#fefce8] to-emerald-50 border-2 border-amber-200 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">🦊</span>
-                  <div>
-                    <h4 className="text-xs font-serif font-bold text-amber-900 uppercase tracking-wider">
-                      Canopy Defense Initiative
-                    </h4>
-                    <p className="text-[10px] text-stone-500">Field to Future Eco-Campaign</p>
+          {/* Tab 1: Social Media Generator */}
+          {tab === 'social' && (
+            <div className="space-y-3">
+              <div className="pixel-card p-4 bg-[#fefce8]">
+                <div className="flex items-center justify-between mb-3 border-b-2 border-[#5c2c16] pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🦊</span>
+                    <div>
+                      <h4 className="text-[10px] font-pixel-heading text-[#2e1005]">CANOPY DEFENSE INITIATIVE</h4>
+                      <p className="text-[8.5px] text-[#78350f]">Field to Future Eco-Campaign</p>
+                    </div>
                   </div>
+                  <span className="text-[8.5px] px-2 py-0.5 bg-[#15803d] text-[#fffbeb] border border-[#2e1005] font-bold">
+                    #SAVETHECANOPY
+                  </span>
                 </div>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold">
-                  #SaveTheCanopy
-                </span>
-              </div>
 
-              <div className="p-4 bg-white/90 rounded-xl border border-amber-200/80 mb-3 shadow-inner">
-                <p className="text-xs text-stone-800 whitespace-pre-line leading-relaxed font-sans">
+                <div className="p-3 bg-[#fffbf2] border-2 border-[#5c2c16] mb-3 text-[9.5px] leading-relaxed text-[#2e1005] whitespace-pre-line">
                   {socialCaption}
-                </p>
+                </div>
+
+                <div className="flex items-center justify-between text-[8.5px] text-[#78350f]">
+                  <span>Spreads Wildfire Education to 500+ Peers</span>
+                  <span>Target: Forestry Dept & State Senates</span>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-stone-500 font-medium">
-                <span>Verified Impact: Spreads Wildfire Education to 500+ Peers</span>
-                <span>Target: Forestry Dept & State Senates</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleCopyCaption}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100/80 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-bold transition-all border border-amber-300"
-            >
-              {copiedCaption ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
-              <span>{copiedCaption ? 'Copied to Clipboard!' : 'Copy Post Caption & Hashtags'}</span>
-            </button>
-          </div>
-        )}
-
-        {/* Tab 2: Representative Email Template */}
-        {tab === 'email' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-white rounded-2xl border border-amber-200 shadow-sm space-y-2">
-              <div className="text-xs text-stone-600">
-                <span className="text-stone-400">Subject: </span>
-                <strong className="text-stone-900">{emailSubject}</strong>
-              </div>
-              <div className="border-t border-amber-100 pt-2">
-                <p className="text-xs text-stone-700 whitespace-pre-line leading-relaxed font-mono">
-                  {emailBody}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
               <button
-                onClick={handleCopyEmail}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100/80 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-bold transition-all border border-amber-300"
+                onClick={handleCopyCaption}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 pixel-btn text-[10px]"
               >
-                {copiedEmail ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedEmail ? 'Copied Email Draft!' : 'Copy Email Text'}</span>
+                {copiedCaption ? <Check className="w-4 h-4 text-[#86efac]" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedCaption ? 'COPIED TO CLIPBOARD!' : 'COPY POST CAPTION & HASHTAGS'}</span>
               </button>
-              <a
-                href={`mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`}
-                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-cyan-700 hover:bg-cyan-800 rounded-xl text-xs font-bold text-white transition-all shadow-sm"
-              >
-                <span>Open Mail Client</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
             </div>
-          </div>
-        )}
-
-        {/* Publish & Complete Action Button */}
-        <div className="mt-6 pt-4 border-t border-amber-200 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-emerald-700 font-bold">
-            <Sparkles className="w-4 h-4 text-emerald-600" />
-            <span>Reward: +350 Amber Bamboo Coins & 100% Forest Flourish</span>
-          </div>
-
-          {!completed ? (
-            <button
-              onClick={handlePublish}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Launch Campaign & Complete Quest</span>
-            </button>
-          ) : (
-            <button
-              onClick={closeQuestModal}
-              className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-all"
-            >
-              Close Hub
-            </button>
           )}
+
+          {/* Tab 2: Representative Email Template */}
+          {tab === 'email' && (
+            <div className="space-y-3">
+              <div className="pixel-card p-4 bg-[#fffbf2] space-y-2">
+                <div className="text-[9.5px] text-[#78350f]">
+                  <span>Subject: </span>
+                  <strong className="text-[#2e1005]">{emailSubject}</strong>
+                </div>
+                <div className="border-t-2 border-[#5c2c16] pt-2 text-[9px] text-[#2e1005] leading-relaxed whitespace-pre-line font-mono bg-[#fefce8] p-2.5 border border-[#c49a6c]">
+                  {emailBody}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopyEmail}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 pixel-btn text-[10px]"
+                >
+                  {copiedEmail ? <Check className="w-4 h-4 text-[#86efac]" /> : <Copy className="w-4 h-4" />}
+                  <span>{copiedEmail ? 'COPIED EMAIL DRAFT!' : 'COPY EMAIL TEXT'}</span>
+                </button>
+                <a
+                  href={`mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 pixel-btn text-[10px]"
+                >
+                  <span>OPEN MAIL</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Publish & Complete Action Button */}
+          <div className="pt-3 border-t-2 border-[#5c2c16] flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[10px] text-[#15803d] font-bold">
+              <Sparkles className="w-4 h-4 text-[#16a34a]" />
+              <span>REWARD: +350 COINS & 100% CANOPY FLOURISH</span>
+            </div>
+
+            {!completed ? (
+              <button
+                onClick={handlePublish}
+                className="flex items-center gap-2 px-4 py-2 pixel-btn-green text-[10px]"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>LAUNCH CAMPAIGN</span>
+              </button>
+            ) : (
+              <button
+                onClick={closeQuestModal}
+                className="px-4 py-2 pixel-btn text-[10px]"
+              >
+                CLOSE HUB
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/context/GameStateContext';
-import { Info, Zap, Sprout } from 'lucide-react';
+import { Info, Zap, Sprout, X } from 'lucide-react';
 
 interface EcoAd {
   id: string;
@@ -78,103 +78,95 @@ export default function DummyAdBanner() {
 
   return (
     <>
-      {/* Bottom Sticky Ad Banner - Warm Light Mode */}
-      <div className="w-full bg-white/95 border-t border-amber-200/80 backdrop-blur-md px-4 py-2.5 z-30 flex items-center justify-between gap-4 select-none shadow-sm text-stone-900">
+      {/* Bottom Sticky Ad Banner - Pixel Farm Theme */}
+      <div className="w-full bg-[#5c2c16] border-t-4 border-[#2e1005] px-3 py-2 z-30 flex items-center justify-between gap-3 select-none text-[#fffbeb] font-pixel shadow-md">
         {/* Ad Tag & Icon */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+            <span className="text-[8px] uppercase font-bold px-1 py-0.5 bg-[#b45309] border border-[#fde68a] text-[#fffbeb]">
               AD
             </span>
-            <span className="text-2xl">{currentAd.icon}</span>
+            <span className="text-xl">{currentAd.icon}</span>
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h4 className="text-xs font-bold font-serif text-stone-900 truncate">{currentAd.headline}</h4>
-              <span
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full hidden sm:inline-block border border-amber-300"
-                style={{ backgroundColor: `${currentAd.themeColor}15`, color: currentAd.themeColor }}
-              >
+              <h4 className="text-[10px] font-bold text-[#fde68a] truncate">{currentAd.headline}</h4>
+              <span className="text-[8px] font-bold px-1.5 py-0.2 bg-[#2e1005] text-[#86efac] border border-[#15803d] hidden sm:inline-block">
                 {currentAd.sponsor}
               </span>
             </div>
-            <p className="text-[11px] text-stone-600 truncate hidden md:block">{currentAd.body}</p>
+            <p className="text-[8.5px] text-[#fffbeb]/80 truncate hidden md:block">{currentAd.body}</p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button
             onClick={handleBoostClick}
             disabled={boostCooldown}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 ${
-              boostCooldown
-                ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-amber-600 to-emerald-600 hover:from-amber-500 hover:to-emerald-500 text-white shadow-emerald-200'
+            className={`pixel-btn-green px-2.5 py-1 text-[9px] font-bold flex items-center gap-1 ${
+              boostCooldown ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>{boostCooldown ? 'Boost Claimed' : 'Claim Ad Eco-Boost (+150 Coins)'}</span>
+            <Zap className="w-3 h-3 text-[#fde68a]" />
+            <span>{boostCooldown ? 'BOOST CLAIMED' : 'ECO-BOOST (+150 COINS)'}</span>
           </button>
 
           <button
             onClick={() => setShowInfo(true)}
             title="How Ad Revenue Funds Conservation"
-            className="p-1.5 text-stone-600 hover:text-stone-900 rounded-lg bg-stone-100 hover:bg-stone-200 border border-stone-300 transition-colors"
+            className="pixel-btn p-1 text-[9px]"
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Info Modal - Light Mode */}
+      {/* Info Modal - Pixel Art Farm Theme */}
       {showInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-lg bg-white border-2 border-amber-900/40 rounded-3xl p-6 shadow-2xl text-stone-900">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 mb-4">
-              <h3 className="font-bold text-base text-stone-900 flex items-center gap-2 font-serif">
-                <Sprout className="w-5 h-5 text-emerald-600" />
-                <span>How Free-to-Play Games Fund Real Conservation</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+          <div className="relative w-full max-w-md pixel-panel p-5 text-[#2e1005] shadow-2xl">
+            <div className="flex items-center justify-between border-b-2 border-[#5c2c16] pb-2.5 mb-3">
+              <h3 className="font-pixel-heading text-xs text-[#5c2c16] flex items-center gap-2">
+                <Sprout className="w-4 h-4 text-[#15803d]" />
+                <span>SPONSOR IMPACT POOL</span>
               </h3>
               <button
                 onClick={() => setShowInfo(false)}
-                className="text-stone-400 hover:text-stone-700 text-sm p-1"
+                className="p-1 pixel-btn-red text-[9px]"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-stone-700 leading-relaxed">
+            <div className="space-y-2.5 text-[9px] leading-relaxed text-[#451a03]">
               <p>
-                In <strong>Field to Future</strong>, you don&apos;t need real money to make a tangible global impact.
+                In <strong>Field to Future</strong>, ad interactions simulate corporate sponsorship match pools from <strong>Bayer Crop Science & Eco-Partners</strong>.
               </p>
-              <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 space-y-1">
-                <div className="font-bold text-emerald-800 font-serif">1. Play & Learn:</div>
-                <p className="text-stone-600">Every minute you spend exploring biomes and talking with endangered animals earns Biome Coins.</p>
+
+              <div className="p-2.5 pixel-card space-y-1">
+                <div className="font-bold text-[#15803d]">1. PLAY & RESTORE:</div>
+                <p className="text-[#5c2c16] text-[8px]">Every minute spent exploring biomes and solving crop crises earns Biome Coins.</p>
               </div>
 
-              <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 space-y-1">
-                <div className="font-bold text-amber-900 font-serif">2. Sponsored Ad Revenue Pool:</div>
-                <p className="text-stone-600">
-                  Ad impressions and clicks generate simulated corporate sponsorship credits from partners like Bayer Crop Science and environmental foundations.
-                </p>
+              <div className="p-2.5 pixel-card space-y-1">
+                <div className="font-bold text-[#b45309]">2. CORPORATE SPONSOR MATCH:</div>
+                <p className="text-[#5c2c16] text-[8px]">Sponsors fund grants for verified wildlife and agriculture initiatives.</p>
               </div>
 
-              <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200 space-y-1">
-                <div className="font-bold text-cyan-800 font-serif">3. Direct Real-World Allocations:</div>
-                <p className="text-stone-600">
-                  You choose in your Impact Profile where funds go—protecting Red Panda canopies, planting monarch milkweed corridors, or restoring coral reefs!
-                </p>
+              <div className="p-2.5 pixel-card space-y-1">
+                <div className="font-bold text-[#0369a1]">3. YOU CHOOSE THE CAUSE:</div>
+                <p className="text-[#5c2c16] text-[8px]">In your portfolio, pledge coins to Monarch corridors, Red Pandas, or Reef preservation!</p>
               </div>
+
+              <button
+                onClick={() => setShowInfo(false)}
+                className="pixel-btn-green w-full py-2 text-[10px] font-bold"
+              >
+                KEEP PLAYING!
+              </button>
             </div>
-
-            <button
-              onClick={() => setShowInfo(false)}
-              className="mt-5 w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95"
-            >
-              Got it, let&apos;s keep playing!
-            </button>
           </div>
         </div>
       )}

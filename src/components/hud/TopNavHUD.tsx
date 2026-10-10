@@ -16,6 +16,7 @@ import {
   Compass,
   RotateCcw,
   Sprout,
+  X,
 } from 'lucide-react';
 
 export default function TopNavHUD() {
@@ -48,74 +49,73 @@ export default function TopNavHUD() {
     sounds.playClick();
     if (confirm('Are you sure you want to reset all game progress, coins, and crop restoration back to the beginning?')) {
       resetGame();
+      setIsSettingsOpen(false);
     }
   };
 
   return (
     <>
-      {/* Top HUD Bar - Clean Warm Light Mode */}
-      <header className="w-full bg-white/95 border-b border-amber-200/80 backdrop-blur-md px-4 py-2.5 z-30 flex items-center justify-between gap-4 select-none shadow-sm text-stone-900">
+      {/* Top HUD Bar - Pixel Art Farm Theme */}
+      <header className="w-full bg-[#5c2c16] border-b-4 border-[#2e1005] px-3 py-2 z-30 flex items-center justify-between gap-3 select-none text-[#fffbeb] shadow-md font-pixel">
         {/* Logo & Theme Title */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-400/80 flex items-center justify-center shadow-sm">
-              <Sprout className="w-4 h-4 text-emerald-700" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-extrabold text-sm tracking-wide text-stone-900 font-serif">
-                  Field to Future
-                </h1>
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                  Bloom
-                </span>
-              </div>
-              <span className="text-[10px] text-stone-500 hidden sm:inline">
-                Sponsored by Bayer • Agriculture & Sustainability
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-none bg-[#78350f] border-2 border-[#fde68a] flex items-center justify-center shadow-inner">
+            <Sprout className="w-4 h-4 text-[#86efac]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="font-pixel-heading text-xs tracking-wider text-[#fde68a] drop-shadow-[1px_1px_0px_#2e1005]">
+                FIELD TO FUTURE
+              </h1>
+              <span className="text-[9px] px-1 py-0.5 bg-[#15803d] border border-[#86efac] text-[#fffbeb] font-bold">
+                BLOOM
               </span>
             </div>
+            <span className="text-[8px] text-[#fde68a]/70 hidden sm:inline tracking-tight">
+              Bayer Smart Farm • Eco-Flourish
+            </span>
           </div>
         </div>
 
         {/* Global Flourish Bar (Middle) */}
         <div className="flex-1 max-w-xs md:max-w-md hidden sm:flex flex-col gap-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-stone-600 font-medium flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>World Flourish Index:</span>
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-[#fde68a] flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-[#fbbf24]" />
+              <span>FLOURISH:</span>
             </span>
-            <span className="font-bold text-emerald-700">{globalFlourish}%</span>
+            <span className="font-bold text-[#86efac]">{globalFlourish}%</span>
           </div>
 
-          <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden border border-stone-300">
+          <div className="w-full bg-[#2e1005] h-3 border-2 border-[#1a0802] p-0.5 shadow-inner">
             <div
-              className="h-full rounded-full transition-all duration-700 bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-500"
+              className="h-full transition-all duration-500 bg-gradient-to-r from-[#ea580c] via-[#eab308] to-[#22c55e]"
               style={{ width: `${globalFlourish}%` }}
             />
           </div>
         </div>
 
-        {/* Right HUD Controls */}
-        <div className="flex items-center gap-2">
-          {/* Coin Treasury Pill */}
+        {/* Right HUD Controls (Pixel Farm Buttons) */}
+        <div className="flex items-center gap-1.5">
+          {/* Coin Treasury Button */}
           <button
             onClick={() => { sounds.playClick(); setIsProfileOpen(true); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-300 text-amber-950 transition-all shadow-sm active:scale-95"
+            className="pixel-btn flex items-center gap-1 px-2.5 py-1 text-[10px]"
             title="Coin Treasury & Causes"
           >
-            <Coins className="w-4 h-4 text-amber-600" />
-            <span className="font-bold text-xs">{totalCoins.toLocaleString()}</span>
+            <Coins className="w-3.5 h-3.5 text-[#fde68a]" />
+            <span className="font-bold">{totalCoins.toLocaleString()}</span>
           </button>
 
           {/* Quests Button */}
           <button
             onClick={() => { sounds.playClick(); setIsQuestsOpen(true); }}
-            className="relative p-2 rounded-xl bg-white hover:bg-amber-50 border border-stone-300 text-stone-700 hover:text-stone-900 transition-all shadow-sm active:scale-95"
-            title="Quests Drawer"
+            className="pixel-btn relative p-1.5 text-[10px]"
+            title="Quests Board"
           >
-            <ScrollText className="w-4 h-4" />
+            <ScrollText className="w-3.5 h-3.5" />
             {uncompletedQuestsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center shadow">
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#b91c1c] border border-[#fde68a] text-white text-[8px] font-bold flex items-center justify-center">
                 {uncompletedQuestsCount}
               </span>
             )}
@@ -124,10 +124,10 @@ export default function TopNavHUD() {
           {/* Profile / Portfolio Button */}
           <button
             onClick={() => { sounds.playClick(); setIsProfileOpen(true); }}
-            className="p-2 rounded-xl bg-white hover:bg-amber-50 border border-stone-300 text-stone-700 hover:text-stone-900 transition-all shadow-sm active:scale-95"
-            title="Impact Portfolio"
+            className="pixel-btn p-1.5 text-[10px]"
+            title="Farm Portfolio & Treasury"
           >
-            <User className="w-4 h-4" />
+            <User className="w-3.5 h-3.5" />
           </button>
 
           {/* Sound Toggle Button */}
@@ -136,104 +136,108 @@ export default function TopNavHUD() {
               sounds.playClick();
               updateSettings({ soundEnabled: !settings.soundEnabled });
             }}
-            className="p-2 rounded-xl bg-white hover:bg-amber-50 border border-stone-300 text-stone-700 hover:text-stone-900 transition-all shadow-sm active:scale-95"
+            className="pixel-btn p-1.5 text-[10px]"
             title={settings.soundEnabled ? 'Mute SFX' : 'Enable SFX'}
           >
-            {settings.soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-stone-400" />}
+            {settings.soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#86efac]" /> : <VolumeX className="w-3.5 h-3.5 text-[#fca5a5]" />}
           </button>
 
           {/* Settings Button */}
           <button
             onClick={() => { sounds.playClick(); setIsSettingsOpen(true); }}
-            className="p-2 rounded-xl bg-white hover:bg-amber-50 border border-stone-300 text-stone-700 hover:text-stone-900 transition-all shadow-sm active:scale-95"
-            title="Gemini AI & Engine Settings"
+            className="pixel-btn p-1.5 text-[10px]"
+            title="Game & AI Settings"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-3.5 h-3.5" />
           </button>
 
           {/* Help & Guide Button */}
           <button
             onClick={() => { sounds.playClick(); setIsHelpOpen(true); }}
-            className="p-2 rounded-xl bg-white hover:bg-amber-50 border border-stone-300 text-stone-700 hover:text-stone-900 transition-all shadow-sm active:scale-95"
-            title="Game Guide & World Map"
+            className="pixel-btn p-1.5 text-[10px]"
+            title="Farm Guide & Map"
           >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-
-          {/* Prominent Reset Progress Button - Vintage Wooden Sign Aesthetic */}
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-900 hover:bg-amber-800 border-2 border-amber-950 text-amber-100 font-serif font-bold text-xs shadow-md transition-all active:scale-95"
-            title="Reset Game Progress to Beginning"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden md:inline">Reset Progress</span>
+            <HelpCircle className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
 
-      {/* Settings Modal - Light Mode */}
+      {/* Settings Modal - Pixel Art Farm Theme with Reset Progress */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-md bg-white border-2 border-amber-900/40 rounded-3xl p-6 shadow-2xl text-stone-900">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 mb-4">
-              <h3 className="font-bold text-sm text-stone-900 flex items-center gap-2 font-serif">
-                <Settings className="w-4 h-4 text-emerald-600" />
-                <span>Game & Gemini 1.5 Flash AI Configuration</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+          <div className="relative w-full max-w-md pixel-panel p-5 text-[#2e1005]">
+            <div className="flex items-center justify-between border-b-2 border-[#5c2c16] pb-2.5 mb-4">
+              <h3 className="font-pixel-heading text-xs text-[#5c2c16] flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#b45309]" />
+                <span>GAME SETTINGS</span>
               </h3>
               <button
                 onClick={() => setIsSettingsOpen(false)}
-                className="text-stone-400 hover:text-stone-700 text-sm p-1"
+                className="p-1 pixel-btn-red text-[9px]"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveSettings} className="space-y-4 text-[10px]">
               <div>
-                <label className="block text-stone-700 font-bold mb-1 flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Google Gemini API Key (Optional)</span>
+                <label className="block text-[#5c2c16] font-bold mb-1 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-[#b45309]" />
+                  <span>GEMINI API KEY (OPTIONAL):</span>
                 </label>
                 <input
                   type="password"
-                  placeholder="AIzaSy... (Leave empty to use built-in simulation)"
+                  placeholder="AIzaSy... (Leave empty for built-in simulation)"
                   value={tempApiKey}
                   onChange={(e) => setTempApiKey(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-stone-900 placeholder-stone-400 focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  className="w-full bg-[#fffbf2] border-2 border-[#5c2c16] p-2 text-[#2e1005] placeholder-[#a88a6d] focus:outline-none focus:border-[#b45309] font-mono text-xs"
                 />
-                <p className="text-[10px] text-stone-500 mt-1.5 leading-relaxed">
-                  If provided, calls stream directly from Google Gemini 1.5 Flash. If left blank, our built-in intelligent dynamic persona engine delivers responses out of the box!
+                <p className="text-[8.5px] text-[#78350f] mt-1 leading-normal">
+                  If set, calls stream from Gemini 1.5 Flash. Otherwise, our built-in offline smart dialog engine is active!
                 </p>
               </div>
 
-              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-stone-700 font-medium">Sound Effects & Synthesis:</span>
-                  <input
-                    type="checkbox"
-                    checked={settings.soundEnabled}
-                    onChange={(e) => updateSettings({ soundEnabled: e.target.checked })}
-                    className="accent-emerald-600 w-4 h-4 rounded cursor-pointer"
-                  />
-                </div>
+              <div className="p-2.5 pixel-card flex items-center justify-between">
+                <span className="text-[#5c2c16] font-bold">SOUND EFFECTS:</span>
+                <input
+                  type="checkbox"
+                  checked={settings.soundEnabled}
+                  onChange={(e) => updateSettings({ soundEnabled: e.target.checked })}
+                  className="w-4 h-4 accent-[#b45309] cursor-pointer"
+                />
               </div>
 
-              <div className="pt-2 flex items-center justify-between gap-3">
+              {/* Reset Progress Button KEPT IN SETTINGS ONLY as requested */}
+              <div className="p-3 bg-[#fee2e2] border-2 border-[#ef4444] space-y-2">
+                <div className="text-[9px] text-[#991b1b] font-bold">
+                  RESET PROGRESS:
+                </div>
+                <p className="text-[8px] text-[#7f1d1d] leading-tight">
+                  Wipes all saved restoration, biome coins, and unlocked badges back to Day 1.
+                </p>
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="px-3.5 py-2 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded-xl font-semibold flex items-center gap-1.5 transition-colors"
+                  className="pixel-btn-red w-full py-1.5 text-[9px] font-bold flex items-center justify-center gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset Progress</span>
+                  <span>RESET ALL GAME PROGRESS</span>
                 </button>
+              </div>
 
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="pixel-btn px-3 py-1.5 text-[9px]"
+                >
+                  CANCEL
+                </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-md active:scale-95"
+                  className="pixel-btn-green px-4 py-1.5 text-[9px] font-bold"
                 >
-                  Save Settings
+                  SAVE SETTINGS
                 </button>
               </div>
             </form>
@@ -241,55 +245,55 @@ export default function TopNavHUD() {
         </div>
       )}
 
-      {/* Guide Modal - Light Mode */}
+      {/* Guide Modal - Pixel Art Farm Theme */}
       {isHelpOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-xl bg-white border-2 border-amber-900/40 rounded-3xl p-6 shadow-2xl text-stone-900 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3 mb-4">
-              <h3 className="font-bold text-base text-stone-900 flex items-center gap-2 font-serif">
-                <Compass className="w-5 h-5 text-emerald-600" />
-                <span>Field to Future World Guide & Map</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in font-pixel">
+          <div className="relative w-full max-w-lg pixel-panel p-5 text-[#2e1005] max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b-2 border-[#5c2c16] pb-2.5 mb-3">
+              <h3 className="font-pixel-heading text-xs text-[#5c2c16] flex items-center gap-2">
+                <Compass className="w-4 h-4 text-[#b45309]" />
+                <span>FARM GUIDE & BIOMES</span>
               </h3>
               <button
                 onClick={() => setIsHelpOpen(false)}
-                className="text-stone-400 hover:text-stone-700 text-sm p-1"
+                className="p-1 pixel-btn-red text-[9px]"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs text-stone-700 leading-relaxed">
+            <div className="space-y-3 text-[9.5px] leading-relaxed text-[#451a03]">
               <p>
-                Welcome to <strong>Field to Future: Bloom</strong>! You begin at the central farm hub where 6 crops are failing due to crises in neighboring biomes. Walk to each biome, talk to the animals, and complete environmental action plans to revive each habitat!
+                Welcome to <strong>Field to Future: Bloom</strong>! You begin at the central farm hub where 6 crops are failing due to crises in neighboring biomes.
               </p>
 
-              <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-2">
-                <h4 className="font-bold text-stone-900 text-xs uppercase tracking-wide font-serif">Controls & Movement:</h4>
-                <div className="grid grid-cols-2 gap-2 text-stone-600">
+              <div className="p-3 pixel-card space-y-1.5">
+                <h4 className="font-bold text-[#78350f] uppercase">CONTROLS & TRAVEL:</h4>
+                <div className="space-y-1 text-[#5c2c16] text-[8.5px]">
                   <div>• <strong>Arrow Keys</strong>: Walk along paths</div>
                   <div>• <strong>Click Ground</strong>: Click-to-move along paths</div>
-                  <div>• <strong>Click Animals / Signs</strong>: Interact & Talk</div>
-                  <div>• <strong>Screen Transitions</strong>: Exiting one side enters on the opposite side</div>
+                  <div>• <strong>Click Map Nodes</strong>: Instant travel to any biome</div>
+                  <div>• <strong>Screen Edges</strong>: Walk offscreen to transition to connected biomes</div>
                 </div>
               </div>
 
-              <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-2">
-                <h4 className="font-bold text-stone-900 text-xs uppercase tracking-wide font-serif">Biomes & Endangered Species:</h4>
-                <div className="space-y-1.5 text-stone-700">
-                  <div>• <strong>NW - Forest</strong>: Paku the Red Panda (Stop wildfires $\rightarrow$ Canopy Apples)</div>
-                  <div>• <strong>West - Lake</strong>: Mo the Manatee (Watershed waste recycling $\rightarrow$ Golden Sweet Corn)</div>
-                  <div>• <strong>North - Tundra</strong>: Nanuk the Polar Bear (Retire coal plant $\rightarrow$ Winter Wheat)</div>
-                  <div>• <strong>East - Prairie</strong>: Aura the Monarch (Bayer Smart Farming $\rightarrow$ Sunflowers)</div>
-                  <div>• <strong>SE - Desert</strong>: Zuri the Cheetah (Solar artesian wells $\rightarrow$ Sugar Melons)</div>
-                  <div>• <strong>South - Reefs</strong>: Coralia the Sea Turtle (Divert vessel routes $\rightarrow$ Tidal Rice)</div>
+              <div className="p-3 pixel-card space-y-1.5">
+                <h4 className="font-bold text-[#78350f] uppercase">6 BIOMES & CROP CRISES:</h4>
+                <div className="space-y-1 text-[#5c2c16] text-[8.5px]">
+                  <div>• <strong>Lake (West)</strong>: Mo the Manatee $\rightarrow$ Golden Corn</div>
+                  <div>• <strong>Forest (NW)</strong>: Paku the Red Panda $\rightarrow$ Canopy Apples</div>
+                  <div>• <strong>Tundra (North)</strong>: Nanuk the Polar Bear $\rightarrow$ Winter Wheat</div>
+                  <div>• <strong>Prairie (East)</strong>: Aura the Monarch $\rightarrow$ Sunflowers</div>
+                  <div>• <strong>Desert (SE)</strong>: Zuri the Cheetah $\rightarrow$ Sugar Melons</div>
+                  <div>• <strong>Reefs (South)</strong>: Coralia the Sea Turtle $\rightarrow$ Tidal Rice</div>
                 </div>
               </div>
 
               <button
                 onClick={() => setIsHelpOpen(false)}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95"
+                className="pixel-btn-green w-full py-2 text-[10px] font-bold"
               >
-                Let&apos;s Flourish!
+                CLOSE GUIDE
               </button>
             </div>
           </div>

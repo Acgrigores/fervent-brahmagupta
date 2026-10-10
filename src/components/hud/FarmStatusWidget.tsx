@@ -15,38 +15,38 @@ export default function FarmStatusWidget() {
   const flourishingCount = cropKeys.filter((k) => (restoration[k] || 0) >= 80).length;
 
   return (
-    <div className="absolute top-20 left-4 z-20 max-w-xs sm:max-w-sm select-none">
-      <div className="bg-amber-50/95 backdrop-blur-md border-2 border-amber-900/40 rounded-2xl shadow-xl overflow-hidden transition-all text-stone-900">
-        {/* Header Bar - Vintage Wooden Sign Plaque */}
+    <div className="absolute top-16 left-3 z-20 max-w-xs sm:max-w-sm select-none font-pixel">
+      <div className="pixel-panel shadow-2xl overflow-hidden transition-all text-[#2e1005]">
+        {/* Header Bar - Pixel Farm Wood Plank */}
         <div
           onClick={() => { sounds.playClick(); setIsExpanded(!isExpanded); }}
-          className="p-3 bg-amber-900 border-b-2 border-amber-950 flex items-center justify-between cursor-pointer hover:bg-amber-850 transition-colors shadow-sm text-amber-50"
+          className="p-2.5 bg-[#5c2c16] border-b-4 border-[#2e1005] flex items-center justify-between cursor-pointer hover:bg-[#6d330c] transition-colors shadow-sm text-[#fffbeb]"
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-amber-950 border border-amber-700 flex items-center justify-center shadow-inner">
-              <Home className="w-4 h-4 text-amber-300" />
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-[#78350f] border-2 border-[#fde68a] flex items-center justify-center">
+              <Home className="w-3.5 h-3.5 text-[#fde68a]" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-bold font-serif tracking-wide text-amber-100">
-                  Central Bayer Farm
+                <h3 className="text-[10px] font-pixel-heading text-[#fde68a]">
+                  CENTRAL FARM
                 </h3>
-                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-emerald-900 text-emerald-200 border border-emerald-600">
-                  {flourishingCount}/6 Crops
+                <span className="text-[8px] px-1 py-0.5 bg-[#15803d] border border-[#86efac] text-[#fffbeb] font-bold">
+                  {flourishingCount}/6 CROPS
                 </span>
               </div>
-              <p className="text-[10px] text-amber-200/80">Save biomes to revive failing crops</p>
+              <p className="text-[7.5px] text-[#fde68a]/80">Save biomes to revive crops</p>
             </div>
           </div>
 
-          <button className="text-amber-200 hover:text-white p-1">
+          <button className="text-[#fde68a] hover:text-white p-1">
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
 
         {/* Expanded Crops List */}
         {isExpanded && (
-          <div className="p-3 space-y-2 max-h-[50vh] overflow-y-auto bg-amber-50/80">
+          <div className="p-2 space-y-1.5 max-h-[46vh] overflow-y-auto bg-[#fcf6e8]">
             {cropKeys.map((biomeKey) => {
               const crop = FARM_CROPS[biomeKey];
               const isFlourished = (restoration[biomeKey] || 0) >= 80;
@@ -54,38 +54,38 @@ export default function FarmStatusWidget() {
               return (
                 <div
                   key={biomeKey}
-                  className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 ${
+                  className={`p-2 pixel-card transition-all flex items-center justify-between gap-2 ${
                     isFlourished
-                      ? 'bg-emerald-50/90 border-emerald-300 shadow-sm'
-                      : 'bg-white border-amber-200 hover:border-amber-400 shadow-sm'
+                      ? 'bg-[#f0fdf4] border-[#15803d]'
+                      : 'bg-[#fffbf2] border-[#5c2c16] hover:border-[#b45309]'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     <img
                       src={isFlourished ? crop.icon : crop.deadIcon}
                       alt={crop.name}
-                      className="w-10 h-10 object-contain rounded-lg border border-amber-200 bg-amber-50/50 flex-shrink-0"
+                      className="w-8 h-8 object-contain border-2 border-[#5c2c16] bg-[#fef3c7] flex-shrink-0"
                     />
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-stone-900 truncate font-serif">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9.5px] font-bold text-[#2e1005] truncate">
                           {crop.name}
                         </span>
-                        <span className="text-[9px] uppercase px-1 rounded bg-stone-100 text-stone-600 border border-stone-200 font-mono">
+                        <span className="text-[7.5px] uppercase px-1 bg-[#fef08a] text-[#854d0e] border border-[#ca8a04]">
                           {biomeKey}
                         </span>
                       </div>
-                      <p className="text-[10px] text-stone-600 truncate">
-                        {isFlourished ? 'Thriving harvest!' : crop.crisisDescription}
+                      <p className="text-[7.5px] text-[#78350f] truncate">
+                        {isFlourished ? '✓ Thriving harvest!' : crop.crisisDescription}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex-shrink-0">
                     {isFlourished ? (
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        <span>Flourishing</span>
+                      <span className="flex items-center gap-0.5 text-[8px] font-bold text-[#15803d] px-1.5 py-0.5 bg-[#dcfce7] border border-[#16a34a]">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        <span>SAVED</span>
                       </span>
                     ) : (
                       <button
@@ -93,10 +93,10 @@ export default function FarmStatusWidget() {
                           sounds.playClick();
                           setCurrentBiome(biomeKey as BiomeId);
                         }}
-                        className="flex items-center gap-1 text-[10px] font-serif font-bold px-2 py-1 rounded-lg bg-amber-800 hover:bg-amber-700 text-amber-50 border border-amber-950 transition-all shadow-sm active:scale-95"
+                        className="pixel-btn flex items-center gap-1 text-[8px] px-2 py-0.5 font-bold"
                       >
-                        <span>Enter Biome</span>
-                        <ArrowRight className="w-3 h-3 text-amber-300" />
+                        <span>GO</span>
+                        <ArrowRight className="w-2.5 h-2.5 text-[#fde68a]" />
                       </button>
                     )}
                   </div>
