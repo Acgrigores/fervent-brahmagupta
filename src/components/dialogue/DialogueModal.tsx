@@ -127,7 +127,7 @@ export default function DialogueModal() {
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 border-2 border-[#fde68a] bg-[#2e1005] overflow-hidden flex-shrink-0">
               <img
-                src={animal.avatar}
+                src={currentRestoration >= 80 ? animal.avatar : animal.avatar.replace('.png', '_sad.png')}
                 alt={animal.name}
                 className="w-full h-full object-cover"
               />

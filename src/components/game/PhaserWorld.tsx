@@ -146,6 +146,10 @@ export default function PhaserWorld() {
             this.load.image('butterfly', '/assets/sprites/butterfly.png');
             this.load.image('cheetah', '/assets/sprites/cheetah.png');
             this.load.image('sea_turtle', '/assets/sprites/sea_turtle.png');
+            // Sad versions shown until the animal's biome is restored
+            (['manatee', 'red_panda', 'polar_bear', 'butterfly', 'cheetah', 'sea_turtle'] as const).forEach((id) => {
+              this.load.image(`${id}_sad`, `/assets/sprites/${id}_sad.png`);
+            });
 
             // Biome Paths
             this.load.image('path_farm', '/assets/paths/path_farm.png');
@@ -1007,7 +1011,7 @@ export default function PhaserWorld() {
             // 3. Animal Friend at Center (w / 2, 330)
             const animalId = this.getAnimalForBiome(biome);
             if (animalId) {
-              this.spawnBiomeAnimal(animalId, w / 2, 330);
+              this.spawnBiomeAnimal(animalId, w / 2, 330, isRestored);
             }
 
             // 4. Action Plan Quest Station at (w / 2, 180)
@@ -1160,32 +1164,66 @@ export default function PhaserWorld() {
             return null;
           }
 
-          private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number) {
+          private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number, isRestored: boolean) {
             const info = ANIMALS[animalId];
             const container = this.add.container(x, y);
 
             // Ground shadow
             const shadow = this.add.ellipse(0, 44, 76, 22, 0x000000, 0.35);
 
-            // Ambient breathing glow
-            const glow = this.add.circle(0, 0, 46, 0x10b981, 0.25);
+            // Ambient breathing glow (gloomy grey until the biome is restored)
+            const glow = this.add.circle(0, 0, 46, isRestored ? 0x10b981 : 0x64748b, 0.25);
             this.tweens.add({ targets: glow, scale: 1.25, alpha: 0.08, duration: 900, yoyo: true, repeat: -1 });
 
-            // Animal image sprite
-            const sprite = this.add.image(0, 0, animalId);
+            // Animal image sprite: sad until its biome is restored, then happy
+            const sprite = this.add.image(0, 0, isRestored ? animalId : `${animalId}_sad`);
             sprite.setDisplaySize(80, 80);
             sprite.setOrigin(0.5, 0.5);
 
-            // Gentle float tween
+            // Happy friends bounce; sad ones slump slowly
             this.tweens.add({
               targets: sprite,
-              y: sprite.y - 6,
-              duration: 1400,
+              y: isRestored ? sprite.y - 6 : sprite.y + 3,
+              duration: isRestored ? 1400 : 2200,
               yoyo: true,
               repeat: -1,
             });
 
             container.add([shadow, glow, sprite]);
+
+            // Little pixel rain cloud hanging over sad friends until their biome is restored
+            if (!isRestored) {
+              const cloud = this.add.container(0, -66);
+              const puffs = this.add.graphics();
+              puffs.fillStyle(0x334155, 1);
+              puffs.fillRect(-26, -6, 52, 16);
+              puffs.fillRect(-18, -14, 20, 8);
+              puffs.fillRect(-2, -18, 18, 12);
+              puffs.fillStyle(0x64748b, 1);
+              puffs.fillRect(-24, -4, 48, 12);
+              puffs.fillRect(-16, -12, 16, 8);
+              puffs.fillRect(0, -16, 14, 12);
+              puffs.fillStyle(0x94a3b8, 1);
+              puffs.fillRect(-14, -10, 8, 4);
+              puffs.fillRect(2, -14, 8, 4);
+              cloud.add(puffs);
+
+              [-16, -4, 8, 18].forEach((dropX, i) => {
+                const drop = this.add.rectangle(dropX, 12, 3, 7, 0x60a5fa);
+                cloud.add(drop);
+                this.tweens.add({
+                  targets: drop,
+                  y: 34,
+                  alpha: { from: 1, to: 0 },
+                  duration: 650,
+                  delay: i * 170,
+                  repeat: -1,
+                });
+              });
+
+              this.tweens.add({ targets: cloud, x: 5, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+              container.add(cloud);
+            }
 
             const triggerChat = () => {
               sounds.playClick();
@@ -1597,7 +1635,7 @@ export default function PhaserWorld() {
           >
             {activeNearbyHotspot.animalId && (
               <img
-                src={`/assets/sprites/${activeNearbyHotspot.animalId}.png`}
+                src={`/assets/sprites/${activeNearbyHotspot.animalId}${(restoration[currentBiome] || 0) >= 80 ? '' : '_sad'}.png`}
                 alt={activeNearbyHotspot.name}
                 className="w-8 h-8 object-cover border-2 border-[#5c2c16]"
               />
