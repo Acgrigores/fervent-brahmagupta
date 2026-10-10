@@ -23,6 +23,7 @@ import DesertAquiferModal from '@/components/quests/DesertAquiferModal';
 // Story & Crop Context Modals
 import GamePremiseModal from '@/components/popups/GamePremiseModal';
 import CropCrisisModal from '@/components/popups/CropCrisisModal';
+import NemoLostModal from '@/components/popups/NemoLostModal';
 
 export default function Home() {
   return (
@@ -37,7 +38,7 @@ export default function Home() {
           <FarmStatusWidget />
           <NotificationToast />
 
-          {/* Dialogue & Quest Modals Overlay */}
+        {/* Dialogue & Quest Modals Overlay */}
           <DialogueModal />
           <WildfireQuenchModal />
           <LakeRecyclingModal />
@@ -50,6 +51,7 @@ export default function Home() {
           <QuestsDrawer />
           <GamePremiseModal />
           <CropCrisisModal />
+          <NemoLostModal />
         </div>
 
         {/* Bottom Dummy Ad Banner for Eco-Sponsorship */}
