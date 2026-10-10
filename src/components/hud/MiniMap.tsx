@@ -3,7 +3,6 @@
 import React from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { BiomeId } from '@/types/game';
-import { BIOME_WARP_COORDS } from '@/components/hud/FastTravelDock';
 import { sounds } from '@/utils/soundEffects';
 import { MapPin } from 'lucide-react';
 
@@ -23,14 +22,6 @@ export default function MiniMap() {
   const handleNodeClick = (id: BiomeId) => {
     sounds.playClick();
     setCurrentBiome(id);
-    const coords = BIOME_WARP_COORDS[id];
-    if (typeof window !== 'undefined' && coords) {
-      window.dispatchEvent(
-        new CustomEvent('WARP_PLAYER', {
-          detail: { x: coords.x, y: coords.y, biome: id },
-        })
-      );
-    }
   };
 
   return (
@@ -38,7 +29,7 @@ export default function MiniMap() {
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
           <MapPin className="w-3 h-3 text-emerald-400" />
-          <span>Biome Radar (Click to Warp)</span>
+          <span>Biome Radar (Click to Switch)</span>
         </span>
       </div>
 
@@ -57,7 +48,7 @@ export default function MiniMap() {
               key={b.id}
               onClick={() => handleNodeClick(b.id)}
               style={{ left: b.x, top: b.y }}
-              title={`Warp to ${b.label}`}
+              title={`Switch to ${b.label} Room`}
               className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer"
             >
               <div

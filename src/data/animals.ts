@@ -10,11 +10,11 @@ export const BIOMES_INFO: Record<BiomeId, {
   flourishColor: string;
 }> = {
   clearing: {
-    name: 'Charred Ash Clearing',
-    theme: 'Smoldering Wildfire Ground Zero',
+    name: 'Bayer Central Eco-Farm',
+    theme: 'Community Farm Hub & 6 Failing Crops',
     color: '#ef4444',
-    flourishDescription: 'Lush emerald moss, pioneer saplings, and dew-kissed clover have risen from the embers.',
-    ashDescription: 'Scorched black earth, lingering embers, and suffocating ash clouds.',
+    flourishDescription: 'All 6 crops have burst into a bountiful harvest! Golden corn, sunflowers, apples, and wheat flourish under sunny skies.',
+    ashDescription: 'Scorched earth, smoldering wildfire embers, and 6 withered crops dying from ecological crises in neighboring biomes.',
     charredColor: '#262626',
     flourishColor: '#15803d',
   },
