@@ -151,49 +151,6 @@ def generate_nemo():
     s.px(8, 20, (255, 150, 130))
     s.finish("nemo", add_shadow=False)
 
-# 2b. 🐠 MARLIN (Adult Clownfish, Nemo's Father)
-def generate_marlin():
-    s = Sprite()
-    # Adult clownfish has a richer, deeper orange hue
-    deep_orange = (240, 95, 12)
-    white = (252, 252, 252)
-    black = (26, 20, 24)
-    # Caudal Tail fin - broader, stronger adult fin
-    s.poly([(30, 16), (39, 10), (37, 20), (39, 30), (30, 24)], deep_orange, edge=-35)
-    s.line([(37, 11), (35, 20), (37, 29)], black, width=1)
-    s.poly([(36, 13), (38, 11), (36, 20), (38, 29), (36, 27)], white, edge=None, shading=False)
-    # Majestic Dorsal fin
-    s.poly([(13, 7), (21, 4), (28, 6), (30, 13), (15, 12)], deep_orange, edge=-30)
-    s.line([(15, 6), (28, 5)], black, width=1)
-    s.line([(17, 7), (26, 6)], white, width=1)
-    # Anal fin
-    s.poly([(19, 25), (26, 31), (29, 27), (22, 24)], deep_orange, edge=-30)
-    s.line([(22, 29), (27, 28)], black, width=1)
-    # Main Body - slightly larger and sleeker adult profile
-    s.ellipse((4, 10, 32, 28), deep_orange, edge=-35)
-    # Stripe 1: Head stripe
-    s.ellipse((9, 10, 14, 28), white, edge=None, shading=False)
-    s.line([(9, 11), (9, 27)], black, width=1)
-    s.line([(14, 11), (14, 27)], black, width=1)
-    # Stripe 2: Mid-body stripe with distinctive clownfish curve
-    s.poly([(18, 10), (22, 10), (24, 18), (22, 28), (18, 28), (20, 18)], white, edge=None, shading=False)
-    s.line([(18, 10), (20, 18), (18, 28)], black, width=1)
-    s.line([(22, 10), (24, 18), (22, 28)], black, width=1)
-    # Stripe 3: Tail band
-    s.rect((28, 16, 30, 24), white, edge=None, shading=False)
-    s.line([(28, 16), (28, 24)], black, width=1)
-    s.line([(30, 16), (30, 24)], black, width=1)
-    # Full Adult Pectoral Fin (prominent, normal-sized)
-    s.poly([(11, 20), (18, 26), (15, 29), (10, 24)], deep_orange, edge=-30)
-    s.line([(16, 27), (14, 29)], black, width=1)
-    s.line([(15, 26), (13, 28)], white, width=1)
-    # Expressive adult clownfish eye (caring fatherly brow)
-    s.eye(6, 15)
-    s.line([(5, 13), (8, 13)], black, width=1)
-    s.line([(4, 22), (7, 22)], black)
-    s.px(7, 19, (235, 130, 110))
-    s.finish("marlin", add_shadow=False)
-
 # 3. 🌵 WAVING CACTUS (Trunk + stationary left arm, and waving right arm)
 def generate_cactus():
     # Full cactus with two arms
@@ -278,40 +235,26 @@ def generate_tall_grass():
     s.ellipse((19, 21, 23, 25), (236, 72, 153), edge=-10)  # pink blossom
     s.finish("tall_grass", shadow_box=(5, 31, 35, 38))
 
-# 5. ❄️ ICE PATCH (Tundra Glacial Pack Ice)
+# 5. ❄️ ICE PATCH (Tundra)
 def generate_ice_patch():
     s = Sprite()
-    deep_ice = (85, 165, 210)
-    mid_ice = (145, 215, 242)
-    frost_white = (225, 245, 255)
-    pure_white = (255, 255, 255)
-    
-    # Natural angular glacial ice floe geometry
-    ice_poly = [(5, 15), (10, 8), (23, 6), (32, 9), (36, 17), (35, 26), (26, 32), (13, 31), (4, 23)]
-    s.poly(ice_poly, deep_ice, edge=-35)
-    
-    inner_poly = [(7, 16), (11, 10), (22, 8), (30, 11), (34, 18), (33, 25), (25, 30), (14, 29), (6, 22)]
-    s.poly(inner_poly, mid_ice, edge=-15)
-    
-    # Frost facets & glassy reflections
-    s.poly([(10, 11), (22, 9), (28, 13), (16, 16)], frost_white, shading=False)
-    
-    # Specular glacial glints across surface
-    s.ellipse((14, 11, 24, 15), pure_white, shading=False)
-    s.line([(26, 14), (32, 18)], frost_white, width=1)
-    s.line([(7, 21), (12, 26)], frost_white, width=1)
-    
-    # Realistic crystalline stress fractures
-    s.line([(12, 19), (18, 22), (23, 20), (29, 23)], pure_white, width=1)
-    s.line([(18, 22), (20, 27)], pure_white, width=1)
-    s.line([(23, 20), (25, 15)], pure_white, width=1)
-    s.line([(14, 15), (16, 19)], pure_white, width=1)
+    ice_blue = (175, 225, 245)
+    deep_ice = (115, 185, 220)
+    white = (255, 255, 255)
+    # Sleek oval patch of ice
+    s.ellipse((3, 10, 37, 30), deep_ice, edge=-30)
+    s.ellipse((5, 12, 35, 28), ice_blue, edge=-15)
+    # Specular gleam across the surface
+    s.ellipse((8, 14, 28, 20), white, shading=False)
+    # Ice cracks / crystalline fractures
+    s.line([(12, 20), (18, 22), (24, 20), (28, 23)], white, width=1)
+    s.line([(18, 22), (19, 26)], white, width=1)
+    s.line([(24, 20), (26, 16)], white, width=1)
     s.finish("ice_patch", add_shadow=False)
 
 if __name__ == "__main__":
     generate_mushroom()
     generate_nemo()
-    generate_marlin()
     generate_cactus()
     generate_tall_grass()
     generate_ice_patch()
