@@ -1241,8 +1241,8 @@ export default function PhaserWorld() {
             this.renderFarmCropField(w / 2 - 170, 580, 'reefs', 'Tidal Rice & Kelp', 'Boat Propellers & Oil');
             this.renderFarmCropField(w / 2 + 330, 580, 'desert', 'Sugar Melons', 'Aquifer Depleted');
 
-            // 5. Vintage Wooden Posted Directional Signs positioned near exits
-            this.renderPathGateSigns();
+            // 5. Elemental Biome Portals (Replaced signs with living environmental indicators)
+            this.renderElementalBiomePortals();
 
             // 6. Farm Activity Station (Extinguish Wildfire Flare-ups)
             this.spawnBiomeQuestStation('clearing', isFarmRestored);
@@ -1512,10 +1512,13 @@ export default function PhaserWorld() {
 
             const container = this.add.container(x, y);
 
-            // Soft shadow
-            const shadow = this.add.ellipse(0, 32, 95, 20, 0x000000, 0.35);
+            // Raise crop position vertically away from the sign so they never overlap
+            const cropOffsetY = -26;
 
-            // Real Image Sprite (Biome-specific Dead vs Baby Sprout vs Flourishing image)
+            // Soft shadow beneath raised crop plot
+            const shadow = this.add.ellipse(0, cropOffsetY + 32, 95, 20, 0x000000, 0.35);
+
+            // Real Image Sprite (Biome-specific Dead vs Baby Sprout vs Flourishing image) raised cleanly away from sign
             const deadTextureKey = this.textures.exists(`crop_${biome}_dead`) ? `crop_${biome}_dead` : 'crop_dead';
             let textureKey = deadTextureKey;
             if (isBaby) {
@@ -1524,7 +1527,7 @@ export default function PhaserWorld() {
               textureKey = 'crop_flourish';
             }
 
-            const cropImage = this.add.image(0, 0, textureKey);
+            const cropImage = this.add.image(0, cropOffsetY, textureKey);
             cropImage.setDisplaySize(100, 100);
 
             container.add([shadow, cropImage]);
@@ -1573,7 +1576,7 @@ export default function PhaserWorld() {
 
             this.worldContainer.add(container);
 
-            // Vintage wooden posted sign right at the crop plot
+            // Vintage wooden posted sign cleanly positioned below the raised crop
             let subLabel = `⚠ ${crisisNotice}`;
             let subColor = '#fca5a5';
             if (isBaby) {
@@ -1586,10 +1589,9 @@ export default function PhaserWorld() {
               subLabel = '🌾 Click to Harvest!';
               subColor = '#86efac';
             }
-
             this.createVintageWoodenSign(
               x,
-              y + 40,
+              y + 46,
               cropName,
               subLabel,
               145,
@@ -1610,53 +1612,510 @@ export default function PhaserWorld() {
               id: `crop_${biome}`,
               name: `${cropName} (${isBaby ? 'Growing' : (isReadyToHarvest ? 'Flourishing' : 'Crisis')})`,
               x,
-              y,
+              y: y + cropOffsetY,
               iconSprite: textureKey,
               type: 'crop',
               targetBiome: biome,
             });
           }
 
-          // Path portals positioned near offscreen exits
-          private renderPathGateSigns() {
+          // ===============================================================
+          // 🌿 ELEMENTAL BIOME PORTALS (VISUAL STORYTELLING INDICATORS)
+          // Replaces wooden text signs with living environmental indicators:
+          // 1. Lake: Wooden pier dock extending into blue water with swimming fish
+          // 2. Arctic Tundra: Glacial ice sheet with fractures & frost sparkles
+          // 3. Cloud Forest: Forest trees framing the trail with mushrooms & leafy canopy
+          // 4. Desert Oasis: Golden sand dunes with saguaro cactus & desert stones
+          // 5. Coral Reefs: Turquoise tidal lagoon with swaying sea anemone & bubbles
+          // 6. Prairie Grasslands: Waving golden prairie grass with wild sunflowers
+          // ===============================================================
+          private renderElementalBiomePortals() {
             const w = this.canvasW;
-            this.createGateSign(80, 340, 'lake', '← LAKE DOCK', 'Golden Sweet Corn');
-            this.createGateSign(260, 50, 'forest', '↑ CLOUD FOREST', 'Apple Orchard');
-            this.createGateSign(w / 2 + 75, 50, 'tundra', '↑ ARCTIC TUNDRA', 'Winter Wheat');
-            this.createGateSign(w - 80, 340, 'grasslands', 'PRAIRIE →', 'Giant Sunflowers');
-            this.createGateSign(w - 100, 700, 'desert', '↓ DESERT OASIS', 'Sugar Melons');
-            this.createGateSign(w / 2 + 75, 700, 'reefs', '↓ CORAL REEFS', 'Tidal Rice');
+            this.createLakeDockPortal(60, 420);
+            this.createForestGrovePortal(190, 40);
+            this.createTundraIcePortal(w / 2, 38);
+            this.createGrasslandsPrairiePortal(w - 65, 420);
+            this.createDesertOasisPortal(w - 170, 705);
+            this.createReefsAnemonePortal(w / 2, 705);
           }
 
-          private createGateSign(
-            x: number,
-            y: number,
-            targetBiome: BiomeId,
-            label: string,
-            sublabel: string
-          ) {
-            this.createVintageWoodenSign(
-              x,
-              y,
-              label,
-              sublabel,
-              130,
-              28,
-              '#fde68a',
-              () => {
-                sounds.playClick();
-                stateRef.current.setCurrentBiome(targetBiome);
-              },
-              'none'
-            );
+          // 1. 🌊 LAKE DOCK (Path turns into a wooden dock over water with a swimming fish)
+          private createLakeDockPortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Deep lake water cove extending off the west edge
+            const waterDeep = this.add.ellipse(-15, 0, 135, 82, 0x0284c7, 0.95);
+            const waterShallow = this.add.ellipse(-20, 0, 115, 66, 0x38bdf8, 0.7);
+            const waterHighlight = this.add.ellipse(-30, -10, 80, 40, 0x7dd3fc, 0.5);
+
+            // Subtle water ripple ring
+            const ripple = this.add.ellipse(-25, 12, 60, 30, 0xffffff, 0.35);
+            this.tweens.add({
+              targets: ripple,
+              scaleX: 1.35,
+              scaleY: 1.35,
+              alpha: 0,
+              duration: 2200,
+              repeat: -1,
+              ease: 'Sine.easeOut',
+            });
+
+            // Wooden dock structure extending into the water
+            const supportTop = this.add.rectangle(-12, -18, 72, 6, 0x3e1a06);
+            const supportBottom = this.add.rectangle(-12, 18, 72, 6, 0x3e1a06);
+
+            const dockElements: Phaser.GameObjects.GameObject[] = [
+              waterDeep,
+              waterShallow,
+              waterHighlight,
+              ripple,
+              supportTop,
+              supportBottom,
+            ];
+
+            // 5 wooden dock planks with rustic texture and brass nails
+            for (let i = 0; i < 5; i++) {
+              const px = -40 + i * 14;
+              const plank = this.add.rectangle(px, 0, 11, 46, 0x78350f).setStrokeStyle(1, 0x451a03);
+              const nailTop = this.add.circle(px, -16, 1.2, 0xd97706);
+              const nailBottom = this.add.circle(px, 16, 1.2, 0xd97706);
+              dockElements.push(plank, nailTop, nailBottom);
+            }
+
+            // Mooring post / piling driven into the lake bed with wrapped rope
+            const piling = this.add.rectangle(26, -20, 10, 18, 0x451a03);
+            const rope = this.add.rectangle(26, -20, 12, 4, 0xfde68a);
+            dockElements.push(piling, rope);
+
+            // Swimming clownfish in the water beside the dock
+            const fish = this.add.image(-28, 24, 'nemo');
+            fish.setDisplaySize(28, 28);
+            this.tweens.add({
+              targets: fish,
+              y: 18,
+              angle: -8,
+              duration: 1300,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            // Ascending water bubble
+            const bubble = this.add.circle(-18, 16, 2.5, 0xffffff, 0.75);
+            this.tweens.add({
+              targets: bubble,
+              y: -12,
+              alpha: 0,
+              duration: 1800,
+              repeat: -1,
+              ease: 'Cubic.easeOut',
+            });
+
+            dockElements.push(fish, bubble);
+            container.add(dockElements);
+
+            const triggerLake = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('lake');
+            };
+
+            container.setSize(100, 70);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerLake);
+            fish.setInteractive({ useHandCursor: true });
+            fish.on('pointerdown', triggerLake);
+
+            this.worldContainer.add(container);
 
             this.currentHotspots.push({
-              id: `gate_${targetBiome}`,
-              name: label,
+              id: 'gate_lake',
+              name: 'Lake Dock',
+              x,
+              y,
+              iconSprite: 'nemo',
+              type: 'gate',
+              targetBiome: 'lake',
+            });
+          }
+
+          // 2. 🌲 CLOUD FOREST TREES (Woodland trees framing trail with mushrooms & canopy)
+          private createForestGrovePortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Mossy woodland stepping stones on the path
+            const stone1 = this.add.ellipse(-8, 8, 14, 8, 0x64748b).setStrokeStyle(1, 0x166534);
+            const stone2 = this.add.ellipse(10, 16, 16, 9, 0x475569).setStrokeStyle(1, 0x166534);
+
+            // Two majestic woodland trees flanking the trail exit
+            const leftTree = this.add.image(-36, -6, 'trees');
+            leftTree.setDisplaySize(70, 70);
+            const rightTree = this.add.image(36, -6, 'trees');
+            rightTree.setDisplaySize(70, 70);
+
+            // Soft emerald canopy arch connecting treetops overhead
+            const canopyArch = this.add.ellipse(0, -26, 76, 24, 0x14532d, 0.65);
+
+            // Wild woodland mushroom at the tree base
+            const mushroom = this.add.image(-22, 16, 'mushroom');
+            mushroom.setDisplaySize(20, 20);
+            this.tweens.add({
+              targets: mushroom,
+              angle: 6,
+              duration: 1600,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            // Falling woodland leaf drifting softly down
+            const leaf = this.add.ellipse(0, -10, 4, 6, 0x22c55e, 0.85);
+            this.tweens.add({
+              targets: leaf,
+              y: 20,
+              x: 8,
+              angle: 120,
+              duration: 2500,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            container.add([stone1, stone2, leftTree, rightTree, canopyArch, mushroom, leaf]);
+
+            const triggerForest = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('forest');
+            };
+
+            container.setSize(100, 70);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerForest);
+
+            this.worldContainer.add(container);
+
+            this.currentHotspots.push({
+              id: 'gate_forest',
+              name: 'Cloud Forest',
+              x,
+              y,
+              iconSprite: 'trees',
+              type: 'gate',
+              targetBiome: 'forest',
+            });
+          }
+
+          // 3. ❄️ ARCTIC TUNDRA ICE (Glacial ice sheet with fractures & sparkling frost)
+          private createTundraIcePortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Snow banks framing the icy pass
+            const snowLeft = this.add.ellipse(-34, -2, 28, 22, 0xf1f5f9, 0.95).setStrokeStyle(1, 0xbae6fd);
+            const snowRight = this.add.ellipse(34, -2, 28, 22, 0xf1f5f9, 0.95).setStrokeStyle(1, 0xbae6fd);
+
+            // Glacial ice base
+            const iceBase = this.add.rectangle(0, 0, 72, 48, 0xbae6fd, 0.9).setStrokeStyle(2, 0x93c5fd);
+
+            // Textured ice patch sprite
+            const iceTexture = this.add.image(0, 0, 'ice_patch');
+            iceTexture.setDisplaySize(68, 44);
+            iceTexture.setAlpha(0.85);
+
+            // Fractured ice cracks
+            const crack1 = this.add.line(0, 0, -22, -12, 8, 4, 0xffffff, 0.8).setLineWidth(1.5);
+            const crack2 = this.add.line(0, 0, 8, 4, 24, -14, 0xffffff, 0.8).setLineWidth(1.5);
+            const iceShine = this.add.rectangle(-14, -10, 26, 3.5, 0xffffff, 0.65).setRotation(-0.15);
+
+            // Sparkling frost crystal glints
+            const glint1 = this.add.circle(-14, 6, 2.5, 0xffffff, 0.9);
+            const glint2 = this.add.circle(18, -8, 2, 0xffffff, 0.9);
+            this.tweens.add({
+              targets: [glint1, glint2],
+              scale: { from: 0.6, to: 1.4 },
+              alpha: { from: 0.3, to: 1.0 },
+              duration: 800,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            container.add([snowLeft, snowRight, iceBase, iceTexture, crack1, crack2, iceShine, glint1, glint2]);
+
+            const triggerTundra = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('tundra');
+            };
+
+            container.setSize(76, 50);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerTundra);
+
+            this.worldContainer.add(container);
+
+            this.currentHotspots.push({
+              id: 'gate_tundra',
+              name: 'Arctic Tundra',
+              x,
+              y,
+              iconSprite: 'ice_patch',
+              type: 'gate',
+              targetBiome: 'tundra',
+            });
+          }
+
+          // 4. 🌻 PRAIRIE GRASSLANDS (Waving golden prairie grass with wild sunflowers)
+          private createGrasslandsPrairiePortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Topsoil transition
+            const soil = this.add.ellipse(10, 0, 80, 54, 0x271908, 0.35);
+
+            // Tall waving prairie grass clump
+            const tallGrass = this.add.image(18, -10, 'tall_grass');
+            tallGrass.setDisplaySize(44, 48);
+            this.tweens.add({
+              targets: tallGrass,
+              angle: 5,
+              duration: 1700,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            // Wild sunflowers along the meadow trail
+            const flower1Stem = this.add.rectangle(12, 18, 3, 14, 0x15803d);
+            const flower1Petals = this.add.circle(12, 12, 7, 0xfacc15);
+            const flower1Center = this.add.circle(12, 12, 3.5, 0x451a03);
+
+            const flower2Stem = this.add.rectangle(-14, 22, 2.5, 11, 0x15803d);
+            const flower2Petals = this.add.circle(-14, 17, 5.5, 0xfbbf24);
+            const flower2Center = this.add.circle(-14, 17, 2.5, 0x451a03);
+
+            // Fluttering prairie butterfly / sparkle
+            const butterflyDot = this.add.circle(-8, -18, 3, 0xfef08a, 0.9);
+            this.tweens.add({
+              targets: butterflyDot,
+              y: -24,
+              x: -4,
+              duration: 900,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            container.add([
+              soil,
+              tallGrass,
+              flower1Stem,
+              flower1Petals,
+              flower1Center,
+              flower2Stem,
+              flower2Petals,
+              flower2Center,
+              butterflyDot,
+            ]);
+
+            const triggerGrasslands = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('grasslands');
+            };
+
+            container.setSize(80, 60);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerGrasslands);
+
+            this.worldContainer.add(container);
+
+            this.currentHotspots.push({
+              id: 'gate_grasslands',
+              name: 'Prairie Grasslands',
+              x,
+              y,
+              iconSprite: 'tall_grass',
+              type: 'gate',
+              targetBiome: 'grasslands',
+            });
+          }
+
+          // 5. 🌵 DESERT OASIS (Golden sand dunes with saguaro cactus & desert stones)
+          private createDesertOasisPortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Golden sand dunes spilling over the southern trail
+            const sandBase = this.add.ellipse(0, 10, 85, 48, 0xd97706, 0.85);
+            const sandCrest = this.add.ellipse(-6, 8, 70, 34, 0xfde68a, 0.7);
+
+            // Desert pebbles
+            const pebble1 = this.add.circle(-22, 18, 3.5, 0x92400e);
+            const pebble2 = this.add.circle(18, 22, 2.5, 0xb45309);
+
+            // Saguaro cactus standing beside the sandy path
+            const cactus = this.add.image(24, -6, 'cactus');
+            cactus.setDisplaySize(46, 50);
+
+            // Desert yellow flower bloom on top of the cactus
+            const bloomOuter = this.add.circle(24, -30, 4, 0xfde047);
+            const bloomInner = this.add.circle(24, -30, 2, 0xeab308);
+
+            // Subtle warm sun sparkle
+            const heatShimmer = this.add.circle(-14, -4, 2, 0xfef08a, 0.75);
+            this.tweens.add({
+              targets: heatShimmer,
+              alpha: { from: 0.2, to: 0.9 },
+              scale: { from: 0.6, to: 1.3 },
+              duration: 1100,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            container.add([sandBase, sandCrest, pebble1, pebble2, cactus, bloomOuter, bloomInner, heatShimmer]);
+
+            const triggerDesert = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('desert');
+            };
+
+            container.setSize(85, 60);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerDesert);
+
+            this.worldContainer.add(container);
+
+            this.currentHotspots.push({
+              id: 'gate_desert',
+              name: 'Desert Oasis',
+              x,
+              y,
+              iconSprite: 'cactus',
+              type: 'gate',
+              targetBiome: 'desert',
+            });
+          }
+
+          // 6. 🪸 CORAL REEFS ANEMONE (Turquoise tidal lagoon with swaying sea anemone & bubbles)
+          private createReefsAnemonePortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Sunlit turquoise lagoon pool at the southern exit
+            const poolDeep = this.add.ellipse(0, 8, 86, 50, 0x0891b2, 0.85);
+            const poolShallow = this.add.ellipse(0, 7, 72, 36, 0x67e8f9, 0.65);
+            const poolHighlight = this.add.ellipse(-10, 3, 44, 20, 0xa5f3fc, 0.5);
+
+            // Coral branch & spiral seashell
+            const coral1 = this.add.rectangle(-22, 6, 5, 14, 0xfb923c);
+            const coral2 = this.add.rectangle(-18, 3, 8, 4, 0xfb923c);
+            const shell = this.add.circle(-10, 18, 3.5, 0xffedd5);
+
+            // Swaying Sea Anemone with radiating tentacles
+            const anemoneContainer = this.add.container(16, 4);
+            const anemoneBody = this.add.circle(0, 0, 9, 0xe11d48);
+            const anemoneHighlight = this.add.circle(-2, -2, 5, 0xf43f5e);
+
+            // Radiating soft tentacles in vibrant coral pink & violet
+            const t1 = this.add.ellipse(-7, -7, 5, 9, 0xf472b6).setRotation(-0.6);
+            const t2 = this.add.ellipse(0, -10, 5, 10, 0xe879f9);
+            const t3 = this.add.ellipse(7, -7, 5, 9, 0xfb7185).setRotation(0.6);
+            const t4 = this.add.ellipse(10, 0, 9, 5, 0xf472b6);
+            const t5 = this.add.ellipse(7, 7, 5, 9, 0xe879f9).setRotation(-0.6);
+            const t6 = this.add.ellipse(0, 9, 5, 9, 0xfb7185);
+            const t7 = this.add.ellipse(-7, 7, 5, 9, 0xf472b6).setRotation(0.6);
+            const t8 = this.add.ellipse(-10, 0, 9, 5, 0xe879f9);
+
+            anemoneContainer.add([t1, t2, t3, t4, t5, t6, t7, t8, anemoneBody, anemoneHighlight]);
+
+            // Soft swaying animation mimicking underwater currents
+            this.tweens.add({
+              targets: anemoneContainer,
+              scaleX: 1.12,
+              scaleY: 0.9,
+              angle: 5,
+              duration: 1300,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            // Ascending sea bubble
+            const bubble = this.add.circle(6, 12, 2.5, 0xffffff, 0.7);
+            this.tweens.add({
+              targets: bubble,
+              y: -14,
+              alpha: 0,
+              duration: 1800,
+              repeat: -1,
+              ease: 'Cubic.easeOut',
+            });
+
+            container.add([poolDeep, poolShallow, poolHighlight, coral1, coral2, shell, anemoneContainer, bubble]);
+
+            const triggerReefs = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('reefs');
+            };
+
+            container.setSize(86, 52);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerReefs);
+
+            this.worldContainer.add(container);
+
+            this.currentHotspots.push({
+              id: 'gate_reefs',
+              name: 'Coral Reefs',
+              x,
+              y,
+              iconSprite: 'sea_turtle',
+              type: 'gate',
+              targetBiome: 'reefs',
+            });
+          }
+
+          // 7. 🏡 FARM RETURN GATEWAY (Replaces return wooden signs inside biomes)
+          private createFarmReturnPortal(x: number, y: number) {
+            const container = this.add.container(x, y);
+
+            // Rustic wooden fence posts
+            const postLeft = this.add.rectangle(-18, 0, 7, 28, 0x451a03);
+            const postRight = this.add.rectangle(18, 0, 7, 28, 0x451a03);
+            const rail1 = this.add.rectangle(0, -6, 38, 4.5, 0x78350f);
+            const rail2 = this.add.rectangle(0, 6, 38, 4.5, 0x78350f);
+
+            // Glowing farm brass lantern hanging on iron crook
+            const crook = this.add.rectangle(-17, -16, 10, 2.5, 0x292524);
+            const lanternBody = this.add.rectangle(-12, -10, 7, 9, 0xb45309);
+            const flame = this.add.circle(-12, -10, 3, 0xfef08a);
+            const halo = this.add.circle(-12, -10, 9, 0xfde68a, 0.35);
+
+            this.tweens.add({
+              targets: [halo],
+              alpha: { from: 0.2, to: 0.5 },
+              scale: { from: 0.85, to: 1.2 },
+              duration: 650,
+              yoyo: true,
+              repeat: -1,
+            });
+
+            // Fresh green farm sprout at the gate post
+            const sprout1 = this.add.ellipse(14, 12, 4.5, 8, 0x4ade80).setRotation(0.4);
+            const sprout2 = this.add.ellipse(18, 12, 4.5, 8, 0x22c55e).setRotation(-0.4);
+
+            container.add([postLeft, postRight, rail1, rail2, crook, lanternBody, halo, flame, sprout1, sprout2]);
+
+            const triggerReturn = () => {
+              sounds.playClick();
+              stateRef.current.setCurrentBiome('clearing');
+            };
+
+            container.setSize(44, 34);
+            container.setInteractive({ useHandCursor: true });
+            container.on('pointerdown', triggerReturn);
+
+            this.worldContainer.add(container);
+
+            this.currentHotspots.push({
+              id: 'gate_clearing',
+              name: 'Return to Central Farm',
               x,
               y,
               type: 'gate',
-              targetBiome,
+              targetBiome: 'clearing',
             });
           }
 
@@ -1750,99 +2209,15 @@ export default function PhaserWorld() {
               }
             }
 
-            // 6. Return to Central Farm Signpost placed at exit edge
+            // 6. Return to Central Farm Portal placed at exit edge (Rustic farm gateway)
             if (biome === 'lake') {
-              this.createVintageWoodenSign(
-                w - 90,
-                375,
-                'FARM PORTAL →',
-                'Return to Central Farm',
-                130,
-                28,
-                '#fde68a',
-                () => {
-                  sounds.playClick();
-                  stateRef.current.setCurrentBiome('clearing');
-                },
-                'none'
-              );
-              this.currentHotspots.push({
-                id: 'gate_clearing',
-                name: 'Return to Central Farm',
-                x: w - 90,
-                y: 375,
-                type: 'gate',
-                targetBiome: 'clearing',
-              });
+              this.createFarmReturnPortal(w - 70, 375);
             } else if (biome === 'grasslands') {
-              this.createVintageWoodenSign(
-                80,
-                375,
-                '← FARM PORTAL',
-                'Return to Central Farm',
-                130,
-                28,
-                '#fde68a',
-                () => {
-                  sounds.playClick();
-                  stateRef.current.setCurrentBiome('clearing');
-                },
-                'none'
-              );
-              this.currentHotspots.push({
-                id: 'gate_clearing',
-                name: 'Return to Central Farm',
-                x: 80,
-                y: 375,
-                type: 'gate',
-                targetBiome: 'clearing',
-              });
+              this.createFarmReturnPortal(70, 375);
             } else if (biome === 'forest' || biome === 'tundra') {
-              this.createVintageWoodenSign(
-                w / 2,
-                710,
-                '↓ RETURN TO FARM',
-                'Portal to Central Farm',
-                140,
-                28,
-                '#fde68a',
-                () => {
-                  sounds.playClick();
-                  stateRef.current.setCurrentBiome('clearing');
-                },
-                'top'
-              );
-              this.currentHotspots.push({
-                id: 'gate_clearing',
-                name: 'Return to Central Farm',
-                x: w / 2,
-                y: 710,
-                type: 'gate',
-                targetBiome: 'clearing',
-              });
+              this.createFarmReturnPortal(w / 2, 715);
             } else if (biome === 'reefs' || biome === 'desert') {
-              this.createVintageWoodenSign(
-                w / 2,
-                40,
-                '↑ RETURN TO FARM',
-                'Portal to Central Farm',
-                140,
-                28,
-                '#fde68a',
-                () => {
-                  sounds.playClick();
-                  stateRef.current.setCurrentBiome('clearing');
-                },
-                'bottom'
-              );
-              this.currentHotspots.push({
-                id: 'gate_clearing',
-                name: 'Return to Central Farm',
-                x: w / 2,
-                y: 40,
-                type: 'gate',
-                targetBiome: 'clearing',
-              });
+              this.createFarmReturnPortal(w / 2, 35);
             }
           }
 
@@ -2124,7 +2499,7 @@ export default function PhaserWorld() {
 
           private spawnBiomeAnimal(animalId: AnimalId, x: number, y: number, isRestored: boolean) {
             const info = ANIMALS[animalId];
-            const hasMiniGame = animalId === 'manatee' || animalId === 'butterfly';
+            const hasMiniGame = ['manatee', 'butterfly', 'cheetah', 'polar_bear'].includes(animalId);
             const container = this.add.container(x, y);
 
             // Ground shadow
@@ -2291,7 +2666,7 @@ export default function PhaserWorld() {
               const tShadow = this.add.ellipse(0, 42, 90, 26, 0x000000, 0.35);
               const tSprite = this.add.image(0, 0, 'trees');
               tSprite.setDisplaySize(115, 115);
-              tSprite.setOrigin(0.5, 0.85);
+              tSprite.setOrigin(0.5, 0.5);
 
               // Gentle ambient swaying in the breeze
               this.tweens.add({
@@ -2349,13 +2724,13 @@ export default function PhaserWorld() {
 
             // Joyful wobble
             this.tweens.add({
-              targets: treeData.container,
+              targets: treeData.sprite,
               angle: { from: -4, to: 4 },
               duration: 80,
               yoyo: true,
               repeat: 3,
               onComplete: () => {
-                treeData.container.angle = 0;
+                treeData.sprite.angle = 0;
               },
             });
 
@@ -3391,31 +3766,49 @@ export default function PhaserWorld() {
             const fx = this.player.x + Math.cos(perpAngle) * sideOffset;
             const fy = this.player.y + Math.sin(perpAngle) * sideOffset;
 
-            // Biome-specific footprint colors & opacity for distinct visibility
-            let printColor = 0x241105; // rich dark loam boot print
-            let printAlpha = 0.85;
-            let strokeColor = 0x140702;
+            // Footprints are gray until a biome is healed
+            const currentRestorationVal = (this.restorationData?.[this.currentRoomId] ?? stateRef.current.restoration?.[this.currentRoomId] ?? 0);
+            const isCurrentQuestCompleted = Boolean(stateRef.current.quests?.some((q: any) => q.biome === this.currentRoomId && q.completed));
+            const isCurrentBiomeHealed = currentRestorationVal > 0 || isCurrentQuestCompleted;
 
-            if (this.currentRoomId === 'tundra') {
-              printColor = 0x1d4ed8; // crisp snow blue indentation
-              printAlpha = 0.8;
-              strokeColor = 0x1e3a8a;
-            } else if (this.currentRoomId === 'lake' || this.currentRoomId === 'reefs') {
-              printColor = 0x0369a1; // wet splash water print
+            const hasHealedAnyBiome =
+              Object.values(this.restorationData ?? stateRef.current.restoration ?? {}).some((val: any) => Number(val) > 0) ||
+              Boolean(stateRef.current.quests?.some((q: any) => q.completed));
+
+            const isHealed = this.currentRoomId === 'clearing'
+              ? (isCurrentBiomeHealed || hasHealedAnyBiome)
+              : isCurrentBiomeHealed;
+
+            let printColor = 0x808080; // neutral gray until a biome is healed
+            let printAlpha = 0.85;
+            let strokeColor = 0x404040; // dark gray outline
+
+            if (isHealed) {
+              printColor = 0x241105; // rich dark loam boot print
               printAlpha = 0.85;
-              strokeColor = 0x075985;
-            } else if (this.currentRoomId === 'desert') {
-              printColor = 0x78350f; // deep sand tread
-              printAlpha = 0.85;
-              strokeColor = 0x451a03;
-            } else if (this.currentRoomId === 'forest') {
-              printColor = 0x1c1917; // rich woodland humus
-              printAlpha = 0.85;
-              strokeColor = 0x0c0a09;
-            } else if (this.currentRoomId === 'grasslands') {
-              printColor = 0x271908; // deep topsoil
-              printAlpha = 0.85;
-              strokeColor = 0x140b03;
+              strokeColor = 0x140702;
+
+              if (this.currentRoomId === 'tundra') {
+                printColor = 0x1d4ed8; // crisp snow blue indentation
+                printAlpha = 0.8;
+                strokeColor = 0x1e3a8a;
+              } else if (this.currentRoomId === 'lake' || this.currentRoomId === 'reefs') {
+                printColor = 0x0369a1; // wet splash water print
+                printAlpha = 0.85;
+                strokeColor = 0x075985;
+              } else if (this.currentRoomId === 'desert') {
+                printColor = 0x78350f; // deep sand tread
+                printAlpha = 0.85;
+                strokeColor = 0x451a03;
+              } else if (this.currentRoomId === 'forest') {
+                printColor = 0x1c1917; // rich woodland humus
+                printAlpha = 0.85;
+                strokeColor = 0x0c0a09;
+              } else if (this.currentRoomId === 'grasslands') {
+                printColor = 0x271908; // deep topsoil
+                printAlpha = 0.85;
+                strokeColor = 0x140b03;
+              }
             }
 
             const foot = this.add.container(fx, fy);
