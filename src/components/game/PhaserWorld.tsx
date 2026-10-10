@@ -32,6 +32,37 @@ export default function PhaserWorld() {
   } = useGameState();
 
   const [activeNearbyHotspot, setActiveNearbyHotspot] = useState<Hotspot | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1.38);
+  const onZoomChangeRef = useRef<((z: number) => void) | null>(null);
+
+  useEffect(() => {
+    onZoomChangeRef.current = (z: number) => {
+      setZoomLevel(Math.round(z * 100) / 100);
+    };
+  }, []);
+
+  const handleZoomChange = (delta: number) => {
+    sounds.playClick();
+    if (phaserGameRef.current) {
+      const scene = phaserGameRef.current.scene.getScene('GardenscapesWorldScene') as any;
+      if (scene && typeof scene.applyZoom === 'function') {
+        const next = Math.round((scene.currentZoom + delta) * 10) / 10;
+        scene.applyZoom(next);
+        setZoomLevel(scene.currentZoom);
+      }
+    }
+  };
+
+  const handleResetZoom = () => {
+    sounds.playClick();
+    if (phaserGameRef.current) {
+      const scene = phaserGameRef.current.scene.getScene('GardenscapesWorldScene') as any;
+      if (scene && typeof scene.resetZoom === 'function') {
+        scene.resetZoom();
+        setZoomLevel(scene.defaultZoom);
+      }
+    }
+  };
 
   const stateRef = useRef({
     currentBiome,
@@ -105,6 +136,8 @@ export default function PhaserWorld() {
           private speed: number = 290;
           public canvasW: number = 1400;
           public canvasH: number = 750;
+          public defaultZoom: number = 1.38;
+          public currentZoom: number = 1.38;
           private nextStepTime: number = 0;
           private stepInterval: number = 250;
           private ignorePathClickUntil: number = 0;
@@ -137,6 +170,22 @@ export default function PhaserWorld() {
 
           constructor() {
             super({ key: 'GardenscapesWorldScene' });
+          }
+
+          public applyZoom(zoom: number) {
+            const clamped = Phaser.Math.Clamp(zoom, 1.0, 2.2);
+            this.currentZoom = clamped;
+            this.cameras.main.setZoom(clamped);
+            if (onZoomChangeRef.current) {
+              onZoomChangeRef.current(clamped);
+            }
+          }
+
+          public resetZoom() {
+            this.applyZoom(this.defaultZoom);
+            if (this.player) {
+              this.cameras.main.centerOn(this.player.x, this.player.y);
+            }
           }
 
           preload() {
@@ -203,6 +252,7 @@ export default function PhaserWorld() {
 
             this.physics.world.setBounds(0, 0, this.canvasW, this.canvasH);
             this.cameras.main.setBounds(0, 0, this.canvasW, this.canvasH);
+            this.cameras.main.setRoundPixels(true);
 
             // Set little green sprout custom cursor
             this.input.setDefaultCursor("url('/assets/sprout_cursor.svg') 2 4, auto");
@@ -233,13 +283,23 @@ export default function PhaserWorld() {
               if (this.isTransitioning) return;
               if (this.time.now < this.ignorePathClickUntil) return;
 
-              const target = this.getClosestPointOnWalkablePath(pointer.x, pointer.y);
-              const clickDistFromPath = Phaser.Math.Distance.Between(pointer.x, pointer.y, target.x, target.y);
+              // Use camera-transformed world coordinates for accurate click-to-move while zoomed/panned
+              const clickX = pointer.worldX;
+              const clickY = pointer.worldY;
+
+              const target = this.getClosestPointOnWalkablePath(clickX, clickY);
+              const clickDistFromPath = Phaser.Math.Distance.Between(clickX, clickY, target.x, target.y);
 
               // Allow clicks directly on path or within 90px (e.g. clicking animals, signs, or path edges)
               if (clickDistFromPath <= 90) {
                 this.walkPlayerTo(pointer.x, pointer.y);
               }
+            });
+
+            // Smooth mouse wheel / pinch zooming with bounds clamping
+            this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
+              const targetZoom = Phaser.Math.Clamp(this.cameras.main.zoom - deltaY * 0.0012, 1.0, 2.2);
+              this.applyZoom(targetZoom);
             });
 
             // Create Farmer Avatar Sprite at central farm plaza
@@ -249,6 +309,11 @@ export default function PhaserWorld() {
             this.currentRoomId = stateRef.current.currentBiome;
             this.buildRoom(this.currentRoomId);
             sounds.setBiome(this.currentRoomId);
+
+            // START ZOOMED IN ON MAP & FOLLOW USER AS THEY MOVE IN TIME
+            this.applyZoom(this.defaultZoom);
+            this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
+            this.cameras.main.centerOn(this.player.x, this.player.y);
           }
 
           private createFarmerPlayer(x: number, y: number) {
@@ -328,6 +393,9 @@ export default function PhaserWorld() {
               this.currentRoomId = biome;
               this.buildRoom(biome);
 
+              // Reset zoom so each map starts zoomed in
+              this.applyZoom(this.defaultZoom);
+
               // Determine opposite-side entry coordinates with large safety margin
               const w = this.canvasW;
               if (customSpawn) {
@@ -374,6 +442,10 @@ export default function PhaserWorld() {
                 }
               }
 
+              // Center camera immediately over player at new spawn and follow
+              this.cameras.main.centerOn(this.player.x, this.player.y);
+              this.cameras.main.startFollow(this.player, true, 0.15, 0.15);
+
               this.cameras.main.fadeIn(150, 0, 0, 0);
               this.time.delayedCall(200, () => {
                 this.isTransitioning = false;
@@ -394,6 +466,8 @@ export default function PhaserWorld() {
               this.playerBody.setVelocity(0, 0);
             }
             this.moveTarget = null;
+            this.currentPathWaypoints = [];
+            this.cameras.main.centerOn(x, y);
             this.nextStepTime = (this.time ? this.time.now : 0) + 400;
           }
 
@@ -714,15 +788,15 @@ export default function PhaserWorld() {
 
           // ===============================================================
           // 🪵 VINTAGE WOODEN POSTED SIGN HELPER (RUSTIC CARVED SIGNS)
-          // Text is white, slightly larger, non-pixelated, and signs expand dynamically in height
+          // Text is white, larger, non-pixelated, and signs expand dynamically in height
           // ===============================================================
           private createVintageWoodenSign(
             x: number,
             y: number,
             title: string,
             subtitle?: string,
-            width: number = 180,
-            baseHeight: number = 44,
+            width: number = 190,
+            baseHeight: number = 46,
             statusColor: string = '#ffffff',
             onClick?: () => void,
             postPos: 'bottom' | 'top' | 'none' = 'bottom'
@@ -732,30 +806,32 @@ export default function PhaserWorld() {
             // Clean, non-pixelated, smooth modern font
             const smoothFont = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
-            // Title Text: Pure white, slightly larger, crisp outline
-            const titleFontSize = subtitle ? '12.5px' : '13.5px';
+            // Title Text: Pure white, larger font size, crisp high-DPI rendering
+            const titleFontSize = subtitle ? '14px' : '15.5px';
             const titleText = this.add.text(0, 0, title, {
               fontSize: titleFontSize,
               fontStyle: 'bold',
               fontFamily: smoothFont,
               color: '#ffffff',
               stroke: '#1c0d02',
-              strokeThickness: 2.5,
-              wordWrap: { width: width - 20, useAdvancedWrap: true },
+              strokeThickness: 3,
+              wordWrap: { width: width - 16, useAdvancedWrap: true },
               align: 'center',
+              resolution: 2,
             }).setOrigin(0.5);
 
             let subText: Phaser.GameObjects.Text | null = null;
             if (subtitle) {
               subText = this.add.text(0, 0, subtitle, {
-                fontSize: '10px',
+                fontSize: '11.5px',
                 fontStyle: '600',
                 fontFamily: smoothFont,
-                color: '#ffffff',
+                color: statusColor || '#ffffff',
                 stroke: '#1c0d02',
-                strokeThickness: 2,
-                wordWrap: { width: width - 20, useAdvancedWrap: true },
+                strokeThickness: 2.5,
+                wordWrap: { width: width - 16, useAdvancedWrap: true },
                 align: 'center',
+                resolution: 2,
               }).setOrigin(0.5);
             }
 
@@ -763,7 +839,7 @@ export default function PhaserWorld() {
             const titleHeight = titleText.height;
             const subHeight = subText ? subText.height : 0;
             const textSpacing = 4;
-            const verticalPadding = 18;
+            const verticalPadding = 20;
             const totalContentHeight = titleHeight + (subHeight > 0 ? subHeight + textSpacing : 0);
             const actualHeight = Math.max(baseHeight, totalContentHeight + verticalPadding);
 
@@ -942,11 +1018,11 @@ export default function PhaserWorld() {
             // Vintage wooden posted sign right at the crop plot
             this.createVintageWoodenSign(
               x,
-              y + 44,
+              y + 46,
               cropName,
               isFlourished ? '✓ Flourishing Harvest' : `⚠ ${crisisNotice}`,
-              164,
-              32,
+              185,
+              36,
               isFlourished ? '#86efac' : '#fca5a5',
               () => {
                 sounds.playClick();
@@ -989,8 +1065,8 @@ export default function PhaserWorld() {
               y,
               label,
               sublabel,
-              164,
-              38,
+              180,
+              40,
               '#ffffff',
               () => {
                 sounds.playClick();
@@ -1095,8 +1171,8 @@ export default function PhaserWorld() {
                 375,
                 'FARM PORTAL →',
                 'Return to Central Farm',
-                170,
-                38,
+                190,
+                40,
                 '#ffffff',
                 () => {
                   sounds.playClick();
@@ -1118,8 +1194,8 @@ export default function PhaserWorld() {
                 375,
                 '← FARM PORTAL',
                 'Return to Central Farm',
-                170,
-                38,
+                190,
+                40,
                 '#ffffff',
                 () => {
                   sounds.playClick();
@@ -1141,8 +1217,8 @@ export default function PhaserWorld() {
                 710,
                 '↓ RETURN TO CENTRAL FARM',
                 'Opposite Portal to Bayer Farm',
-                230,
-                38,
+                250,
+                40,
                 '#ffffff',
                 () => {
                   sounds.playClick();
@@ -1164,8 +1240,8 @@ export default function PhaserWorld() {
                 40,
                 '↑ RETURN TO CENTRAL FARM',
                 'Opposite Portal to Bayer Farm',
-                230,
-                38,
+                250,
+                40,
                 '#ffffff',
                 () => {
                   sounds.playClick();
@@ -1208,8 +1284,8 @@ export default function PhaserWorld() {
               180,
               isRestored ? `✓ RESTORED: ${qInfo.name}` : `ACTION PLAN: ${qInfo.name}`,
               isRestored ? 'Habitat Flourishing • Tap to review action' : 'Tap sign to launch environmental action',
-              320,
-              44,
+              350,
+              46,
               '#ffffff',
               triggerAction,
               'bottom'
@@ -1311,8 +1387,8 @@ export default function PhaserWorld() {
               y + 54,
               info.name,
               `${info.species} • Tap to Chat`,
-              170,
-              32,
+              190,
+              36,
               '#fde68a',
               triggerChat,
               'none'
@@ -2165,49 +2241,49 @@ export default function PhaserWorld() {
               const w = this.canvasW;
               const h = this.canvasH;
               if (this.currentRoomId === 'clearing') {
-                if (this.player.x <= 22) {
+                if (this.player.x <= 28) {
                   stateRef.current.setCurrentBiome('lake');
                   return;
                 }
-                if (this.player.x >= w - 22) {
+                if (this.player.x >= w - 28) {
                   stateRef.current.setCurrentBiome('grasslands');
                   return;
                 }
-                if (this.player.y <= 22 && this.player.x < 450) {
+                if (this.player.y <= 28 && this.player.x < 450) {
                   stateRef.current.setCurrentBiome('forest');
                   return;
                 }
-                if (this.player.y <= 22 && this.player.x >= 450) {
+                if (this.player.y <= 28 && this.player.x >= 450) {
                   stateRef.current.setCurrentBiome('tundra');
                   return;
                 }
-                if (this.player.y >= h - 22 && this.player.x < w - 450) {
+                if (this.player.y >= h - 28 && this.player.x < w - 450) {
                   stateRef.current.setCurrentBiome('reefs');
                   return;
                 }
-                if (this.player.y >= h - 22 && this.player.x >= w - 450) {
+                if (this.player.y >= h - 28 && this.player.x >= w - 450) {
                   stateRef.current.setCurrentBiome('desert');
                   return;
                 }
               } else {
-                if (this.currentRoomId === 'lake' && this.player.x >= w - 22) {
+                if (this.currentRoomId === 'lake' && this.player.x >= w - 28) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
-                if (this.currentRoomId === 'grasslands' && this.player.x <= 22) {
+                if (this.currentRoomId === 'grasslands' && this.player.x <= 28) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
                 if (
                   (this.currentRoomId === 'forest' || this.currentRoomId === 'tundra') &&
-                  this.player.y >= h - 22
+                  this.player.y >= h - 28
                 ) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
                 }
                 if (
                   (this.currentRoomId === 'reefs' || this.currentRoomId === 'desert') &&
-                  this.player.y <= 22
+                  this.player.y <= 28
                 ) {
                   stateRef.current.setCurrentBiome('clearing');
                   return;
@@ -2343,6 +2419,9 @@ export default function PhaserWorld() {
             scene.cameras.main.setBounds(0, 0, calculatedW, 750);
             scene.physics.world.setBounds(0, 0, calculatedW, 750);
             scene.rebuildCurrentRoom();
+            if ((scene as any).player) {
+              scene.cameras.main.centerOn((scene as any).player.x, (scene as any).player.y);
+            }
           }
         };
         window.addEventListener('resize', handleResize);
@@ -2374,13 +2453,43 @@ export default function PhaserWorld() {
         <div className="absolute top-3 left-3 z-30 animate-in fade-in">
           <button
             onClick={() => { sounds.playClick(); setCurrentBiome('clearing'); }}
-            className="pixel-btn flex items-center gap-1.5 px-3 py-1.5 text-[9.5px] font-bold"
+            className="pixel-btn flex items-center gap-2 px-3.5 py-2 text-[11px] font-bold shadow-md"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-[#fde68a]" />
+            <ArrowLeft className="w-4 h-4 text-[#fde68a]" />
             <span>RETURN TO FARM</span>
           </button>
         </div>
       )}
+
+      {/* Retro Zoom Controls Overlay */}
+      <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1 pixel-panel p-1 shadow-lg bg-[#fef3c7]/95 border-2 border-[#5c2c16]">
+        <button
+          type="button"
+          onClick={() => handleZoomChange(-0.2)}
+          className="w-6 h-6 flex items-center justify-center font-bold text-xs bg-[#fde68a] hover:bg-[#fcd34d] active:scale-95 border border-[#b45309] text-[#78350f] transition-all"
+          title="Zoom Out"
+          aria-label="Zoom Out"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          onClick={handleResetZoom}
+          className="px-1.5 h-6 flex items-center justify-center font-bold text-[9px] bg-[#fffbeb] hover:bg-[#fef3c7] border border-[#ca8a04] text-[#854d0e] transition-all"
+          title="Reset to default zoomed-in view (160%)"
+        >
+          {Math.round(zoomLevel * 100)}%
+        </button>
+        <button
+          type="button"
+          onClick={() => handleZoomChange(0.2)}
+          className="w-6 h-6 flex items-center justify-center font-bold text-xs bg-[#fde68a] hover:bg-[#fcd34d] active:scale-95 border border-[#b45309] text-[#78350f] transition-all"
+          title="Zoom In"
+          aria-label="Zoom In"
+        >
+          +
+        </button>
+      </div>
 
       {/* Proximity Interaction Prompt (Retro Pixel Art Dialog Plaque) */}
       {activeNearbyHotspot && (
@@ -2398,20 +2507,20 @@ export default function PhaserWorld() {
                 openQuestModal(activeNearbyHotspot.questAction);
               }
             }}
-            className="pixel-panel px-4 py-2 flex items-center gap-2.5 transition-transform active:scale-95 shadow-2xl cursor-pointer"
+            className="pixel-panel px-5 py-2.5 flex items-center gap-3 transition-transform active:scale-95 shadow-2xl cursor-pointer bg-[#fffbeb] border-2 border-[#5c2c16]"
           >
             {activeNearbyHotspot.animalId && (
               <img
                 src={`/assets/sprites/${activeNearbyHotspot.animalId}${(restoration[currentBiome] || 0) >= 80 ? '' : '_sad'}.png`}
                 alt={activeNearbyHotspot.name}
-                className="w-8 h-8 object-cover border-2 border-[#5c2c16]"
+                className="w-9 h-9 object-cover border-2 border-[#5c2c16] rounded-sm bg-[#fef3c7]"
               />
             )}
             <div className="text-left">
-              <div className="text-[10px] font-bold text-[#b45309] uppercase">
+              <div className="text-[11.5px] sm:text-[13px] font-bold text-[#b45309] uppercase tracking-wide">
                 {activeNearbyHotspot.name}
               </div>
-              <div className="text-[8.5px] text-[#5c2c16]">
+              <div className="text-[9.5px] sm:text-[11px] text-[#5c2c16] font-medium">
                 {activeNearbyHotspot.type === 'animal' && 'TAP TO CHAT WITH ANIMAL'}
                 {activeNearbyHotspot.type === 'crop' && 'TAP TO INSPECT CROP HARVEST'}
                 {activeNearbyHotspot.type === 'gate' && 'TAP TO ENTER BIOME'}

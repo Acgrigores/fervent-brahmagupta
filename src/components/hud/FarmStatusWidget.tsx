@@ -247,13 +247,13 @@ export default function FarmStatusWidget() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h3
-                  className="text-[10px] font-pixel-heading tracking-wider"
+                  className="text-[11.5px] font-pixel-heading tracking-wider"
                   style={{ color: theme.titleColor }}
                 >
                   {theme.title}
                 </h3>
                 <span
-                  className="text-[8px] px-1 py-0.5 border font-bold"
+                  className="text-[9px] px-1.5 py-0.5 border font-bold"
                   style={{
                     backgroundColor: theme.badgeBg,
                     borderColor: theme.badgeBorderColor,
@@ -264,7 +264,7 @@ export default function FarmStatusWidget() {
                 </span>
               </div>
               <p
-                className="text-[7.5px] truncate"
+                className="text-[8.5px] truncate mt-0.5"
                 style={{ color: theme.subtextColor }}
               >
                 {currentBiome === 'clearing'
@@ -307,7 +307,7 @@ export default function FarmStatusWidget() {
                   }}
                   className={`p-2 pixel-card transition-all flex items-start justify-between gap-2 cursor-pointer hover:scale-[1.01] ${
                     isFlourished
-                      ? 'bg-[#f0fdf4] border-[#15803d] hover:bg-[#dcfce7]'
+                       ? 'bg-[#f0fdf4] border-[#15803d] hover:bg-[#dcfce7]'
                       : isCurrentBiome
                       ? 'bg-[#fefce8] border-2 border-[#b45309] shadow-sm'
                       : 'bg-[#fffbf2] border-[#5c2c16] hover:border-[#b45309] hover:bg-[#fef9c3]'
@@ -336,7 +336,7 @@ export default function FarmStatusWidget() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-1 mb-0.5">
                       <h4
-                        className="text-[9.5px] font-bold text-[#2e1005] leading-snug break-words"
+                        className="text-[11px] font-bold text-[#2e1005] leading-snug break-words"
                         style={{
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
@@ -348,7 +348,7 @@ export default function FarmStatusWidget() {
                         {crop.name}
                       </h4>
                       <span
-                        className={`text-[7px] uppercase px-1 py-0.5 border flex-shrink-0 font-bold whitespace-nowrap ml-1 ${
+                        className={`text-[8px] uppercase px-1 py-0.5 border flex-shrink-0 font-bold whitespace-nowrap ml-1 ${
                           isCurrentBiome
                             ? 'bg-[#fde047] text-[#713f12] border-[#ca8a04]'
                             : 'bg-[#fef08a] text-[#854d0e] border-[#ca8a04]'
@@ -358,7 +358,7 @@ export default function FarmStatusWidget() {
                       </span>
                     </div>
 
-                    <p className="text-[7.5px] sm:text-[8px] text-[#78350f] leading-relaxed break-words whitespace-normal mt-1">
+                    <p className="text-[8.5px] sm:text-[9.5px] text-[#78350f] leading-relaxed break-words whitespace-normal mt-1">
                       {isFlourished ? '✓ Thriving harvest!' : crop.crisisDescription}
                     </p>
                   </div>
@@ -366,7 +366,7 @@ export default function FarmStatusWidget() {
                   {/* Right: Action Button or Saved Status */}
                   <div className="flex-shrink-0 self-start mt-0.5 ml-1">
                     {isFlourished ? (
-                      <span className="flex items-center gap-0.5 text-[8px] font-bold text-[#15803d] px-1.5 py-0.5 bg-[#dcfce7] border border-[#16a34a] whitespace-nowrap">
+                      <span className="flex items-center gap-0.5 text-[9px] font-bold text-[#15803d] px-1.5 py-0.5 bg-[#dcfce7] border border-[#16a34a] whitespace-nowrap">
                         <CheckCircle2 className="w-2.5 h-2.5" />
                         <span>SAVED</span>
                       </span>
