@@ -7,6 +7,8 @@ import MoSortingGame from '@/components/minigames/MoSortingGame';
 import AuraFlappyGame from '@/components/minigames/AuraFlappyGame';
 import ZuriRunGame from '@/components/minigames/ZuriRunGame';
 import NanukKnockoutGame from '@/components/minigames/NanukKnockoutGame';
+import CoraliaReefGame from '@/components/minigames/CoraliaReefGame';
+import PakuLaddersGame from '@/components/minigames/PakuLaddersGame';
 import { sounds } from '@/utils/soundEffects';
 import { X, Send, Sparkles, Coins, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -66,6 +68,8 @@ export default function DialogueModal() {
     butterfly: AuraFlappyGame,
     cheetah: ZuriRunGame,
     polar_bear: NanukKnockoutGame,
+    sea_turtle: CoraliaReefGame,
+    red_panda: PakuLaddersGame,
   };
   const MiniGame = MINI_GAMES[animal.id];
   if (MiniGame) {
