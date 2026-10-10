@@ -14,6 +14,11 @@ body {
   background: var(--background);
   font-family: 'Silkscreen', 'Press Start 2P', system-ui, sans-serif;
   image-rendering: pixelated;
+  cursor: url('/assets/sprout_cursor.svg') 2 4, auto;
+}
+
+*, button, a, [role="button"], input[type="submit"], input[type="button"], select {
+  cursor: url('/assets/sprout_cursor.svg') 2 4, auto;
 }
 
 /* Retro Pixel Art Farm Utilities */
