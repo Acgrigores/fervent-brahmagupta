@@ -20,6 +20,7 @@ import ForestFireModal from '@/components/quests/ForestFireModal';
 import TundraPetitionModal from '@/components/quests/TundraPetitionModal';
 import GrasslandsFarmingModal from '@/components/quests/GrasslandsFarmingModal';
 import ReefNavigationModal from '@/components/quests/ReefNavigationModal';
+import DesertAquiferModal from '@/components/quests/DesertAquiferModal';
 
 export default function Home() {
   return (
@@ -44,6 +45,7 @@ export default function Home() {
           <TundraPetitionModal />
           <GrasslandsFarmingModal />
           <ReefNavigationModal />
+          <DesertAquiferModal />
           <ProfileModal />
           <QuestsDrawer />
         </div>

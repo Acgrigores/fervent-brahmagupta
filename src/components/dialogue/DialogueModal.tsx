@@ -245,7 +245,13 @@ export default function DialogueModal() {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
             placeholder={`Ask ${animal.name} about ${animal.species}, climate, or habitat solutions...`}
             disabled={isLoading}
             className="flex-1 bg-zinc-900 border border-zinc-700/80 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"

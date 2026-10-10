@@ -333,6 +333,18 @@ export const INITIAL_QUESTS: Quest[] = [
     actionType: 'reef_navigation',
     icon: 'compass',
   },
+  {
+    id: 'quest_desert',
+    biome: 'desert',
+    title: 'Solar Artesian Well & Aquifer Restoration',
+    subtitle: 'Revive the Oasis for Zuri',
+    description: 'Deploy solar-powered deep artesian pumps and plant drought-resilient acacia buffer strips to restore the depleted desert aquifer.',
+    rewardCoins: 420,
+    rewardRestoration: 100,
+    completed: false,
+    actionType: 'desert_aquifer',
+    icon: 'solar',
+  },
 ];
 
 export const INITIAL_BADGES: Badge[] = [
@@ -387,6 +399,15 @@ export const INITIAL_BADGES: Badge[] = [
     description: 'Successfully redirected maritime shipping traffic around fragile hawksbill coral nurseries.',
     icon: 'marine',
     biome: 'reefs',
+    unlocked: false,
+    rarity: 'Epic',
+  },
+  {
+    id: 'badge_desert_oasis',
+    title: 'Oasis Wellspring Restorer',
+    description: 'Drilled solar artesian wells to quench droughts and revived the Sunfire Savanna Oasis for Zuri.',
+    icon: 'solar',
+    biome: 'desert',
     unlocked: false,
     rarity: 'Epic',
   },

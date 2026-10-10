@@ -48,7 +48,7 @@ export interface Quest {
   rewardCoins: number;
   rewardRestoration: number;
   completed: boolean;
-  actionType: 'wildfire_quench' | 'forest_campaign' | 'lake_recycling' | 'tundra_petition' | 'grasslands_farming' | 'reef_navigation';
+  actionType: 'wildfire_quench' | 'forest_campaign' | 'lake_recycling' | 'tundra_petition' | 'grasslands_farming' | 'reef_navigation' | 'desert_aquifer';
   icon: string;
 }
 
