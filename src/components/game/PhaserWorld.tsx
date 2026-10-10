@@ -3177,13 +3177,14 @@ export default function PhaserWorld() {
 
               const flapScaleX = bf.scaleX;
 
-              // Fast wing flapping (wings flap between +6px and -6px width)
+              // Gentle, natural butterfly wing flapping
               this.tweens.add({
                 targets: bf,
                 scaleX: { from: flapScaleX, to: -flapScaleX },
-                duration: 65,
+                duration: Phaser.Math.Between(190, 240),
                 yoyo: true,
                 repeat: -1,
+                ease: 'Sine.easeInOut',
               });
 
               // Upward & away flight trajectory
