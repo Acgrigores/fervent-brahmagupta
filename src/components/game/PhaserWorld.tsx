@@ -1522,9 +1522,6 @@ export default function PhaserWorld() {
             // Raise crop position vertically away from the sign so they never overlap
             const cropOffsetY = -26;
 
-            // Soft shadow beneath raised crop plot
-            const shadow = this.add.ellipse(0, cropOffsetY + 32, 95, 20, 0x000000, 0.35);
-
             // Real Image Sprite (Biome-specific Dead vs Baby Sprout vs Flourishing image) raised cleanly away from sign
             const deadTextureKey = this.textures.exists(`crop_${biome}_dead`) ? `crop_${biome}_dead` : 'crop_dead';
             let textureKey = deadTextureKey;
@@ -1537,7 +1534,7 @@ export default function PhaserWorld() {
             const cropImage = this.add.image(0, cropOffsetY, textureKey);
             cropImage.setDisplaySize(100, 100);
 
-            container.add([shadow, cropImage]);
+            container.add(cropImage);
 
             // Clickable & glows on hover!
             this.makeClickableAndGlow(cropImage, () => {
@@ -2460,14 +2457,13 @@ export default function PhaserWorld() {
             ];
 
             bgTreePositions.forEach((pos, i) => {
-              const shadow = this.add.ellipse(pos.x, pos.y + 40, 80, 24, 0x000000, 0.35);
               const tree = this.add.image(pos.x, pos.y, 'trees');
               tree.setDisplaySize(110, 110);
               tree.setOrigin(0.5, 0.85);
               if (!isRestored) {
                 tree.setTint(0x78716c);
               }
-              this.worldContainer.add([shadow, tree]);
+              this.worldContainer.add(tree);
               this.tweens.add({
                 targets: tree,
                 angle: { from: -2.2, to: 2.2 },
@@ -2684,7 +2680,6 @@ export default function PhaserWorld() {
               const tContainer = this.add.container(pos.x, pos.y);
               tContainer.setDepth(24);
 
-              const tShadow = this.add.ellipse(0, 42, 90, 26, 0x000000, 0.35);
               const tSprite = this.add.image(0, 0, 'trees');
               tSprite.setDisplaySize(115, 115);
               tSprite.setOrigin(0.5, 0.5);
@@ -2700,7 +2695,7 @@ export default function PhaserWorld() {
                 delay: Math.random() * 500,
               });
 
-              tContainer.add([tShadow, tSprite]);
+              tContainer.add(tSprite);
 
               const treeData = {
                 container: tContainer,
