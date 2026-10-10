@@ -3171,14 +3171,16 @@ export default function PhaserWorld() {
               const startY = gy + Phaser.Math.Between(-15, 5);
 
               const bf = this.add.image(startX, startY, 'butterfly');
-              bf.setDisplaySize(12, 12);
+              bf.setDisplaySize(6, 12);
               bf.setTint(colors[i % colors.length]);
               bf.setDepth(60);
 
-              // Fast wing flapping
+              const flapScaleX = bf.scaleX;
+
+              // Fast wing flapping (wings flap between +6px and -6px width)
               this.tweens.add({
                 targets: bf,
-                scaleX: { from: 0.85, to: -0.85 },
+                scaleX: { from: flapScaleX, to: -flapScaleX },
                 duration: 65,
                 yoyo: true,
                 repeat: -1,
