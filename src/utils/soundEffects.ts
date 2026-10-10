@@ -533,6 +533,32 @@ class SoundEngine {
     osc.start(t);
     osc.stop(t + 0.1);
   }
+
+  // 🥶 Farmer cold shiver teeth-chatter sound
+  public playShiver() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    [0, 0.04, 0.08, 0.12, 0.16, 0.20, 0.24].forEach((delay) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(380, t + delay);
+      osc.frequency.exponentialRampToValueAtTime(300, t + delay + 0.02);
+
+      gain.gain.setValueAtTime(0.04, t + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.02);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(t + delay);
+      osc.stop(t + delay + 0.02);
+    });
+  }
 }
 
 export const sounds = new SoundEngine();

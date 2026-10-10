@@ -280,11 +280,12 @@ export default function PhaserWorld() {
           private isSlidingOnIce: boolean = false;
           private lastIceSlideSoundTime: number = 0;
           private nextFarmerBreathTime: number = 0;
+          private isShivering: boolean = false;
           private grasslandsGrassPatch: {
             x: number;
             y: number;
             container: Phaser.GameObjects.Container;
-            restingButterflies: Phaser.GameObjects.Image[];
+            restingButterflies?: Phaser.GameObjects.Image[];
             triggered: boolean;
             readyAt: number;
           } | null = null;
@@ -608,6 +609,12 @@ export default function PhaserWorld() {
 
               if (biome === 'tundra') {
                 this.nextFarmerBreathTime = this.time.now + 350;
+              } else {
+                this.isShivering = false;
+                if (this.playerSprite) {
+                  this.playerSprite.x = 0;
+                  this.playerSprite.angle = 0;
+                }
               }
 
               // Center camera immediately over player at new spawn and follow
@@ -1903,20 +1910,7 @@ export default function PhaserWorld() {
               ease: 'Sine.easeInOut',
             });
 
-            // Real butterfly sprite fluttering over the prairie path
-            const butterfly = this.add.image(-12, -18, 'butterfly');
-            butterfly.setDisplaySize(24, 24);
-            this.tweens.add({
-              targets: butterfly,
-              y: -24,
-              x: -6,
-              duration: 900,
-              yoyo: true,
-              repeat: -1,
-              ease: 'Sine.easeInOut',
-            });
-
-            container.add([grasslandsTile, tallGrass, butterfly]);
+            container.add([grasslandsTile, tallGrass]);
 
             const triggerGrasslands = () => {
               sounds.playClick();
@@ -2438,31 +2432,123 @@ export default function PhaserWorld() {
 
           private createDynamicForestEnvironment(isRestored: boolean) {
             const w = this.canvasW;
+            const cx = w / 2;
 
-            // 1. Ambient swaying trees along forest backdrop (kept clear of the bouncy mushroom at w/2 - 410, 375)
-            const bgTreePositions = [
-              { x: w / 2 - 320, y: 160 },
-              { x: w / 2 + 320, y: 160 },
-              { x: w / 2 - 420, y: 560 },
-              { x: w / 2 + 420, y: 440 },
+            // Very dense old-growth canopy trees across all 4 quadrants and outer borders
+            // Positioned with strict clearance from:
+            // - Vertical path: x in [cx - 75, cx + 75]
+            // - Horizontal path: y in [310, 440] for x in [cx - 480, cx + 480]
+            // - Mushroom Easter Egg at (cx - 410, 375)
+            // - Paku at (cx, 330) and Quest station at (cx, 180)
+            const denseForestTreePositions = [
+              // --- North-West Dense Grove (Top-Left quadrant) ---
+              { x: cx - 580, y: 70, size: 110, depth: 10 },
+              { x: cx - 480, y: 65, size: 115, depth: 10 },
+              { x: cx - 380, y: 70, size: 105, depth: 10 },
+              { x: cx - 280, y: 65, size: 110, depth: 10 },
+              { x: cx - 180, y: 75, size: 100, depth: 10 },
+              { x: cx - 95,  y: 70, size: 95, depth: 10 },
+
+              { x: cx - 550, y: 140, size: 115, depth: 12 },
+              { x: cx - 440, y: 135, size: 110, depth: 12 },
+              { x: cx - 330, y: 145, size: 115, depth: 12 },
+              { x: cx - 220, y: 150, size: 105, depth: 12 },
+              { x: cx - 105, y: 145, size: 100, depth: 12 },
+
+              { x: cx - 520, y: 215, size: 110, depth: 14 },
+              { x: cx - 410, y: 210, size: 115, depth: 14 },
+              { x: cx - 300, y: 220, size: 110, depth: 14 },
+              { x: cx - 190, y: 225, size: 105, depth: 14 },
+              { x: cx - 100, y: 220, size: 95, depth: 14 },
+
+              { x: cx - 460, y: 285, size: 95, depth: 16 },
+              { x: cx - 350, y: 280, size: 95, depth: 16 },
+              { x: cx - 240, y: 285, size: 90, depth: 16 },
+              { x: cx - 115, y: 280, size: 85, depth: 16 },
+
+              // --- North-East Dense Grove (Top-Right quadrant) ---
+              { x: cx + 95,  y: 70, size: 95, depth: 10 },
+              { x: cx + 180, y: 75, size: 100, depth: 10 },
+              { x: cx + 280, y: 65, size: 110, depth: 10 },
+              { x: cx + 380, y: 70, size: 105, depth: 10 },
+              { x: cx + 480, y: 65, size: 115, depth: 10 },
+              { x: cx + 580, y: 70, size: 110, depth: 10 },
+
+              { x: cx + 105, y: 145, size: 100, depth: 12 },
+              { x: cx + 220, y: 150, size: 105, depth: 12 },
+              { x: cx + 330, y: 145, size: 115, depth: 12 },
+              { x: cx + 440, y: 135, size: 110, depth: 12 },
+              { x: cx + 550, y: 140, size: 115, depth: 12 },
+
+              { x: cx + 100, y: 220, size: 95, depth: 14 },
+              { x: cx + 190, y: 225, size: 105, depth: 14 },
+              { x: cx + 300, y: 220, size: 110, depth: 14 },
+              { x: cx + 410, y: 210, size: 115, depth: 14 },
+              { x: cx + 520, y: 215, size: 110, depth: 14 },
+
+              { x: cx + 115, y: 280, size: 85, depth: 16 },
+              { x: cx + 240, y: 285, size: 90, depth: 16 },
+              { x: cx + 350, y: 280, size: 95, depth: 16 },
+              { x: cx + 460, y: 285, size: 95, depth: 16 },
+
+              // --- South-West Dense Grove (Bottom-Left quadrant) ---
+              { x: cx - 470, y: 460, size: 95, depth: 18 },
+              { x: cx - 350, y: 455, size: 95, depth: 18 },
+              { x: cx - 230, y: 460, size: 90, depth: 18 },
+              { x: cx - 110, y: 455, size: 85, depth: 18 },
+
+              { x: cx - 530, y: 535, size: 115, depth: 20 },
+              { x: cx - 420, y: 530, size: 110, depth: 20 },
+              { x: cx - 310, y: 535, size: 115, depth: 20 },
+              { x: cx - 200, y: 540, size: 105, depth: 20 },
+              { x: cx - 100, y: 535, size: 100, depth: 20 },
+
+              { x: cx - 480, y: 625, size: 110, depth: 22 },
+              { x: cx - 370, y: 620, size: 115, depth: 22 },
+              { x: cx - 260, y: 625, size: 110, depth: 22 },
+              { x: cx - 120, y: 620, size: 100, depth: 22 },
+
+              // --- South-East Dense Grove (Bottom-Right quadrant) ---
+              { x: cx + 110, y: 455, size: 85, depth: 18 },
+              { x: cx + 230, y: 460, size: 90, depth: 18 },
+              { x: cx + 350, y: 455, size: 95, depth: 18 },
+              { x: cx + 470, y: 460, size: 95, depth: 18 },
+
+              { x: cx + 100, y: 535, size: 100, depth: 20 },
+              { x: cx + 200, y: 540, size: 105, depth: 20 },
+              { x: cx + 310, y: 535, size: 115, depth: 20 },
+              { x: cx + 420, y: 530, size: 110, depth: 20 },
+              { x: cx + 530, y: 535, size: 115, depth: 20 },
+
+              { x: cx + 120, y: 620, size: 100, depth: 22 },
+              { x: cx + 260, y: 625, size: 110, depth: 22 },
+              { x: cx + 370, y: 620, size: 115, depth: 22 },
+              { x: cx + 480, y: 625, size: 110, depth: 22 },
+
+              // --- Outer Border Flanks (Far West & Far East) ---
+              { x: cx - 570, y: 345, size: 95, depth: 15 },
+              { x: cx - 570, y: 420, size: 95, depth: 17 },
+              { x: cx + 570, y: 345, size: 95, depth: 15 },
+              { x: cx + 570, y: 420, size: 95, depth: 17 },
             ];
 
-            bgTreePositions.forEach((pos, i) => {
+            denseForestTreePositions.forEach((pos, i) => {
               const tree = this.add.image(pos.x, pos.y, 'trees');
-              tree.setDisplaySize(110, 110);
+              tree.setDisplaySize(pos.size, pos.size);
               tree.setOrigin(0.5, 0.85);
+              tree.setDepth(pos.depth);
               if (!isRestored) {
                 tree.setTint(0x78716c);
               }
               this.worldContainer.add(tree);
               this.tweens.add({
                 targets: tree,
-                angle: { from: -2.2, to: 2.2 },
-                duration: 2500 + i * 400,
+                angle: { from: -2.0, to: 2.0 },
+                duration: 2400 + (i % 7) * 300,
                 yoyo: true,
                 repeat: -1,
                 ease: 'Sine.easeInOut',
-                delay: i * 250,
+                delay: (i % 5) * 200,
               });
             });
 
@@ -2667,7 +2753,7 @@ export default function PhaserWorld() {
               });
             });
 
-            // 3. 🦋 Tall Grass with Resting Butterflies in Farm Meadow
+            // 3. 🦋 Tall Grass Patch in Farm Meadow (Butterflies swarm only when walked through)
             const gx = w / 2 + 110;
             const gy = 365;
 
@@ -2678,35 +2764,13 @@ export default function PhaserWorld() {
             grassSprite.setDisplaySize(64, 64);
             grassContainer.add(grassSprite);
 
-            const restingButterflies: Phaser.GameObjects.Image[] = [];
-            const restingOffsets = [
-              { x: -14, y: -16, tint: 0xf97316 },
-              { x: 12, y: -20, tint: 0x38bdf8 },
-              { x: 0, y: -26, tint: 0xfacc15 },
-            ];
-
-            restingOffsets.forEach((off) => {
-              const bf = this.add.image(off.x, off.y, 'butterfly');
-              bf.setDisplaySize(20, 20);
-              bf.setTint(off.tint);
-              this.tweens.add({
-                targets: bf,
-                scaleX: 0.6,
-                duration: Phaser.Math.Between(350, 600),
-                yoyo: true,
-                repeat: -1,
-              });
-              grassContainer.add(bf);
-              restingButterflies.push(bf);
-            });
-
             this.easterEggsContainer.add(grassContainer);
 
             this.grasslandsGrassPatch = {
               x: gx,
               y: gy,
               container: grassContainer,
-              restingButterflies,
+              restingButterflies: [],
               triggered: false,
               readyAt: 0,
             };
@@ -2973,6 +3037,39 @@ export default function PhaserWorld() {
             }
           }
 
+          // 🥶 Farmer shivers from the biting cold before exhaling frosty breath
+          private triggerFarmerColdShiverAndBreath() {
+            if (!this.player || !this.playerSprite || this.currentRoomId !== 'tundra' || this.isShivering) return;
+
+            this.isShivering = true;
+            try {
+              sounds.playShiver();
+            } catch {}
+
+            // Rapid teeth-chattering shiver tremor on the player sprite
+            this.tweens.add({
+              targets: this.playerSprite,
+              x: { from: -2.5, to: 2.5 },
+              angle: { from: -4, to: 4 },
+              duration: 38,
+              yoyo: true,
+              repeat: 7, // ~300ms shiver tremor
+              ease: 'Sine.easeInOut',
+              onComplete: () => {
+                if (this.playerSprite) {
+                  this.playerSprite.x = 0;
+                  this.playerSprite.angle = 0;
+                }
+                this.isShivering = false;
+
+                // Right after shivering, the cold breath puff comes out!
+                if (this.currentRoomId === 'tundra') {
+                  this.spawnFarmerBreath();
+                }
+              },
+            });
+          }
+
           // ❄️ Visible farmer's breath in the freezing Arctic Tundra
           private spawnFarmerBreath() {
             if (!this.player || !this.playerSprite || this.currentRoomId !== 'tundra') return;
@@ -3028,36 +3125,13 @@ export default function PhaserWorld() {
             grassSprite.setDisplaySize(64, 64);
             grassContainer.add(grassSprite);
 
-            // Resting butterflies gently fluttering wings
-            const restingButterflies: Phaser.GameObjects.Image[] = [];
-            const restingOffsets = [
-              { x: -14, y: -16, tint: 0xf97316 },
-              { x: 12, y: -20, tint: 0x38bdf8 },
-              { x: 0, y: -26, tint: 0xfacc15 },
-            ];
-
-            restingOffsets.forEach((off) => {
-              const bf = this.add.image(off.x, off.y, 'butterfly');
-              bf.setDisplaySize(20, 20);
-              bf.setTint(off.tint);
-              this.tweens.add({
-                targets: bf,
-                scaleX: 0.6,
-                duration: Phaser.Math.Between(350, 600),
-                yoyo: true,
-                repeat: -1,
-              });
-              grassContainer.add(bf);
-              restingButterflies.push(bf);
-            });
-
             this.easterEggsContainer.add(grassContainer);
 
             this.grasslandsGrassPatch = {
               x: gx,
               y: gy,
               container: grassContainer,
-              restingButterflies,
+              restingButterflies: [],
               triggered: false,
               readyAt: 0,
             };
@@ -3068,14 +3142,13 @@ export default function PhaserWorld() {
               this.ignorePathClickUntil = this.time.now + 250;
               this.walkPlayerTo(gx, gy);
             }, { parentContainer: grassContainer, glowRadius: 85 });
-
           }
 
           private triggerButterflySwarm(
             gx: number,
             gy: number,
             grassContainer: Phaser.GameObjects.Container,
-            restingButterflies: Phaser.GameObjects.Image[]
+            restingButterflies?: Phaser.GameObjects.Image[]
           ) {
             sounds.playFlutter();
 
@@ -3090,10 +3163,7 @@ export default function PhaserWorld() {
               repeat: 3,
             });
 
-            // Hide resting butterflies
-            restingButterflies.forEach((bf) => bf.setVisible(false));
-
-            // Swarm of vibrant butterflies flying up and away into the sky
+            // Swarm of vibrant butterflies flying up and away into the sky (about half their original size: 12x12)
             const colors = [0xf97316, 0x38bdf8, 0xfacc15, 0xec4899, 0xa855f7, 0x22c55e];
 
             for (let i = 0; i < 11; i++) {
@@ -3101,7 +3171,7 @@ export default function PhaserWorld() {
               const startY = gy + Phaser.Math.Between(-15, 5);
 
               const bf = this.add.image(startX, startY, 'butterfly');
-              bf.setDisplaySize(24, 24);
+              bf.setDisplaySize(12, 12);
               bf.setTint(colors[i % colors.length]);
               bf.setDepth(60);
 
@@ -3133,17 +3203,9 @@ export default function PhaserWorld() {
 
           private respawnRestingButterflies(patch: {
             container: Phaser.GameObjects.Container;
-            restingButterflies: Phaser.GameObjects.Image[];
+            restingButterflies?: Phaser.GameObjects.Image[];
           }) {
-            patch.restingButterflies.forEach((bf) => {
-              bf.setVisible(true);
-              bf.setAlpha(0);
-              this.tweens.add({
-                targets: bf,
-                alpha: 1,
-                duration: 800,
-              });
-            });
+            // Resting butterflies remain hidden; butterflies only appear in swarm when user walks through grass
           }
 
           // 4. 🌵 DESERT EASTER EGG: Cacti that wave (two arms; one arm moves as if waving)
@@ -3795,7 +3857,7 @@ export default function PhaserWorld() {
 
               if (isOnIce) {
                 // Ice skating posture: tilt slightly and spray frost sparks
-                if (this.playerSprite) {
+                if (this.playerSprite && !this.isShivering) {
                   this.playerSprite.angle = nvx >= 0 ? 8 : -8;
                 }
                 this.spawnIceGliderParticles(this.player.x, this.player.y);
@@ -3804,7 +3866,7 @@ export default function PhaserWorld() {
                   this.lastIceSlideSoundTime = time + 260;
                 }
               } else {
-                if (this.playerSprite) {
+                if (this.playerSprite && !this.isShivering) {
                   this.playerSprite.angle = Math.sin(time * 0.015) * 5;
                 }
                 // Spawn footprints while walking (fading after 3 seconds)
@@ -3821,7 +3883,7 @@ export default function PhaserWorld() {
               }
             } else {
               this.playerBody.setVelocity(0, 0);
-              if (this.playerSprite && !this.mushroomJumpTween) {
+              if (this.playerSprite && !this.mushroomJumpTween && !this.isShivering) {
                 this.playerSprite.angle = 0;
               }
             }
@@ -3842,12 +3904,12 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // ❄️ TUNDRA COLD BREATH: Farmer exhales visible frosty breath in the freezing arctic
+            // ❄️ TUNDRA COLD BREATH & SHIVER: Farmer shivers before frosty breath puff
             // ===============================================================
             if (this.currentRoomId === 'tundra' && this.player && this.playerSprite) {
-              if (time >= this.nextFarmerBreathTime) {
-                this.spawnFarmerBreath();
-                this.nextFarmerBreathTime = time + Phaser.Math.Between(1800, 2400);
+              if (time >= this.nextFarmerBreathTime && !this.isShivering) {
+                this.triggerFarmerColdShiverAndBreath();
+                this.nextFarmerBreathTime = time + Phaser.Math.Between(2600, 3600);
               }
             }
 
@@ -3897,10 +3959,10 @@ export default function PhaserWorld() {
             }
 
             // ===============================================================
-            // 🦋 GRASSLANDS BUTTERFLY PATCH EASTER EGG
+            // 🦋 GRASSLANDS & FARM BUTTERFLY PATCH EASTER EGG
             // When sprite walks through grass, butterflies fly up and away
             // ===============================================================
-            if (this.currentRoomId === 'grasslands' && this.grasslandsGrassPatch) {
+            if ((this.currentRoomId === 'grasslands' || this.currentRoomId === 'clearing') && this.grasslandsGrassPatch) {
               const patch = this.grasslandsGrassPatch;
               const distToPatch = Phaser.Math.Distance.Between(this.player.x, this.player.y, patch.x, patch.y);
 
