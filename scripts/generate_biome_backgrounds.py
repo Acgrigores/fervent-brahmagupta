@@ -12,28 +12,28 @@ from PIL import Image, ImageDraw, ImageFilter
 public_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public", "assets", "biomes")
 os.makedirs(public_dir, exist_ok=True)
 
-W, H = 1200, 750
+W, H = 1400, 750
 P = 3  # size of one "art pixel" for scenery
 
 # Walkable path rectangles per biome (mirrors buildMaximalistBiomeRoom)
 PATHS = {
-    "lake": [(160, 340, 1100, 70), (560, 140, 80, 480)],
-    "grasslands": [(-60, 340, 1100, 70), (560, 140, 80, 480)],
-    "forest": [(560, 140, 80, 670), (200, 340, 800, 70)],
-    "tundra": [(560, 140, 80, 670), (200, 340, 800, 70)],
-    "desert": [(560, -60, 80, 710), (200, 340, 800, 70)],
-    "reefs": [(560, -60, 80, 710), (200, 340, 800, 70)],
+    "lake": [(160, 340, 1300, 70), (660, 140, 80, 480)],
+    "grasslands": [(-60, 340, 1300, 70), (660, 140, 80, 480)],
+    "forest": [(660, 140, 80, 670), (240, 340, 920, 70)],
+    "tundra": [(660, 140, 80, 670), (240, 340, 920, 70)],
+    "desert": [(660, -60, 80, 710), (240, 340, 920, 70)],
+    "reefs": [(660, -60, 80, 710), (240, 340, 920, 70)],
 }
 
 # Areas kept clear of scenery: animal, quest sign, exit signs
-COMMON_KEEPOUT = [(500, 250, 200, 160), (430, 130, 340, 100)]
+COMMON_KEEPOUT = [(600, 250, 200, 160), (530, 130, 340, 100)]
 EXIT_KEEPOUT = {
-    "lake": [(1040, 330, 160, 90)],
-    "grasslands": [(0, 330, 160, 90)],
-    "forest": [(470, 670, 260, 80)],
-    "tundra": [(470, 670, 260, 80)],
-    "desert": [(470, 0, 260, 80)],
-    "reefs": [(470, 0, 260, 80)],
+    "lake": [(1220, 330, 180, 90)],
+    "grasslands": [(0, 330, 170, 90)],
+    "forest": [(570, 670, 260, 80)],
+    "tundra": [(570, 670, 260, 80)],
+    "desert": [(570, 0, 260, 80)],
+    "reefs": [(570, 0, 260, 80)],
 }
 
 
@@ -401,7 +401,7 @@ def build_lake(alive):
         g = make_ground((88, 84, 62), (76, 72, 54), (98, 92, 66), 16)
         water, edge, shore, var = (88, 96, 70), (64, 70, 50), (110, 98, 72), (120, 110, 70)
 
-    ponds = [(220, 160, 170, 105), (300, 590, 220, 115), (900, 590, 220, 115), (975, 165, 170, 105)]
+    ponds = [(260, 160, 170, 105), (320, 590, 220, 115), (1080, 590, 220, 115), (1150, 165, 170, 105)]
     for (x, y, rx, ry) in ponds:
         cells = c.blob_cells(x, y, rx, ry)
         c.fill_area(cells, water, edge, rim=shore, rim_width=2, fill_var=var)
@@ -509,7 +509,7 @@ def build_tundra(alive):
         g = make_ground((150, 148, 146), (136, 134, 132), (168, 166, 162), 12, blade_range=(1, 3))
         ice, ice_edge, ice_var = (96, 110, 120), (70, 80, 88), (120, 130, 136)
 
-    for (x, y, rx, ry) in [(260, 560, 170, 90), (950, 190, 150, 80), (930, 590, 140, 80)]:
+    for (x, y, rx, ry) in [(300, 560, 170, 90), (1130, 190, 150, 80), (1110, 590, 140, 80)]:
         cells = c.blob_cells(x, y, rx, ry)
         c.fill_area(cells, ice, ice_edge, fill_var=ice_var)
         c.placed.append((x, y, min(rx, ry)))
@@ -576,13 +576,13 @@ def build_desert(alive):
                 c.px(gx, gy, (206, 166, 104) if alive else (206, 170, 120))
 
     # Oasis: lush pool vs. dried-up bed
-    cells = c.blob_cells(260, 560, 160, 100)
+    cells = c.blob_cells(300, 560, 160, 100)
     if alive:
         c.fill_area(cells, (70, 170, 210), (50, 136, 186), rim=(120, 170, 80), rim_width=3, fill_var=(140, 210, 235))
     else:
         c.fill_area(cells, (176, 132, 86), (150, 110, 72))
         c.cracks(40, (130, 92, 60))
-    c.placed.append((260, 560, 100))
+    c.placed.append((300, 560, 100))
 
     if alive:
         def palm(gx, gy):
@@ -593,7 +593,7 @@ def build_desert(alive):
                 for r in range(1, 5):
                     c.px(top_x + int(math.cos(math.radians(ang)) * r), top_y + int(math.sin(math.radians(ang)) * r * 0.7), (60, 150, 64) if r < 4 else (36, 110, 50))
             c.px(top_x, top_y, (120, 80, 40))
-        for (x, y) in [(150, 470), (390, 480), (180, 680), (420, 660)]:
+        for (x, y) in [(190, 470), (430, 480), (220, 680), (460, 660)]:
             if c.is_free(x, y, 4, spacing=False):
                 palm(x // P, y // P)
                 c.placed.append((x, y, 26))
@@ -617,7 +617,7 @@ def build_reefs(alive):
         g = make_water_ground((84, 112, 122), (76, 102, 112), (130, 150, 156), (60, 80, 88))
         sand, sand_edge = (170, 162, 140), (140, 132, 112)
 
-    for (x, y, rx, ry) in [(250, 175, 150, 100), (950, 580, 210, 120), (260, 590, 180, 100), (970, 170, 160, 100)]:
+    for (x, y, rx, ry) in [(280, 175, 150, 100), (1130, 580, 210, 120), (300, 590, 180, 100), (1150, 170, 160, 100)]:
         cells = c.blob_cells(x, y, rx, ry)
         c.fill_area(cells, sand, sand_edge, fill_var=shade(sand, 14))
 
