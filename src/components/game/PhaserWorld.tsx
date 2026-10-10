@@ -105,19 +105,19 @@ export default function PhaserWorld() {
             this.load.image('grass_flourish', '/assets/grass_flourish.png');
             this.load.image('grass_dead', '/assets/grass_dead.png');
 
-            // Biome Real Images (Dying/polluted vs Flourishing/clean) - No Polygons!
-            this.load.image('biome_lake_dead', '/assets/biomes/lake_dead.jpg');
-            this.load.image('biome_lake_flourish', '/assets/biomes/lake_flourish.jpg');
-            this.load.image('biome_forest_dead', '/assets/biomes/forest_dead.jpg');
-            this.load.image('biome_forest_flourish', '/assets/biomes/forest_flourish.jpg');
-            this.load.image('biome_tundra_dead', '/assets/biomes/tundra_dead.jpg');
-            this.load.image('biome_tundra_flourish', '/assets/biomes/tundra_flourish.jpg');
-            this.load.image('biome_grasslands_dead', '/assets/biomes/grasslands_dead.jpg');
-            this.load.image('biome_grasslands_flourish', '/assets/biomes/grasslands_flourish.jpg');
-            this.load.image('biome_desert_dead', '/assets/biomes/desert_dead.jpg');
-            this.load.image('biome_desert_flourish', '/assets/biomes/desert_flourish.jpg');
-            this.load.image('biome_reefs_dead', '/assets/biomes/reefs_dead.jpg');
-            this.load.image('biome_reefs_flourish', '/assets/biomes/reefs_flourish.jpg');
+            // Pixel-art biome backgrounds (Dying/polluted vs Flourishing/clean) - see scripts/generate_biome_backgrounds.py
+            this.load.image('biome_lake_dead', '/assets/biomes/lake_dead.png');
+            this.load.image('biome_lake_flourish', '/assets/biomes/lake_flourish.png');
+            this.load.image('biome_forest_dead', '/assets/biomes/forest_dead.png');
+            this.load.image('biome_forest_flourish', '/assets/biomes/forest_flourish.png');
+            this.load.image('biome_tundra_dead', '/assets/biomes/tundra_dead.png');
+            this.load.image('biome_tundra_flourish', '/assets/biomes/tundra_flourish.png');
+            this.load.image('biome_grasslands_dead', '/assets/biomes/grasslands_dead.png');
+            this.load.image('biome_grasslands_flourish', '/assets/biomes/grasslands_flourish.png');
+            this.load.image('biome_desert_dead', '/assets/biomes/desert_dead.png');
+            this.load.image('biome_desert_flourish', '/assets/biomes/desert_flourish.png');
+            this.load.image('biome_reefs_dead', '/assets/biomes/reefs_dead.png');
+            this.load.image('biome_reefs_flourish', '/assets/biomes/reefs_flourish.png');
 
             // Sprites & generated images
             this.load.image('farmer', '/assets/sprites/farmer.png');
