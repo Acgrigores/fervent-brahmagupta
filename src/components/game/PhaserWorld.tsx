@@ -97,6 +97,8 @@ export default function PhaserWorld() {
           private speed: number = 290;
           private canvasW: number = 1400;
           private canvasH: number = 750;
+          private nextStepTime: number = 0;
+          private stepInterval: number = 250;
 
           constructor() {
             super({ key: 'GardenscapesWorldScene' });
@@ -169,6 +171,7 @@ export default function PhaserWorld() {
 
             // Click-to-move along paths (supports multi-turn navigation & path-snapping)
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              sounds.initCtx();
               if (this.isTransitioning) return;
 
               const target = this.getClosestPointOnWalkablePath(pointer.x, pointer.y);
@@ -210,9 +213,10 @@ export default function PhaserWorld() {
             // Create Farmer Avatar Sprite at central farm plaza
             this.createFarmerPlayer(700, 420);
 
-            // Initial Room Build
+            // Initial Room Build & Biome Background Music
             this.currentRoomId = stateRef.current.currentBiome;
             this.buildRoom(this.currentRoomId);
+            sounds.setBiome(this.currentRoomId);
           }
 
           private createFarmerPlayer(x: number, y: number) {
@@ -247,6 +251,8 @@ export default function PhaserWorld() {
             if ((biome === this.currentRoomId && !customSpawn) || this.isTransitioning) return;
             this.isTransitioning = true;
             sounds.playBloom();
+            sounds.setBiome(biome);
+            this.nextStepTime = this.time ? this.time.now + 600 : 0;
 
             const previousRoom = this.currentRoomId;
 
@@ -323,7 +329,7 @@ export default function PhaserWorld() {
               this.playerBody.setVelocity(0, 0);
             }
             this.moveTarget = null;
-            this.currentPathWaypoints = [];
+            this.nextStepTime = (this.time ? this.time.now : 0) + 400;
           }
 
           private isPointOnWalkablePath(x: number, y: number, margin: number = 0): boolean {
@@ -1259,29 +1265,28 @@ export default function PhaserWorld() {
               if (this.playerSprite) {
                 this.playerSprite.angle = 0;
               }
+            }
 
-              // Anti-stuck recovery for stationary player:
-              // Gently slide back onto the path if slightly displaced
-              if (currentDistFromPath > 1) {
-                if (currentDistFromPath > 10) {
-                  this.player.setPosition(closestNow.x, closestNow.y);
-                  this.playerBody?.reset(closestNow.x, closestNow.y);
-                } else {
-                  const nx = Phaser.Math.Linear(this.player.x, closestNow.x, 0.25);
-                  const ny = Phaser.Math.Linear(this.player.y, closestNow.y, 0.25);
-                  this.player.setPosition(nx, ny);
-                  this.playerBody?.reset(nx, ny);
-                }
+            // Step sounds for when avatar is moving around on the map
+            const isMoving =
+              this.playerBody &&
+              (Math.abs(this.playerBody.velocity.x) > 10 || Math.abs(this.playerBody.velocity.y) > 10);
+
+            if (isMoving) {
+              if (time >= this.nextStepTime) {
+                sounds.playStep(this.currentRoomId);
+                this.nextStepTime = time + this.stepInterval;
               }
+            } else {
+              // Reset so footsteps trigger promptly when walking starts again
+              this.nextStepTime = Math.min(this.nextStepTime, time + 40);
             }
 
-            // Safety Boundary Clamp: Never permit player to remain > 6px off-path
-            if (currentDistFromPath > 6) {
-              this.player.setPosition(closestNow.x, closestNow.y);
-              this.playerBody?.reset(closestNow.x, closestNow.y);
-            }
-
-            // Screen edge transitions (Guarded by transitionCooldownUntil)
+            // ===============================================================
+            // OPPOSITE-SIDE SCREEN EDGE TRANSITIONS
+            // "If a user exits a page, make them enter the new page on the opposite side"
+            // Guarded by transitionCooldownUntil so players can never instantly re-trigger!
+            // ===============================================================
             if (time > this.transitionCooldownUntil) {
               if (this.currentRoomId === 'clearing') {
                 if (this.player.x <= 22) {
