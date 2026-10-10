@@ -28,6 +28,12 @@ export interface CropInfo {
   crisisDescription: string;
   flourishDescription: string;
   yieldMultiplier: number;
+  crisisHeadline?: string;
+  detailedCrisisReason?: string;
+  threatFactors?: string[];
+  restorationSolution?: string;
+  guardianAnimalId?: AnimalId;
+  biomeDisplayName?: string;
 }
 
 export interface CoinLedger {
