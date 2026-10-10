@@ -398,35 +398,54 @@ def build_lake(alive):
         # Full freshwater lake: vibrant, shimmering water across the entire room
         g = make_water_ground((44, 142, 200), (36, 130, 186), (118, 210, 242), (24, 105, 158), count=1400)
     else:
-        # Polluted, murky lake water
-        g = make_water_ground((72, 90, 78), (62, 78, 68), (112, 132, 108), (48, 62, 52), count=1000)
+        g = make_ground((88, 84, 62), (76, 72, 54), (98, 92, 66), 16)
+        water, edge, shore, var = (88, 96, 70), (64, 70, 50), (110, 98, 72), (120, 110, 70)
+
+    ponds = [(260, 160, 170, 105), (320, 590, 220, 115), (1080, 590, 220, 115), (1140, 225, 180, 110)]
+    for (x, y, rx, ry) in ponds:
+        cells = c.blob_cells(x, y, rx, ry)
+        c.fill_area(cells, water, edge, rim=shore, rim_width=2, fill_var=var)
+        c.placed.append((x, y, min(rx, ry)))
+        inner = [cell for cell in cells if all(n in cells for n in [(cell[0] + 3, cell[1]), (cell[0] - 3, cell[1]), (cell[0], cell[1] + 3), (cell[0], cell[1] - 3)])]
+        for (gx, gy) in random.sample(inner, min(len(inner), 9)):
+            if alive:
+                c.lily(gx, gy, (80, 170, 80), random.choice([None, (250, 170, 200), (255, 255, 255)]))
+            else:
+                c.trash(gx, gy)
+        for (gx, gy) in random.sample(inner, min(len(inner), 14)):
+            for dx in range(random.randint(2, 4)):
+                c.px(gx + dx, gy, (200, 235, 250) if alive else (130, 128, 92))
+        if not alive:
+            # Oily scum patches
+            for (gx, gy) in random.sample(inner, min(len(inner), 5)):
+                for dx in range(-2, 3):
+                    c.px(gx + dx, gy, (120, 90, 130))
+                    c.px(gx + dx, gy + 1, (90, 120, 110))
+
+    for (x, y, rx, ry) in ponds:
+        for _ in range(8):
+            a = random.uniform(0, math.tau)
+            cx = int(x + math.cos(a) * (rx + 14))
+            cy = int(y + math.sin(a) * (ry + 14))
+            if c.is_free(cx, cy, 6, spacing=False):
+                if alive:
+                    c.cattail(cx // P, cy // P)
+                else:
+                    c.cattail(cx // P, cy // P, stem=(96, 90, 60), head=(70, 60, 50))
+
+    # Smooth aquatic shoreline stones & pebbles instead of terrestrial trees/bushes
+    def pebble(gx, gy, col):
+        for dx in range(-2, 3):
+            for dy in range(-1, 2):
+                c.px(gx + dx, gy + dy, col)
+        c.px(gx - 1, gy - 1, (240, 240, 240) if alive else (160, 150, 130))
 
     if alive:
-        # Floating lily pads with blossoms floating directly on water
-        c.scatter(36, 14, lambda gx, gy: c.lily(gx, gy, (55, 155, 80), random.choice([None, (250, 180, 210), (255, 255, 255), (250, 220, 120)])))
-        # Freshwater fish swimming in open lake waters
-        c.scatter(24, 8, lambda gx, gy: c.fish(gx, gy, random.choice([(245, 150, 60), (240, 210, 70), (70, 180, 240), (230, 90, 90)])), spacing=False)
-        # Small smooth lake stones
-        c.scatter(10, 9, lambda gx, gy: c.rock(gx, gy, 2, (100, 120, 135)))
-        # Glistening surface glints
-        for _ in range(60):
-            x = random.randint(0, W // P)
-            y = random.randint(0, H // P)
-            if c.is_free(x * P, y * P, 1, spacing=False):
-                c.px(x, y, (215, 240, 255))
-                c.px(x + 1, y, (215, 240, 255))
+        # Extra cattails, ripples, and water lilies for pure aquatic wetlands
+        c.scatter(35, 10, lambda gx, gy: pebble(gx, gy, random.choice([(140, 160, 170), (120, 145, 160), (160, 180, 190)])))
     else:
-        # Floating trash & plastic waste
-        c.scatter(38, 8, lambda gx, gy: c.trash(gx, gy))
-        # Oily scum & chemical slicks floating on water
-        def oily_film(gx, gy):
-            for dy in range(-2, 3):
-                for dx in range(-4 + abs(dy), 5 - abs(dy)):
-                    c.px(gx + dx, gy + dy, random.choice([(110, 90, 120), (80, 110, 100), (95, 85, 70)]))
-            c.px(gx - 1, gy, (130, 90, 140))
-            c.px(gx + 1, gy, (90, 130, 110))
-        c.scatter(16, 18, oily_film)
-        c.scatter(12, 9, lambda gx, gy: c.rock(gx, gy, 2, (80, 85, 80)))
+        c.scatter(15, 12, lambda gx, gy: pebble(gx, gy, (90, 85, 75)))
+        c.scatter(28, 6, lambda gx, gy: c.trash(gx, gy))
     return c.finish(g)
 
 
