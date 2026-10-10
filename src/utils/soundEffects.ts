@@ -132,14 +132,14 @@ class SoundEngine {
         noiseGainVal = 0.05;
         break;
 
-      case 'tundra': // Crisp snow & ice crust
-        baseFreq = 110;
-        noiseFilterFreq = 2200;
-        noiseFilterType = 'highpass';
-        noiseFilterQ = 1.8;
-        stepDuration = 0.055;
-        oscGainVal = 0.035;
-        noiseGainVal = 0.065;
+      case 'tundra': // Balanced crisp snow & permafrost crunch (intermediate pitch)
+        baseFreq = 88;
+        noiseFilterFreq = 1350;
+        noiseFilterType = 'bandpass';
+        noiseFilterQ = 1.5;
+        stepDuration = 0.062;
+        oscGainVal = 0.045;
+        noiseGainVal = 0.058;
         break;
 
       case 'grasslands': // Dry prairie loam & rustling turf
