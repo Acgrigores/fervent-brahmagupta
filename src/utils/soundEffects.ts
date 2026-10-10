@@ -1,21 +1,38 @@
 // Procedural Web Audio API sound synthesizer
 // Provides rich game audio without requiring external mp3 assets
+// Generates responsive step sound effects & adaptive biome background music
+
+import { BiomeId } from '@/types/game';
+import { BiomeMusicManager } from './biomeMusic';
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
-  private ambientOsc: OscillatorNode | null = null;
-  private ambientGain: GainNode | null = null;
+  private music: BiomeMusicManager = new BiomeMusicManager();
+  private noiseBuffer: AudioBuffer | null = null;
+  private stepFoot: boolean = false; // Alternates left/right footstep
 
   constructor() {
-    // AudioContext will be initialized on first user interaction
+    // AudioContext will be initialized on first user interaction or explicit call
+    if (typeof window !== 'undefined') {
+      const unlockAudio = () => {
+        this.initCtx();
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+      };
+      window.addEventListener('pointerdown', unlockAudio);
+      window.addEventListener('keydown', unlockAudio);
+      window.addEventListener('touchstart', unlockAudio);
+    }
   }
 
-  private initCtx() {
+  public initCtx() {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
+        this.music.init(this.ctx);
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -25,13 +42,170 @@ class SoundEngine {
 
   public setEnabled(val: boolean) {
     this.enabled = val;
-    if (!val && this.ambientGain) {
-      this.ambientGain.gain.setValueAtTime(0, this.ctx?.currentTime || 0);
-    }
+    this.music.setEnabled(val);
   }
 
   public isEnabled(): boolean {
     return this.enabled;
+  }
+
+  public setBiome(biome: BiomeId) {
+    this.initCtx();
+    this.music.setBiome(biome);
+  }
+
+  public getBiome(): BiomeId | null {
+    return this.music.getCurrentBiome();
+  }
+
+  public setMusicVolume(val: number) {
+    this.music.setVolume(val);
+  }
+
+  public stopMusic() {
+    this.music.stopAll();
+  }
+
+  // 1-second cached noise buffer for realistic footsteps & texture effects
+  private getNoiseBuffer(): AudioBuffer | null {
+    if (!this.ctx) return null;
+    if (!this.noiseBuffer) {
+      const size = this.ctx.sampleRate;
+      this.noiseBuffer = this.ctx.createBuffer(1, size, this.ctx.sampleRate);
+      const data = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < size; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+    }
+    return this.noiseBuffer;
+  }
+
+  // ===============================================================
+  // 👣 PROCEDURAL DYNAMIC FOOTSTEPS FOR AVATAR MOVEMENT
+  // Natural alternating left/right cadence with surface-specific acoustic textures
+  // ===============================================================
+  public playStep(biome: BiomeId = 'clearing') {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    // Alternate left foot vs right foot subtle frequency shift
+    this.stepFoot = !this.stepFoot;
+    const footMod = this.stepFoot ? 1.05 : 0.95;
+
+    // 1. Low transient thump (shoe impact on ground)
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+
+    let baseFreq = 85;
+    let noiseFilterFreq = 580;
+    let noiseFilterType: BiquadFilterType = 'bandpass';
+    let noiseFilterQ = 1.3;
+    let stepDuration = 0.06;
+    let oscGainVal = 0.055;
+    let noiseGainVal = 0.045;
+
+    switch (biome) {
+      case 'clearing': // Farm dirt & grass path
+        baseFreq = 85;
+        noiseFilterFreq = 620;
+        noiseFilterType = 'bandpass';
+        noiseFilterQ = 1.3;
+        stepDuration = 0.06;
+        break;
+
+      case 'forest': // Soft woodland earth & pine needles
+        baseFreq = 95;
+        noiseFilterFreq = 880;
+        noiseFilterType = 'bandpass';
+        noiseFilterQ = 1.2;
+        stepDuration = 0.065;
+        break;
+
+      case 'lake': // Moist shoreline & wet pebbles
+        baseFreq = 135;
+        noiseFilterFreq = 1150;
+        noiseFilterType = 'bandpass';
+        noiseFilterQ = 1.6;
+        stepDuration = 0.07;
+        noiseGainVal = 0.05;
+        break;
+
+      case 'tundra': // Crisp snow & ice crust
+        baseFreq = 110;
+        noiseFilterFreq = 2200;
+        noiseFilterType = 'highpass';
+        noiseFilterQ = 1.8;
+        stepDuration = 0.055;
+        oscGainVal = 0.035;
+        noiseGainVal = 0.065;
+        break;
+
+      case 'grasslands': // Dry prairie loam & rustling turf
+        baseFreq = 90;
+        noiseFilterFreq = 720;
+        noiseFilterType = 'bandpass';
+        noiseFilterQ = 1.1;
+        stepDuration = 0.06;
+        break;
+
+      case 'desert': // Soft sliding sand
+        baseFreq = 75;
+        noiseFilterFreq = 780;
+        noiseFilterType = 'lowpass';
+        noiseFilterQ = 0.9;
+        stepDuration = 0.075;
+        oscGainVal = 0.04;
+        noiseGainVal = 0.05;
+        break;
+
+      case 'reefs': // Wooden dock & shallow crystal water
+        baseFreq = 150;
+        noiseFilterFreq = 1350;
+        noiseFilterType = 'bandpass';
+        noiseFilterQ = 1.5;
+        stepDuration = 0.065;
+        noiseGainVal = 0.05;
+        break;
+    }
+
+    const freq = baseFreq * footMod;
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(28, freq * 0.45), t + stepDuration);
+
+    oscGain.gain.setValueAtTime(oscGainVal, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, t + stepDuration);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + stepDuration);
+
+    // 2. Texture noise crunch (shoes scuffing dirt / leaves / snow / sand)
+    const nBuf = this.getNoiseBuffer();
+    if (nBuf) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = nBuf;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = noiseFilterType;
+      filter.frequency.setValueAtTime(noiseFilterFreq * footMod, t);
+      filter.Q.setValueAtTime(noiseFilterQ, t);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(noiseGainVal, t);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + stepDuration);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
+
+      noise.start(t);
+      noise.stop(t + stepDuration);
+    }
   }
 
   // Sparkling coin pickup chime
@@ -174,7 +348,7 @@ class SoundEngine {
     osc.frequency.setValueAtTime(800, t);
     osc.frequency.exponentialRampToValueAtTime(400, t + 0.03);
 
-    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.setValueAtTime(0.045, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
 
     osc.connect(gain);

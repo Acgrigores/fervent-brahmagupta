@@ -136,8 +136,8 @@ export default function TopNavHUD() {
               sounds.playClick();
               updateSettings({ soundEnabled: !settings.soundEnabled });
             }}
-            className="pixel-btn p-1.5 text-[10px]"
-            title={settings.soundEnabled ? 'Mute SFX' : 'Enable SFX'}
+            className="p-2 rounded-xl bg-white hover:bg-amber-50 border border-stone-300 text-stone-700 hover:text-stone-900 transition-all shadow-sm active:scale-95"
+            title={settings.soundEnabled ? 'Mute Audio & Biome Music' : 'Enable Audio & Biome Music'}
           >
             {settings.soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#86efac]" /> : <VolumeX className="w-3.5 h-3.5 text-[#fca5a5]" />}
           </button>
@@ -197,14 +197,16 @@ export default function TopNavHUD() {
                 </p>
               </div>
 
-              <div className="p-2.5 pixel-card flex items-center justify-between">
-                <span className="text-[#5c2c16] font-bold">SOUND EFFECTS:</span>
-                <input
-                  type="checkbox"
-                  checked={settings.soundEnabled}
-                  onChange={(e) => updateSettings({ soundEnabled: e.target.checked })}
-                  className="w-4 h-4 accent-[#b45309] cursor-pointer"
-                />
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-700 font-medium">Audio, Steps & Biome Music:</span>
+                  <input
+                    type="checkbox"
+                    checked={settings.soundEnabled}
+                    onChange={(e) => updateSettings({ soundEnabled: e.target.checked })}
+                    className="accent-emerald-600 w-4 h-4 rounded cursor-pointer"
+                  />
+                </div>
               </div>
 
               {/* Reset Progress Button KEPT IN SETTINGS ONLY as requested */}

@@ -135,7 +135,13 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   // Biome change handler
   const setCurrentBiome = (biome: BiomeId) => {
     setCurrentBiomeState(biome);
+    sounds.setBiome(biome);
   };
+
+  // Sync active biome music whenever currentBiome changes
+  useEffect(() => {
+    sounds.setBiome(currentBiome);
+  }, [currentBiome]);
 
   // Sound toggle
   const updateSettings = (newSettings: Partial<GameSettings>) => {

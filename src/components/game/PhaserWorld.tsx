@@ -90,9 +90,10 @@ export default function PhaserWorld() {
           public currentRoomId: BiomeId = 'clearing';
           private worldContainer!: Phaser.GameObjects.Container;
           private footprintsContainer!: Phaser.GameObjects.Container;
+          private signsContainer!: Phaser.GameObjects.Container;
           private lastFootprintPos: { x: number; y: number } = { x: 700, y: 420 };
           private footstepToggle: boolean = false;
-          private readonly FOOTSTEP_DISTANCE: number = 18;
+          private readonly FOOTSTEP_DISTANCE: number = 16;
           private pathPolygons: Phaser.Geom.Rectangle[] = [];
           private currentHotspots: Hotspot[] = [];
           private nearbyHotspot: Hotspot | null = null;
@@ -101,6 +102,8 @@ export default function PhaserWorld() {
           private speed: number = 290;
           public canvasW: number = 1400;
           public canvasH: number = 750;
+          private nextStepTime: number = 0;
+          private stepInterval: number = 250;
 
           constructor() {
             super({ key: 'GardenscapesWorldScene' });
@@ -162,8 +165,13 @@ export default function PhaserWorld() {
             this.input.setDefaultCursor("url('/assets/sprout_cursor.svg') 2 4, auto");
 
             this.worldContainer = this.add.container(0, 0);
+            this.worldContainer.setDepth(1);
+
             this.footprintsContainer = this.add.container(0, 0);
-            this.worldContainer.add(this.footprintsContainer);
+            this.footprintsContainer.setDepth(15);
+
+            this.signsContainer = this.add.container(0, 0);
+            this.signsContainer.setDepth(35);
 
             // Setup Arrow Keys ONLY for keyboard navigation (strictly NO spacebar/letter capture)
             if (this.input.keyboard) {
@@ -178,6 +186,7 @@ export default function PhaserWorld() {
 
             // Click-to-move along paths (supports multi-turn navigation & path-snapping)
             this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+              sounds.initCtx();
               if (this.isTransitioning) return;
 
               const target = this.getClosestPointOnWalkablePath(pointer.x, pointer.y);
@@ -219,13 +228,15 @@ export default function PhaserWorld() {
             // Create Farmer Avatar Sprite at central farm plaza
             this.createFarmerPlayer(this.canvasW / 2, 420);
 
-            // Initial Room Build
+            // Initial Room Build & Biome Background Music
             this.currentRoomId = stateRef.current.currentBiome;
             this.buildRoom(this.currentRoomId);
+            sounds.setBiome(this.currentRoomId);
           }
 
           private createFarmerPlayer(x: number, y: number) {
             this.player = this.add.container(x, y);
+            this.player.setDepth(50);
 
             // Soft ground shadow anchored precisely at the feet (0, 0)
             const shadow = this.add.ellipse(0, 0, 32, 12, 0x000000, 0.4);
@@ -257,6 +268,8 @@ export default function PhaserWorld() {
             if ((biome === this.currentRoomId && !customSpawn) || this.isTransitioning) return;
             this.isTransitioning = true;
             sounds.playBloom();
+            sounds.setBiome(biome);
+            this.nextStepTime = this.time ? this.time.now + 600 : 0;
 
             const previousRoom = this.currentRoomId;
 
@@ -334,7 +347,7 @@ export default function PhaserWorld() {
               this.playerBody.setVelocity(0, 0);
             }
             this.moveTarget = null;
-            this.currentPathWaypoints = [];
+            this.nextStepTime = (this.time ? this.time.now : 0) + 400;
           }
 
           private isPointOnWalkablePath(x: number, y: number, margin: number = 0): boolean {
@@ -616,8 +629,8 @@ export default function PhaserWorld() {
 
           private buildRoom(biome: BiomeId) {
             this.worldContainer.removeAll(true);
-            this.footprintsContainer = this.add.container(0, 0);
-            this.worldContainer.add(this.footprintsContainer);
+            this.footprintsContainer.removeAll(true);
+            this.signsContainer.removeAll(true);
             this.pathPolygons = [];
             this.currentHotspots = [];
             this.nearbyHotspot = null;
@@ -740,7 +753,7 @@ export default function PhaserWorld() {
               }
             }
 
-            this.worldContainer.add(container);
+            this.signsContainer.add(container);
             return container;
           }
 
@@ -757,7 +770,6 @@ export default function PhaserWorld() {
             const lawn = this.add.image(w / 2, h / 2, grassKey);
             lawn.setDisplaySize(w, h);
             this.worldContainer.add(lawn);
-            this.worldContainer.add(this.footprintsContainer);
 
             // 2. Walkable Dirt Path Network (Leading Completely OFFSCREEN)
             this.pathPolygons = [
@@ -946,7 +958,6 @@ export default function PhaserWorld() {
             const bgImage = this.add.image(w / 2, h / 2, bgKey);
             bgImage.setDisplaySize(w, h);
             this.worldContainer.add(bgImage);
-            this.worldContainer.add(this.footprintsContainer);
 
             // 2. Walkable paths designed for opposite-side entry/exit
             let pathKey = 'path_farm';
@@ -1320,29 +1331,28 @@ export default function PhaserWorld() {
               if (this.playerSprite) {
                 this.playerSprite.angle = 0;
               }
+            }
 
-              // Anti-stuck recovery for stationary player:
-              // Gently slide back onto the path if slightly displaced
-              if (currentDistFromPath > 1) {
-                if (currentDistFromPath > 10) {
-                  this.player.setPosition(closestNow.x, closestNow.y);
-                  this.playerBody?.reset(closestNow.x, closestNow.y);
-                } else {
-                  const nx = Phaser.Math.Linear(this.player.x, closestNow.x, 0.25);
-                  const ny = Phaser.Math.Linear(this.player.y, closestNow.y, 0.25);
-                  this.player.setPosition(nx, ny);
-                  this.playerBody?.reset(nx, ny);
-                }
+            // Step sounds for when avatar is moving around on the map
+            const isMoving =
+              this.playerBody &&
+              (Math.abs(this.playerBody.velocity.x) > 10 || Math.abs(this.playerBody.velocity.y) > 10);
+
+            if (isMoving) {
+              if (time >= this.nextStepTime) {
+                sounds.playStep(this.currentRoomId);
+                this.nextStepTime = time + this.stepInterval;
               }
+            } else {
+              // Reset so footsteps trigger promptly when walking starts again
+              this.nextStepTime = Math.min(this.nextStepTime, time + 40);
             }
 
-            // Safety Boundary Clamp: Never permit player to remain > 6px off-path
-            if (currentDistFromPath > 6) {
-              this.player.setPosition(closestNow.x, closestNow.y);
-              this.playerBody?.reset(closestNow.x, closestNow.y);
-            }
-
-            // Screen edge transitions (Guarded by transitionCooldownUntil)
+            // ===============================================================
+            // OPPOSITE-SIDE SCREEN EDGE TRANSITIONS
+            // "If a user exits a page, make them enter the new page on the opposite side"
+            // Guarded by transitionCooldownUntil so players can never instantly re-trigger!
+            // ===============================================================
             if (time > this.transitionCooldownUntil) {
               const w = this.canvasW;
               const h = this.canvasH;
@@ -1429,37 +1439,56 @@ export default function PhaserWorld() {
             );
 
             // Alternate left and right foot offset slightly perpendicular to movement vector
-            const sideOffset = this.footstepToggle ? 4.5 : -4.5;
+            const sideOffset = this.footstepToggle ? 5 : -5;
             this.footstepToggle = !this.footstepToggle;
 
             const perpAngle = moveAngle + Math.PI / 2;
             const fx = this.player.x + Math.cos(perpAngle) * sideOffset;
             const fy = this.player.y + Math.sin(perpAngle) * sideOffset;
 
-            // Biome-specific footprint colors (soil, snow, wetland, desert sand)
-            let printColor = 0x451a03; // rich soil
-            let printAlpha = 0.45;
+            // Biome-specific footprint colors & opacity for distinct visibility
+            let printColor = 0x241105; // rich dark loam boot print
+            let printAlpha = 0.85;
+            let strokeColor = 0x140702;
+
             if (this.currentRoomId === 'tundra') {
-              printColor = 0x60a5fa; // cold snow imprint
-              printAlpha = 0.5;
+              printColor = 0x1d4ed8; // crisp snow blue indentation
+              printAlpha = 0.8;
+              strokeColor = 0x1e3a8a;
             } else if (this.currentRoomId === 'lake' || this.currentRoomId === 'reefs') {
-              printColor = 0x0284c7; // water splash mark
-              printAlpha = 0.45;
+              printColor = 0x0369a1; // wet splash water print
+              printAlpha = 0.85;
+              strokeColor = 0x075985;
             } else if (this.currentRoomId === 'desert') {
-              printColor = 0x9a3412; // deep sand print
-              printAlpha = 0.5;
+              printColor = 0x78350f; // deep sand tread
+              printAlpha = 0.85;
+              strokeColor = 0x451a03;
+            } else if (this.currentRoomId === 'forest') {
+              printColor = 0x1c1917; // rich woodland humus
+              printAlpha = 0.85;
+              strokeColor = 0x0c0a09;
+            } else if (this.currentRoomId === 'grasslands') {
+              printColor = 0x271908; // deep topsoil
+              printAlpha = 0.85;
+              strokeColor = 0x140b03;
             }
 
-            const foot = this.add.ellipse(fx, fy, 5.5, 3.2, printColor, printAlpha);
+            const foot = this.add.container(fx, fy);
             foot.setRotation(moveAngle);
+
+            // Detailed boot print: Front sole + Back heel with subtle crisp edge
+            const sole = this.add.ellipse(3, 0, 9, 6, printColor, printAlpha).setStrokeStyle(1, strokeColor, 0.4);
+            const heel = this.add.ellipse(-3.5, 0, 5, 4.5, printColor, printAlpha * 0.95).setStrokeStyle(1, strokeColor, 0.4);
+
+            foot.add([sole, heel]);
             this.footprintsContainer.add(foot);
 
-            // Footprint fades after 3 seconds: stays visible for 1.8s, fades smoothly over 1.2s to 0
+            // Footprint: fully visible for 0.5s, then smoothly fades out over 1.8s
             this.tweens.add({
               targets: foot,
               alpha: 0,
-              delay: 1800,
-              duration: 1200,
+              delay: 500,
+              duration: 1800,
               ease: 'Quad.easeOut',
               onComplete: () => {
                 foot.destroy();
