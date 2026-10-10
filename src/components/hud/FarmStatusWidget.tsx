@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { FARM_CROPS } from '@/data/animals';
 import { BiomeId } from '@/types/game';
@@ -151,9 +151,60 @@ const BIOME_THEMES: Record<BiomeId, BiomeTheme> = {
   },
 };
 
+// Biome-specific color themes for the "GO" buttons
+const BIOME_BTN_STYLES: Record<Exclude<BiomeId, 'clearing'>, {
+  bg: string;
+  borderHighlight: string;
+  borderShadow: string;
+  arrow: string;
+}> = {
+  lake: {
+    bg: '#0284c7',
+    borderHighlight: '#7dd3fc',
+    borderShadow: '#082f49',
+    arrow: '#bae6fd',
+  },
+  forest: {
+    bg: '#16a34a',
+    borderHighlight: '#86efac',
+    borderShadow: '#052e16',
+    arrow: '#bbf7d0',
+  },
+  tundra: {
+    bg: '#0284c7',
+    borderHighlight: '#bae6fd',
+    borderShadow: '#0c4a6e',
+    arrow: '#e0f2fe',
+  },
+  grasslands: {
+    bg: '#d97706',
+    borderHighlight: '#fde68a',
+    borderShadow: '#451a03',
+    arrow: '#fef08a',
+  },
+  desert: {
+    bg: '#ea580c',
+    borderHighlight: '#fed7aa',
+    borderShadow: '#431407',
+    arrow: '#fed7aa',
+  },
+  reefs: {
+    bg: '#0891b2',
+    borderHighlight: '#67e8f9',
+    borderShadow: '#164e63',
+    arrow: '#a5f3fc',
+  },
+};
+
 export default function FarmStatusWidget() {
   const { currentBiome, restoration, setCurrentBiome, openCropModal } = useGameState();
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Default to collapsed when entering any biome
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Every time the user enters a biome (currentBiome changes), collapse the task list by default
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [currentBiome]);
 
   const cropKeys = Object.keys(FARM_CROPS) as (keyof typeof FARM_CROPS)[];
   const flourishingCount = cropKeys.filter((k) => (restoration[k] || 0) >= 80).length;
@@ -245,6 +296,7 @@ export default function FarmStatusWidget() {
               const crop = FARM_CROPS[biomeKey];
               const isFlourished = (restoration[biomeKey] || 0) >= 80;
               const isCurrentBiome = currentBiome === biomeKey;
+              const btnStyle = BIOME_BTN_STYLES[biomeKey];
 
               return (
                 <div
@@ -329,13 +381,18 @@ export default function FarmStatusWidget() {
                             setCurrentBiome(biomeKey as BiomeId);
                           }
                         }}
-                        className={`pixel-btn flex items-center gap-1 text-[8px] px-2 py-1 font-bold cursor-pointer whitespace-nowrap ${
-                          isCurrentBiome ? 'bg-[#15803d] hover:bg-[#16a34a]' : ''
-                        }`}
-                        title={isCurrentBiome ? 'Inspect this biome crop' : `Fast travel to ${biomeKey}`}
+                        style={{
+                          backgroundColor: btnStyle.bg,
+                          borderTopColor: btnStyle.borderHighlight,
+                          borderLeftColor: btnStyle.borderHighlight,
+                          borderRightColor: btnStyle.borderShadow,
+                          borderBottomColor: btnStyle.borderShadow,
+                        }}
+                        className="pixel-btn flex items-center gap-1 text-[8px] px-2 py-1 font-bold cursor-pointer whitespace-nowrap text-[#fffbeb] hover:brightness-110 active:translate-x-[2px] active:translate-y-[2px] transition-all"
+                        title={isCurrentBiome ? `Current biome: click to inspect ${crop.name}` : `Fast travel to ${biomeKey}`}
                       >
-                        <span>{isCurrentBiome ? 'VIEW' : 'GO'}</span>
-                        <ArrowRight className="w-2.5 h-2.5 text-[#fde68a]" />
+                        <span>GO</span>
+                        <ArrowRight className="w-2.5 h-2.5" style={{ color: btnStyle.arrow }} />
                       </button>
                     )}
                   </div>
