@@ -60,6 +60,14 @@ interface GameStateContextType {
   setIsPremiseOpen: (open: boolean) => void;
   openPremiseModal: () => void;
   closePremiseModal: () => void;
+  isNemoModalOpen: boolean;
+  setIsNemoModalOpen: (open: boolean) => void;
+  openNemoModal: () => void;
+  closeNemoModal: () => void;
+  isNemoGuidedHome: boolean;
+  guideNemoHome: (travelToReef?: boolean) => void;
+  hasInteractedWithMarlin: boolean;
+  setHasInteractedWithMarlin: (val: boolean) => void;
   isAnyPopupOpen: boolean;
   notification: string | null;
   setNotification: (msg: string | null) => void;
@@ -135,7 +143,10 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const [isSettingsOpen, setIsSettingsOpenState] = useState(false);
   const [isHelpOpen, setIsHelpOpenState] = useState(false);
   const [activeCropModal, setActiveCropModalState] = useState<Exclude<BiomeId, 'clearing'> | null>(null);
-  const [isPremiseOpen, setIsPremiseOpenState] = useState(true);
+  const [isPremiseOpen, setIsPremiseOpenState] = useState(false);
+  const [isNemoModalOpen, setIsNemoModalOpenState] = useState(false);
+  const [isNemoGuidedHome, setIsNemoGuidedHome] = useState(false);
+  const [hasInteractedWithMarlin, setHasInteractedWithMarlin] = useState(false);
 
   // Synchronous refs to prevent multiple modals opening simultaneously or on top of each other
   const activeDialogueAnimalRef = useRef<AnimalId | null>(null);
@@ -145,7 +156,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const isQuestsOpenRef = useRef(false);
   const isSettingsOpenRef = useRef(false);
   const isHelpOpenRef = useRef(false);
-  const isPremiseOpenRef = useRef(true);
+  const isPremiseOpenRef = useRef(false);
+  const isNemoModalOpenRef = useRef(false);
 
   activeDialogueAnimalRef.current = activeDialogueAnimal;
   activeQuestModalRef.current = activeQuestModal;
@@ -155,6 +167,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   isSettingsOpenRef.current = isSettingsOpen;
   isHelpOpenRef.current = isHelpOpen;
   isPremiseOpenRef.current = isPremiseOpen;
+  isNemoModalOpenRef.current = isNemoModalOpen;
 
   const checkIsAnyPopupOpen = useCallback(() => {
     return Boolean(
@@ -165,7 +178,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
       isQuestsOpenRef.current ||
       isSettingsOpenRef.current ||
       isHelpOpenRef.current ||
-      isPremiseOpenRef.current
+      isPremiseOpenRef.current ||
+      isNemoModalOpenRef.current
     );
   }, []);
 
@@ -177,7 +191,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     isQuestsOpen ||
     isSettingsOpen ||
     isHelpOpen ||
-    isPremiseOpen
+    isPremiseOpen ||
+    isNemoModalOpen
   );
 
   const openCropModal = useCallback((biome: Exclude<BiomeId, 'clearing'>) => {
@@ -215,6 +230,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const setIsProfileOpen = useCallback((open: boolean) => {
     if (open) {
       if (checkIsAnyPopupOpen()) return;
+      sounds.playClick();
       isProfileOpenRef.current = true;
       setIsProfileOpenState(true);
     } else {
@@ -226,6 +242,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const setIsQuestsOpen = useCallback((open: boolean) => {
     if (open) {
       if (checkIsAnyPopupOpen()) return;
+      sounds.playClick();
       isQuestsOpenRef.current = true;
       setIsQuestsOpenState(true);
     } else {
@@ -237,6 +254,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const setIsSettingsOpen = useCallback((open: boolean) => {
     if (open) {
       if (checkIsAnyPopupOpen()) return;
+      sounds.playClick();
       isSettingsOpenRef.current = true;
       setIsSettingsOpenState(true);
     } else {
@@ -248,6 +266,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const setIsHelpOpen = useCallback((open: boolean) => {
     if (open) {
       if (checkIsAnyPopupOpen()) return;
+      sounds.playClick();
       isHelpOpenRef.current = true;
       setIsHelpOpenState(true);
     } else {
@@ -255,6 +274,42 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
       setIsHelpOpenState(false);
     }
   }, [checkIsAnyPopupOpen]);
+
+  const openNemoModal = useCallback(() => {
+    if (checkIsAnyPopupOpen()) return;
+    sounds.playBubble();
+    isNemoModalOpenRef.current = true;
+    setIsNemoModalOpenState(true);
+  }, [checkIsAnyPopupOpen]);
+
+  const closeNemoModal = useCallback(() => {
+    isNemoModalOpenRef.current = false;
+    setIsNemoModalOpenState(false);
+  }, []);
+
+  const setIsNemoModalOpen = useCallback((open: boolean) => {
+    if (open) {
+      if (checkIsAnyPopupOpen()) return;
+      sounds.playBubble();
+      isNemoModalOpenRef.current = true;
+      setIsNemoModalOpenState(true);
+    } else {
+      isNemoModalOpenRef.current = false;
+      setIsNemoModalOpenState(false);
+    }
+  }, [checkIsAnyPopupOpen]);
+
+  const guideNemoHome = useCallback((travelToReef: boolean = false) => {
+    sounds.playBloom();
+    setIsNemoGuidedHome(true);
+    isNemoModalOpenRef.current = false;
+    setIsNemoModalOpenState(false);
+    // Note: No notification banner at the top to preserve narrative immersion
+    if (travelToReef) {
+      setCurrentBiomeState('reefs');
+      sounds.setBiome('reefs');
+    }
+  }, []);
 
   // Settings
   const [settings, setSettings] = useState<GameSettings>({
@@ -276,6 +331,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         if (parsed.actions) setActions(parsed.actions);
         if (parsed.cropPlots) setCropPlots(parsed.cropPlots);
         if (parsed.biomeTimeSpent) setBiomeTimeSpent(parsed.biomeTimeSpent);
+        if (parsed.isNemoGuidedHome !== undefined) setIsNemoGuidedHome(parsed.isNemoGuidedHome);
         if (parsed.settings) {
           setSettings(parsed.settings);
           sounds.setEnabled(parsed.settings.soundEnabled ?? true);
@@ -299,13 +355,14 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
           badges,
           actions,
           cropPlots,
+          isNemoGuidedHome,
           settings,
         })
       );
     } catch (e) {
       console.warn('Could not persist game state:', e);
     }
-  }, [restoration, coins, biomeTimeSpent, quests, badges, actions, cropPlots, settings]);
+  }, [restoration, coins, biomeTimeSpent, quests, badges, actions, cropPlots, isNemoGuidedHome, settings]);
 
   useEffect(() => {
     saveState();
@@ -711,6 +768,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     setActions([]);
     setCropPlots(defaultCropPlots);
     setRecentBuyerEvent(null);
+    setIsNemoGuidedHome(false);
+    setHasInteractedWithMarlin(false);
     setCurrentBiomeState('clearing');
     sounds.playBloom();
     setNotification('Game progress successfully reset to beginning! Welcome back to the Farm.');
@@ -767,6 +826,14 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         setIsPremiseOpen,
         openPremiseModal,
         closePremiseModal,
+        isNemoModalOpen,
+        setIsNemoModalOpen,
+        openNemoModal,
+        closeNemoModal,
+        isNemoGuidedHome,
+        guideNemoHome,
+        hasInteractedWithMarlin,
+        setHasInteractedWithMarlin,
         isAnyPopupOpen,
         notification,
         setNotification,
