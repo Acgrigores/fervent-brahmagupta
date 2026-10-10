@@ -28,6 +28,7 @@ export default function PhaserWorld() {
     restoration,
     openDialogue,
     openQuestModal,
+    openCropModal,
   } = useGameState();
 
   const [activeNearbyHotspot, setActiveNearbyHotspot] = useState<Hotspot | null>(null);
@@ -38,6 +39,7 @@ export default function PhaserWorld() {
     openDialogue,
     setCurrentBiome,
     openQuestModal,
+    openCropModal,
     activeHotspotId: null as string | null,
   });
 
@@ -49,8 +51,9 @@ export default function PhaserWorld() {
       openDialogue,
       setCurrentBiome,
       openQuestModal,
+      openCropModal,
     };
-  }, [currentBiome, restoration, openDialogue, setCurrentBiome, openQuestModal]);
+  }, [currentBiome, restoration, openDialogue, setCurrentBiome, openQuestModal, openCropModal]);
 
   // Sync React room state changes into Phaser scene
   useEffect(() => {
@@ -817,7 +820,7 @@ export default function PhaserWorld() {
             cropImage.setInteractive({ useHandCursor: true });
             cropImage.on('pointerdown', () => {
               sounds.playClick();
-              stateRef.current.setCurrentBiome(biome);
+              stateRef.current.openCropModal(biome);
             });
 
             this.worldContainer.add(container);
@@ -833,7 +836,7 @@ export default function PhaserWorld() {
               isFlourished ? '#86efac' : '#fca5a5',
               () => {
                 sounds.playClick();
-                stateRef.current.setCurrentBiome(biome);
+                stateRef.current.openCropModal(biome);
               },
               'bottom'
             );
@@ -1425,8 +1428,8 @@ export default function PhaserWorld() {
                 openDialogue(activeNearbyHotspot.animalId);
               } else if (activeNearbyHotspot.type === 'gate' && activeNearbyHotspot.targetBiome) {
                 setCurrentBiome(activeNearbyHotspot.targetBiome);
-              } else if (activeNearbyHotspot.type === 'crop' && activeNearbyHotspot.targetBiome) {
-                setCurrentBiome(activeNearbyHotspot.targetBiome);
+              } else if (activeNearbyHotspot.type === 'crop' && activeNearbyHotspot.targetBiome && activeNearbyHotspot.targetBiome !== 'clearing') {
+                openCropModal(activeNearbyHotspot.targetBiome as Exclude<BiomeId, 'clearing'>);
               } else if (activeNearbyHotspot.type === 'quest' && activeNearbyHotspot.questAction) {
                 openQuestModal(activeNearbyHotspot.questAction);
               }

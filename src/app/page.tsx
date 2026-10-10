@@ -4,7 +4,6 @@ import React from 'react';
 import { GameStateProvider } from '@/context/GameStateContext';
 import GameCanvas from '@/components/game/GameCanvas';
 import TopNavHUD from '@/components/hud/TopNavHUD';
-import MiniMap from '@/components/hud/MiniMap';
 import NotificationToast from '@/components/hud/NotificationToast';
 import DummyAdBanner from '@/components/ads/DummyAdBanner';
 import DialogueModal from '@/components/dialogue/DialogueModal';
@@ -21,6 +20,10 @@ import GrasslandsFarmingModal from '@/components/quests/GrasslandsFarmingModal';
 import ReefNavigationModal from '@/components/quests/ReefNavigationModal';
 import DesertAquiferModal from '@/components/quests/DesertAquiferModal';
 
+// Story & Crop Context Modals
+import GamePremiseModal from '@/components/popups/GamePremiseModal';
+import CropCrisisModal from '@/components/popups/CropCrisisModal';
+
 export default function Home() {
   return (
     <GameStateProvider>
@@ -32,7 +35,6 @@ export default function Home() {
         <div className="relative flex-1 w-full h-full overflow-hidden flex flex-col">
           <GameCanvas />
           <FarmStatusWidget />
-          <MiniMap />
           <NotificationToast />
 
           {/* Dialogue & Quest Modals Overlay */}
@@ -46,6 +48,8 @@ export default function Home() {
           <DesertAquiferModal />
           <ProfileModal />
           <QuestsDrawer />
+          <GamePremiseModal />
+          <CropCrisisModal />
         </div>
 
         {/* Bottom Dummy Ad Banner for Eco-Sponsorship */}

@@ -36,6 +36,13 @@ interface GameStateContextType {
   setIsSettingsOpen: (open: boolean) => void;
   isHelpOpen: boolean;
   setIsHelpOpen: (open: boolean) => void;
+  activeCropModal: Exclude<BiomeId, 'clearing'> | null;
+  openCropModal: (biome: Exclude<BiomeId, 'clearing'>) => void;
+  closeCropModal: () => void;
+  isPremiseOpen: boolean;
+  setIsPremiseOpen: (open: boolean) => void;
+  openPremiseModal: () => void;
+  closePremiseModal: () => void;
   notification: string | null;
   setNotification: (msg: string | null) => void;
   resetGame: () => void;
@@ -80,6 +87,26 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
   const [isQuestsOpen, setIsQuestsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [activeCropModal, setActiveCropModal] = useState<Exclude<BiomeId, 'clearing'> | null>(null);
+  const [isPremiseOpen, setIsPremiseOpen] = useState(true);
+
+  const openCropModal = useCallback((biome: Exclude<BiomeId, 'clearing'>) => {
+    sounds.playClick();
+    setActiveCropModal(biome);
+  }, []);
+
+  const closeCropModal = useCallback(() => {
+    setActiveCropModal(null);
+  }, []);
+
+  const openPremiseModal = useCallback(() => {
+    sounds.playClick();
+    setIsPremiseOpen(true);
+  }, []);
+
+  const closePremiseModal = useCallback(() => {
+    setIsPremiseOpen(false);
+  }, []);
 
   // Settings
   const [settings, setSettings] = useState<GameSettings>({
@@ -397,6 +424,13 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         setIsSettingsOpen,
         isHelpOpen,
         setIsHelpOpen,
+        activeCropModal,
+        openCropModal,
+        closeCropModal,
+        isPremiseOpen,
+        setIsPremiseOpen,
+        openPremiseModal,
+        closePremiseModal,
         notification,
         setNotification,
         resetGame,

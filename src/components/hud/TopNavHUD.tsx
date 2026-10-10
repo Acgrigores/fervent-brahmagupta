@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Sprout,
   X,
+  BookOpen,
 } from 'lucide-react';
 
 export default function TopNavHUD() {
@@ -32,6 +33,7 @@ export default function TopNavHUD() {
     setIsSettingsOpen,
     isHelpOpen,
     setIsHelpOpen,
+    openPremiseModal,
     resetGame,
   } = useGameState();
 
@@ -140,6 +142,16 @@ export default function TopNavHUD() {
             title={settings.soundEnabled ? 'Mute Audio & Biome Music' : 'Enable Audio & Biome Music'}
           >
             {settings.soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#86efac]" /> : <VolumeX className="w-3.5 h-3.5 text-[#fca5a5]" />}
+          </button>
+
+          {/* Game Premise & Story Button */}
+          <button
+            onClick={() => { sounds.playClick(); openPremiseModal(); }}
+            className="pixel-btn flex items-center gap-1 px-2 py-1 text-[10px] text-[#fde68a]"
+            title="Game Premise & Story"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="hidden md:inline font-bold">STORY</span>
           </button>
 
           {/* Settings Button */}
@@ -291,12 +303,26 @@ export default function TopNavHUD() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsHelpOpen(false)}
-                className="pixel-btn-green w-full py-2 text-[10px] font-bold"
-              >
-                CLOSE GUIDE
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    sounds.playClick();
+                    setIsHelpOpen(false);
+                    openPremiseModal();
+                  }}
+                  className="pixel-btn w-full py-2 text-[9.5px] font-bold text-[#fde68a] flex items-center justify-center gap-1.5"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>VIEW FULL STORY & PREMISE</span>
+                </button>
+
+                <button
+                  onClick={() => setIsHelpOpen(false)}
+                  className="pixel-btn-green w-full py-2 text-[9.5px] font-bold"
+                >
+                  CLOSE GUIDE
+                </button>
+              </div>
             </div>
           </div>
         </div>
