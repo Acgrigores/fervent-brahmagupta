@@ -1226,11 +1226,10 @@ export default function PhaserWorld() {
             this.worldContainer.add(house);
 
             // Clumped Orchard Grove
-            const orchardSoil = this.add.ellipse(w / 2 - 190, 130, 150, 95, 0x543315, 0.4);
             const trees1 = this.add.image(w / 2 - 230, 115, 'trees').setDisplaySize(95, 95).setOrigin(0.5, 0.85);
             const trees2 = this.add.image(w / 2 - 150, 110, 'trees').setDisplaySize(95, 95).setOrigin(0.5, 0.85);
             const trees3 = this.add.image(w / 2 - 190, 145, 'trees').setDisplaySize(100, 100).setOrigin(0.5, 0.85);
-            this.worldContainer.add([orchardSoil, trees1, trees2, trees3]);
+            this.worldContainer.add([trees1, trees2, trees3]);
 
             // Dynamic tree wind swaying tweens
             [trees1, trees2, trees3].forEach((t, i) => {
