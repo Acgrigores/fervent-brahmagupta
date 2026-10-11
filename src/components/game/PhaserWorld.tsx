@@ -3294,6 +3294,7 @@ export default function PhaserWorld() {
               nemoSprite = this.add.image(-28, -14, 'nemo');
               nemoSprite.setDisplaySize(42, 42);
               nemoSprite.setOrigin(0.5, 0.5);
+              nemoSprite.setData('baseScale', nemoSprite.scaleX);
               marlinContainer.add(nemoSprite);
             }
 
@@ -3330,10 +3331,12 @@ export default function PhaserWorld() {
                   { text: 'Marlin: "I\'m searching for my son, have you seen him?"', color: '#fed7aa' },
                 ]);
 
+                // Little squish relative to Marlin's on-screen size (scale 1 would be his full image size)
+                const marlinBase = marlinSprite.scaleX;
                 this.tweens.add({
                   targets: marlinSprite,
-                  scaleX: { from: 1, to: 1.15 },
-                  scaleY: { from: 1, to: 0.9 },
+                  scaleX: { from: marlinBase, to: marlinBase * 1.15 },
+                  scaleY: { from: marlinBase, to: marlinBase * 0.9 },
                   yoyo: true,
                   duration: 250,
                 });
@@ -3431,6 +3434,7 @@ export default function PhaserWorld() {
               const nemoSprite = this.add.image(0, 0, 'nemo');
               nemoSprite.setDisplaySize(54, 54);
               nemoSprite.setOrigin(0.5, 0.5);
+              nemoSprite.setData('baseScale', nemoSprite.scaleX);
 
               nemoContainer.add(nemoSprite);
               this.easterEggsContainer.add(nemoContainer);
@@ -3439,6 +3443,7 @@ export default function PhaserWorld() {
                 pointer?.event?.stopPropagation?.();
                 this.ignorePathClickUntil = this.time.now + 200;
                 sounds.playBubble();
+                this.growNemo(nemoSprite);
 
                 // If user interacts with nemo first (has NOT spoken to Marlin yet):
                 if (!stateRef.current.hasInteractedWithMarlin) {
@@ -3449,13 +3454,6 @@ export default function PhaserWorld() {
                     { text: "What's Nemo doing here?", color: '#bae6fd' },
                     { text: 'Nemo: "Just keep swimming"', color: '#fde68a', italic: true },
                   ]);
-                  this.tweens.add({
-                    targets: nemoSprite,
-                    scaleX: { from: 1, to: 1.18 },
-                    scaleY: { from: 1, to: 0.85 },
-                    yoyo: true,
-                    duration: 250,
-                  });
                 } else {
                   // User has interacted with Marlin!
                   // Now the popup modal and "Direct Nemo Home to Coral Reefs" button are available:
@@ -3509,28 +3507,40 @@ export default function PhaserWorld() {
               );
             }
 
-            // 360 loop-de-loop spin (scale never exceeds 1.0)
-            // 360 loop-de-loop spin
+            // 360 loop-de-loop spin. Sizes are left alone here: these sprites are drawn smaller than
+            // their image, so forcing scale 1 used to blow them up to full image size.
             const targets = [nemoData.sprite];
             if (nemoData.nemoSprite) targets.push(nemoData.nemoSprite);
+            if (nemoData.nemoSprite) this.growNemo(nemoData.nemoSprite);
 
             this.tweens.add({
               targets,
               angle: 360,
-              scaleX: 1.0,
-              scaleY: 1.0,
               duration: 650,
               ease: 'Cubic.easeInOut',
               onComplete: () => {
                 nemoData.sprite.angle = 0;
-                nemoData.sprite.setScale(1);
-                if (nemoData.nemoSprite) {
-                  nemoData.nemoSprite.angle = 0;
-                  nemoData.nemoSprite.setScale(1);
-                }
+                if (nemoData.nemoSprite) nemoData.nemoSprite.angle = 0;
                 nemoData.isSpinning = false;
               },
             });
+          }
+
+          // Nemo grows a little when clicked (relative to his normal on-screen size),
+          // then shrinks back after 5 seconds. Clicking again restarts the 5 seconds.
+          private growNemo(sprite: Phaser.GameObjects.Image) {
+            const NEMO_GROW = 1.35;
+            const base = (sprite.getData('baseScale') as number | undefined) ?? sprite.scaleX;
+            sprite.setData('baseScale', base);
+            (sprite.getData('shrinkTimer') as Phaser.Time.TimerEvent | undefined)?.remove();
+            this.tweens.add({ targets: sprite, scale: base * NEMO_GROW, duration: 250, ease: 'Back.easeOut' });
+            sprite.setData(
+              'shrinkTimer',
+              this.time.delayedCall(5000, () => {
+                this.tweens.add({ targets: sprite, scale: base, duration: 400, ease: 'Sine.easeInOut' });
+                sprite.setData('shrinkTimer', undefined);
+              })
+            );
           }
 
           public triggerNemoInteract() {
