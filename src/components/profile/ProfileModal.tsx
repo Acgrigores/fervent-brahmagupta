@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from '@/context/GameStateContext';
 import { CHARITIES, BIOMES_INFO } from '@/data/animals';
 import {
@@ -34,6 +34,7 @@ export default function ProfileModal() {
   const {
     isProfileOpen,
     setIsProfileOpen,
+    profileInitialTab,
     coins,
     totalCoins,
     biomeTimeSpent,
@@ -44,7 +45,14 @@ export default function ProfileModal() {
     globalFlourish,
   } = useGameState();
 
-  const [activeTab, setActiveTab] = useState<'coins' | 'badges' | 'donations' | 'actions'>('coins');
+  const [activeTab, setActiveTab] = useState<'coins' | 'badges' | 'donations' | 'actions'>(profileInitialTab);
+
+  // Sync tab when the modal opens with a requested tab (e.g. donations from house click)
+  useEffect(() => {
+    if (isProfileOpen) {
+      setActiveTab(profileInitialTab);
+    }
+  }, [isProfileOpen, profileInitialTab]);
 
   if (!isProfileOpen) return null;
 
