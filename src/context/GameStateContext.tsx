@@ -33,6 +33,8 @@ interface GameStateContextType {
   updateSettings: (newSettings: Partial<GameSettings>) => void;
   isProfileOpen: boolean;
   setIsProfileOpen: (open: boolean) => void;
+  profileInitialTab: 'coins' | 'badges' | 'donations' | 'actions';
+  openProfileOnDonations: () => void;
   isQuestsOpen: boolean;
   setIsQuestsOpen: (open: boolean) => void;
   isSettingsOpen: boolean;
@@ -152,6 +154,7 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
 
   // Modals
   const [isProfileOpen, setIsProfileOpenState] = useState(false);
+  const [profileInitialTab, setProfileInitialTab] = useState<'coins' | 'badges' | 'donations' | 'actions'>('coins');
   const [isQuestsOpen, setIsQuestsOpenState] = useState(false);
   const [isSettingsOpen, setIsSettingsOpenState] = useState(false);
   const [isHelpOpen, setIsHelpOpenState] = useState(false);
@@ -244,12 +247,21 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
     if (open) {
       if (checkIsAnyPopupOpen()) return;
       sounds.playClick();
+      setProfileInitialTab('coins');
       isProfileOpenRef.current = true;
       setIsProfileOpenState(true);
     } else {
       isProfileOpenRef.current = false;
       setIsProfileOpenState(false);
     }
+  }, [checkIsAnyPopupOpen]);
+
+  const openProfileOnDonations = useCallback(() => {
+    if (checkIsAnyPopupOpen()) return;
+    sounds.playClick();
+    setProfileInitialTab('donations');
+    isProfileOpenRef.current = true;
+    setIsProfileOpenState(true);
   }, [checkIsAnyPopupOpen]);
 
   const setIsQuestsOpen = useCallback((open: boolean) => {
@@ -827,6 +839,8 @@ export function GameStateProvider({ children }: { children: ReactNode }) {
         updateSettings,
         isProfileOpen,
         setIsProfileOpen,
+        profileInitialTab,
+        openProfileOnDonations,
         isQuestsOpen,
         setIsQuestsOpen,
         isSettingsOpen,

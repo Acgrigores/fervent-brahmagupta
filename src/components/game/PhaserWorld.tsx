@@ -51,6 +51,7 @@ export default function PhaserWorld() {
     hasInteractedWithMarlin,
     setHasInteractedWithMarlin,
     setNotification,
+    openProfileOnDonations,
   } = useGameState();
 
   const [zoomLevel, setZoomLevel] = useState(1.38);
@@ -115,6 +116,7 @@ export default function PhaserWorld() {
     hasInteractedWithMarlin,
     setHasInteractedWithMarlin,
     setNotification,
+    openProfileOnDonations,
     activeHotspotId: null as string | null,
     nearbyHotspot: null as Hotspot | null,
   });
@@ -204,6 +206,7 @@ export default function PhaserWorld() {
   stateRef.current.hasInteractedWithMarlin = hasInteractedWithMarlin;
   stateRef.current.setHasInteractedWithMarlin = setHasInteractedWithMarlin;
   stateRef.current.setNotification = setNotification;
+  stateRef.current.openProfileOnDonations = openProfileOnDonations;
 
   // Sync React room state changes into Phaser scene
   useEffect(() => {
@@ -1221,7 +1224,7 @@ export default function PhaserWorld() {
             house.setDisplaySize(140, 140);
             this.makeClickableAndGlow(house, () => {
               sounds.playClick();
-              this.spawnFloatingBubble(w / 2 - 360, 45, '🏡 Farmhouse: Cozy cottage overlooking the regenerative crops!');
+              stateRef.current.openProfileOnDonations();
             });
             this.worldContainer.add(house);
 
