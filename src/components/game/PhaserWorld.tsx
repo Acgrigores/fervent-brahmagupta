@@ -56,12 +56,15 @@ export default function PhaserWorld() {
 
   const [zoomLevel, setZoomLevel] = useState(1.38);
   const [activeNearbyHotspot, setActiveNearbyHotspot] = useState<Hotspot | null>(null);
+  const [hotspotScreenPos, setHotspotScreenPos] = useState<{ x: number; y: number } | null>(null);
+  const setHotspotScreenPosRef = useRef<((pos: { x: number; y: number } | null) => void) | null>(null);
   const onZoomChangeRef = useRef<((z: number) => void) | null>(null);
 
   useEffect(() => {
     onZoomChangeRef.current = (z: number) => {
       setZoomLevel(Math.round(z * 100) / 100);
     };
+    setHotspotScreenPosRef.current = setHotspotScreenPos;
   }, []);
 
   const handleZoomChange = (delta: number) => {
@@ -4082,6 +4085,26 @@ export default function PhaserWorld() {
               stateRef.current.activeHotspotId = nearest?.id || null;
               setActiveNearbyHotspot(nearest);
             }
+
+            // Update screen-space position so the popup tracks the portal during camera movement.
+            // Only push to React state when the rounded-pixel position actually changes (avoids 60fps re-renders).
+            if (nearest && setHotspotScreenPosRef.current) {
+              const cam = this.cameras.main;
+              const screenX = Math.round((nearest.x - cam.worldView.x) * cam.zoom);
+              const screenY = Math.round((nearest.y - cam.worldView.y) * cam.zoom);
+              const prev = (this as any)._lastHotspotScreenPos as { x: number; y: number } | null;
+              if (!prev || prev.x !== screenX || prev.y !== screenY) {
+                (this as any)._lastHotspotScreenPos = { x: screenX, y: screenY };
+                setHotspotScreenPosRef.current({ x: screenX, y: screenY });
+              }
+            } else if (!nearest && setHotspotScreenPosRef.current) {
+              if ((this as any)._lastHotspotScreenPos !== null) {
+                (this as any)._lastHotspotScreenPos = null;
+                setHotspotScreenPosRef.current(null);
+              }
+            }
+
+
           }
 
           // Spawn cute little footprints that fade away after 3 seconds
@@ -4324,7 +4347,20 @@ export default function PhaserWorld() {
 
       {/* Proximity Interaction Prompt (Retro Pixel Art Dialog Plaque) */}
       {activeNearbyHotspot && activeNearbyHotspot.id !== 'marlin_reef' && activeNearbyHotspot.id !== 'nemo_lost_lake' && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 animate-bounce">
+        <div
+          className="absolute z-30 animate-bounce"
+          style={hotspotScreenPos ? {
+            // Anchor popup centered above the portal sprite.
+            // Clamp so the panel (≈220px wide, ≈70px tall) stays fully on-screen.
+            left: `clamp(8px, calc(${hotspotScreenPos.x}px - 110px), calc(100% - 228px))`,
+            top: `clamp(8px, calc(${hotspotScreenPos.y}px - 95px), calc(100% - 80px))`,
+          } : {
+            // Fallback until screen pos is computed
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        >
           <button
             onClick={() => {
               sounds.playClick();
