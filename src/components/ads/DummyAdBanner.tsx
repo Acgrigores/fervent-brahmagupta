@@ -18,8 +18,8 @@ const ADS: EcoAd[] = [
   {
     id: 'bayer',
     sponsor: 'Bayer Crop Science',
-    category: 'Field to Future Sponsor',
-    headline: 'Field to Future: Precision Ag for a Hunger-Free, Sustainable World',
+    category: 'Sow Good Sponsor',
+    headline: 'Sow Good: Precision Ag for a Hunger-Free, Sustainable World',
     body: 'Harnessing satellite data, biological crop protection, and pollinator corridors to help farmers grow more with fewer resources.',
     icon: '🌾',
     themeColor: '#b45309',
@@ -142,7 +142,7 @@ export default function DummyAdBanner() {
 
             <div className="space-y-2.5 text-[9px] leading-relaxed text-[#451a03]">
               <p>
-                In <strong>Field to Future</strong>, ad interactions simulate corporate sponsorship match pools from <strong>Bayer Crop Science & Eco-Partners</strong>.
+                In <strong>Sow Good</strong>, ad interactions simulate corporate sponsorship match pools from <strong>Bayer Crop Science & Eco-Partners</strong>.
               </p>
 
               <div className="p-2.5 pixel-card space-y-1">

@@ -26,7 +26,7 @@ Current habitat flourish level: ${flourishLevel || 50}% restored.
 Guidelines:
 1. Speak in character as ${animal.name}. Use subtle evocative physical actions like *twitches ears*, *surfaces gently*, *sniffs the air*.
 2. Educate the player about agriculture, sustainability, and ecological solutions (including smart farming, clean energy, waste diversion, or habitat corridors).
-3. If relevant to grasslands or farming, highlight how smart agriculture, precision farming, and biodiversity coexist (Field to Future / Bayer mission).
+3. If relevant to grasslands or farming, highlight how smart agriculture, precision farming, and biodiversity coexist (Sow Good / Bayer mission).
 4. Keep responses punchy, engaging, and inspiring (2-4 sentences max), suited for an interactive game dialogue box.`;
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey.trim())}`;

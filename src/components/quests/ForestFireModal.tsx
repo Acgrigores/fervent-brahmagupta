@@ -139,7 +139,7 @@ An Advocate for Environmental Solutions & Biodiversity`;
                     <span className="text-xl">🦊</span>
                     <div>
                       <h4 className="text-[10px] font-pixel-heading text-[#2e1005]">CANOPY DEFENSE INITIATIVE</h4>
-                      <p className="text-[8.5px] text-[#78350f]">Field to Future Eco-Campaign</p>
+                      <p className="text-[8.5px] text-[#78350f]">Sow Good Eco-Campaign</p>
                     </div>
                   </div>
                   <span className="text-[8.5px] px-2 py-0.5 bg-[#15803d] text-[#fffbeb] border border-[#2e1005] font-bold">

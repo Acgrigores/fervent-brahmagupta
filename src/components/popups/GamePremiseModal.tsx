@@ -39,7 +39,7 @@ export default function GamePremiseModal() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-pixel-heading text-xs sm:text-sm text-[#fde68a] tracking-wider">
-                  FIELD TO FUTURE: BLOOM
+                  SOW GOOD: BLOOM
                 </h2>
                 <span className="hidden sm:inline-block text-[8px] px-1.5 py-0.5 bg-[#15803d] border border-[#86efac] text-white font-bold uppercase">
                   ECO-MISSION

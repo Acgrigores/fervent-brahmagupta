@@ -51,7 +51,7 @@ export function generateAnimalResponse(
 
   if (animalId === 'butterfly') {
     if (lower.includes('bayer') || lower.includes('smart farm') || lower.includes('agriculture') || lower.includes('farm')) {
-      return `*flutters with excitement* That's the heart of the Field to Future mission! Bayer Smart Farming connects satellite imaging, precision micro-drip irrigation, and targeted biological pest control. Farmers get bountiful harvests to feed the growing world, while preserving native wildflower buffers and milkweed where our caterpillars thrive!`;
+      return `*flutters with excitement* That's the heart of the Sow Good mission! Bayer Smart Farming connects satellite imaging, precision micro-drip irrigation, and targeted biological pest control. Farmers get bountiful harvests to feed the growing world, while preserving native wildflower buffers and milkweed where our caterpillars thrive!`;
     }
     if (lower.includes('milkweed') || lower.includes('caterpillar') || lower.includes('plant')) {
       return `Milkweed is the ONLY plant monarch caterpillars can eat! Without milkweed, our multi-generational migration stops dead in its tracks. Regenerative agriculture leaves field margins open for native milkweed hedgerows!`;

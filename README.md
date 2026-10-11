@@ -1,13 +1,13 @@
-# 🌾 Field to Future: Bloom (From Ashes to Eden)
+# 🌾 Sow Good: Bloom (From Ashes to Eden)
 
-> **Track:** Field to Future (Agriculture & Sustainability)  
+> **Track:** Sow Good (Agriculture & Sustainability)  
 > *Help the world flourish. Focus on environmental solutions, smart farming, food security, climate tech, or resource conservation. (Sponsored by Bayer)*
 
 ---
 
 ## 🌟 Overview & Core Concept
 
-**Field to Future: Bloom** is an eco-restoration RPG and conservation impact platform. 
+**Sow Good: Bloom** is an eco-restoration RPG and conservation impact platform. 
 
 The game begins in a **charred, desaturated wildfire clearing** (smoldering embers, ash clouds, scorched earth). As the player traverses the world, speaks with endangered wildlife, solves ecological crises, and implements smart agricultural innovations, the world undergoes a **dynamic visual transformation from ash destruction into a vibrant, lush, flourishing Eden** powered by WebGL shaders and Phaser 3.
 
@@ -82,7 +82,7 @@ The game includes a built-in intelligent dynamic persona engine that works out o
 
 ---
 
-## 🏆 Key Features for Field to Future Judges
+## 🏆 Key Features for Sow Good Judges
 
 1. **Bayer Smart Farming Integration:** Hands-on simulator showing how precision agriculture balances crop yields for global food security while safeguarding biodiversity.
 2. **Dynamic World Transformation:** Direct visual feedback where player choices physically clean the world from smoldering wildfire ruins to flourishing green ecosystems.

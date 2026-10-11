@@ -68,7 +68,7 @@ export default function TopNavHUD() {
           <div>
             <div className="flex items-center gap-1.5">
               <h1 className="font-pixel-heading text-xs tracking-wider text-[#fde68a] drop-shadow-[1px_1px_0px_#2e1005]">
-                FIELD TO FUTURE
+                SOW GOOD
               </h1>
               <span className="text-[9px] px-1 py-0.5 bg-[#15803d] border border-[#86efac] text-[#fffbeb] font-bold">
                 BLOOM
@@ -303,7 +303,7 @@ export default function TopNavHUD() {
 
             <div className="space-y-3 text-[9.5px] leading-relaxed text-[#451a03]">
               <p>
-                Welcome to <strong>Field to Future: Bloom</strong>! You begin at the central farm hub where 6 crops are failing due to crises in neighboring biomes.
+                Welcome to <strong>Sow Good: Bloom</strong>! You begin at the central farm hub where 6 crops are failing due to crises in neighboring biomes.
               </p>
 
               <div className="p-3 pixel-card space-y-1.5">

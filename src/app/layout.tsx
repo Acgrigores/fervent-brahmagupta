@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Field to Future: Bloom | Agriculture, Sustainability & Eco-Flourish",
+  title: "Sow Good: Bloom | Agriculture, Sustainability & Eco-Flourish",
   description: "Transform an ash-destroyed world into a flourishing Eden. Connect smart farming, wildlife restoration, and real-world conservation funding with Bayer.",
   icons: {
     icon: [

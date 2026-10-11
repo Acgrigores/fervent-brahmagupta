@@ -8,8 +8,8 @@ async function createDeck() {
 
   // 16:9 widescreen layout (13.333 x 7.5 inches)
   pptx.layout = 'LAYOUT_16x9';
-  pptx.title = 'Field to Future: Bloom — Hackathon Pitch Deck';
-  pptx.company = 'Field to Future / Bayer Hackathon Team';
+  pptx.title = 'Sow Good: Bloom — Hackathon Pitch Deck';
+  pptx.company = 'Sow Good / Bayer Hackathon Team';
   pptx.subject = 'Eco-Restoration RPG & Precision Smart Agriculture Platform';
   pptx.author = 'Bloom Hackathon Team';
 
@@ -62,7 +62,7 @@ async function createDeck() {
 
   // Helper for footer
   function addSlideFooter(slide, slideNum, totalSlides = 12) {
-    slide.addText('FIELD TO FUTURE: BLOOM  |  Bayer Hackathon Track: Agriculture & Sustainability', {
+    slide.addText('SOW GOOD: BLOOM  |  Bayer Hackathon Track: Agriculture & Sustainability', {
       x: 0.8, y: 7.0, w: 9.0, h: 0.3,
       fontSize: 9, color: C_TEXT_DIM
     });
@@ -94,14 +94,14 @@ async function createDeck() {
       fill: { color: '143828' },
       line: { color: C_EMERALD, width: 1.2 }
     });
-    s1.addText('🌾 BAYER TRACK: FIELD TO FUTURE (AGRICULTURE & SUSTAINABILITY)', {
+    s1.addText('🌾 BAYER TRACK: SOW GOOD (AGRICULTURE & SUSTAINABILITY)', {
       x: 1.3, y: 1.3, w: 4.8, h: 0.45,
       fontSize: 9.5, bold: true, color: C_EMERALD,
       align: 'center', valign: 'middle'
     });
 
     // Title & Tagline
-    s1.addText('Field to Future: Bloom', {
+    s1.addText('Sow Good: Bloom', {
       x: 1.3, y: 1.9, w: 10.5, h: 1.1,
       fontSize: 44, bold: true, color: C_TEXT_LIGHT,
       fontFace: 'Arial'
@@ -147,7 +147,7 @@ async function createDeck() {
     });
 
     s1.addNotes(
-      "Good morning judges and organizers! We are thrilled to present 'Field to Future: Bloom'—an eco-restoration RPG and precision agriculture impact platform built for the Bayer Field to Future track.\n\n" +
+      "Good morning judges and organizers! We are thrilled to present 'Sow Good: Bloom'—an eco-restoration RPG and precision agriculture impact platform built for the Bayer Sow Good track.\n\n" +
       "Our core philosophy is simple: environmental recovery and agricultural productivity cannot be treated in isolation. In Bloom, players experience a dynamic visual transformation from a charred wildfire wasteland into a lush, thriving Eden by solving real ecological crises and deploying smart farming strategies that mirror Bayer's real-world innovations."
     );
   }
@@ -405,7 +405,7 @@ async function createDeck() {
     });
 
     s4.addNotes(
-      "Slide 4 highlights our direct integration with the Bayer Field to Future theme. In the Grasslands quest, players don't just click 'fix'. They interact with a smart farming control board balancing four pillars of modern ag.\n\n" +
+      "Slide 4 highlights our direct integration with the Bayer Sow Good theme. In the Grasslands quest, players don't just click 'fix'. They interact with a smart farming control board balancing four pillars of modern ag.\n\n" +
       "If you only maximize yield without pollinator corridors, biodiversity crashes. If you ignore yield, food security fails. The simulation demonstrates the profound synergy of Bayer's precision ag: no-till farming, drip irrigation, biological crop protection, and pollinator corridors achieve both 100% yield and 100% biodiversity."
     );
   }
@@ -988,7 +988,7 @@ async function createDeck() {
       fill: { color: '143828' },
       line: { color: C_EMERALD, width: 1.2 }
     });
-    s12.addText('FIELD TO FUTURE: BLOOM', {
+    s12.addText('SOW GOOD: BLOOM', {
       x: 4.66, y: 1.2, w: 4.0, h: 0.45,
       fontSize: 10, bold: true, color: C_EMERALD,
       align: 'center', valign: 'middle'
@@ -1029,7 +1029,7 @@ async function createDeck() {
     });
 
     s12.addNotes(
-      "To conclude: 'Field to Future: Bloom' proves that when you give people agency, beauty, and scientific truth, they don't just learn about sustainability—they actively create it.\n\n" +
+      "To conclude: 'Sow Good: Bloom' proves that when you give people agency, beauty, and scientific truth, they don't just learn about sustainability—they actively create it.\n\n" +
       "We invite you to step into the clearing, meet Paku, configure Bayer's precision farm, and watch the ashes turn to Eden with us. Thank you, and we welcome your questions!"
     );
   }

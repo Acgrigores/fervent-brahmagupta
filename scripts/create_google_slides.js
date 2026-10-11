@@ -1,7 +1,7 @@
 /**
  * =========================================================================
- * FIELD TO FUTURE: BLOOM — GOOGLE APPS SCRIPT SLIDE GENERATOR
- * Track: Field to Future (Agriculture & Sustainability) Sponsored by Bayer
+ * SOW GOOD: BLOOM — GOOGLE APPS SCRIPT SLIDE GENERATOR
+ * Track: Sow Good (Agriculture & Sustainability) Sponsored by Bayer
  * =========================================================================
  * 
  * HOW TO USE IN GOOGLE SLIDES (ONE-CLICK AUTOMATION):
@@ -16,7 +16,7 @@
  */
 
 function createBloomHackathonPresentation() {
-  const TITLE = "Field to Future: Bloom — Hackathon Pitch Deck";
+  const TITLE = "Sow Good: Bloom — Hackathon Pitch Deck";
   const deck = SlidesApp.create(TITLE);
   const slides = deck.getSlides();
   // Remove default blank slide
@@ -61,7 +61,7 @@ function createBloomHackathonPresentation() {
     }
 
     // Footer
-    const footer = slide.insertTextBox("FIELD TO FUTURE: BLOOM  |  Bayer Hackathon Track: Agriculture & Sustainability", 40, 380, 500, 18);
+    const footer = slide.insertTextBox("SOW GOOD: BLOOM  |  Bayer Hackathon Track: Agriculture & Sustainability", 40, 380, 500, 18);
     footer.getText().getTextStyle().setFontSize(7).setForegroundColor(TEXT_DIM);
   }
 
@@ -86,11 +86,11 @@ function createBloomHackathonPresentation() {
     const badge = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 65, 60, 320, 24);
     badge.getFill().setSolidFill("#143828");
     badge.getBorder().setSolidFill(EMERALD).setWeight(1);
-    badge.getText().setText("🌾 BAYER TRACK: FIELD TO FUTURE (AGRICULTURE & SUSTAINABILITY)");
+    badge.getText().setText("🌾 BAYER TRACK: SOW GOOD (AGRICULTURE & SUSTAINABILITY)");
     badge.getText().getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(EMERALD);
 
     // Title
-    const title = s.insertTextBox("Field to Future: Bloom", 65, 95, 590, 55);
+    const title = s.insertTextBox("Sow Good: Bloom", 65, 95, 590, 55);
     title.getText().getTextStyle().setFontSize(32).setBold(true).setForegroundColor(TEXT_LIGHT);
 
     // Tagline
@@ -126,7 +126,7 @@ function createBloomHackathonPresentation() {
     });
 
     setNotes(s, 
-      "Good morning judges and organizers! We are thrilled to present 'Field to Future: Bloom'—an eco-restoration RPG and precision agriculture impact platform built for the Bayer Field to Future track.\n\n" +
+      "Good morning judges and organizers! We are thrilled to present 'Sow Good: Bloom'—an eco-restoration RPG and precision agriculture impact platform built for the Bayer Sow Good track.\n\n" +
       "Our core philosophy is simple: environmental recovery and agricultural productivity cannot be treated in isolation. In Bloom, players experience a dynamic visual transformation from a charred wildfire wasteland into a lush, thriving Eden by solving real ecological crises and deploying smart farming strategies that mirror Bayer's real-world innovations."
     );
   }
@@ -308,7 +308,7 @@ function createBloomHackathonPresentation() {
     });
 
     setNotes(s,
-      "Slide 4 highlights our direct integration with the Bayer Field to Future theme. In the Grasslands quest, players don't just click 'fix'. They interact with a smart farming control board balancing four pillars of modern ag.\n\n" +
+      "Slide 4 highlights our direct integration with the Bayer Sow Good theme. In the Grasslands quest, players don't just click 'fix'. They interact with a smart farming control board balancing four pillars of modern ag.\n\n" +
       "If you only maximize yield without pollinator corridors, biodiversity crashes. If you ignore yield, food security fails. The simulation demonstrates the profound synergy of Bayer's precision ag: no-till farming, drip irrigation, biological crop protection, and pollinator corridors achieve both 100% yield and 100% biodiversity."
     );
   }
@@ -721,7 +721,7 @@ function createBloomHackathonPresentation() {
     const badge = s.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, 270, 55, 180, 22);
     badge.getFill().setSolidFill("#143828");
     badge.getBorder().setSolidFill(EMERALD).setWeight(1);
-    badge.getText().setText("FIELD TO FUTURE: BLOOM");
+    badge.getText().setText("SOW GOOD: BLOOM");
     badge.getText().getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor(EMERALD);
 
     const title = s.insertTextBox("Help The World Flourish.", 65, 88, 590, 48);
@@ -750,7 +750,7 @@ function createBloomHackathonPresentation() {
     demoSub.getText().getTextStyle().setFontSize(8.5).setForegroundColor(TEXT_LIGHT);
 
     setNotes(s,
-      "To conclude: 'Field to Future: Bloom' proves that when you give people agency, beauty, and scientific truth, they don't just learn about sustainability—they actively create it.\n\n" +
+      "To conclude: 'Sow Good: Bloom' proves that when you give people agency, beauty, and scientific truth, they don't just learn about sustainability—they actively create it.\n\n" +
       "We invite you to step into the clearing, meet Paku, configure Bayer's precision farm, and watch the ashes turn to Eden with us. Thank you, and we welcome your questions!"
     );
   }

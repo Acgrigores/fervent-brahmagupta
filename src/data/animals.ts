@@ -385,7 +385,7 @@ export const INITIAL_QUESTS: Quest[] = [
     id: 'quest_grasslands',
     biome: 'grasslands',
     title: 'Enroll in the Bayer Precision Buffer & Pollinator Program',
-    subtitle: 'Field to Future: Precision Agriculture',
+    subtitle: 'Sow Good: Precision Agriculture',
     description: 'Use precision yield data to find underperforming cropland, then convert it into field borders, streambank buffers and pollinator & prairie habitat.',
     rewardCoins: 450,
     rewardRestoration: 100,
@@ -458,7 +458,7 @@ export const INITIAL_BADGES: Badge[] = [
   },
   {
     id: 'badge_smart_farmer',
-    title: 'Field to Future Master',
+    title: 'Sow Good Master',
     description: 'Harnessed Bayer Smart Farming techniques to feed communities while nurturing monarch corridors.',
     icon: 'farming',
     biome: 'grasslands',
